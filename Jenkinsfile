@@ -31,10 +31,11 @@ pipeline {
           }
           steps {
             dir("${FRONTEND}") {
-              sh 'npm ci'
+            sh 'rm -f package-lock.json && npm install'
             }
           }
         }
+        
       }
     }
 
