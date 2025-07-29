@@ -1,0 +1,27 @@
+{
+  "type": "module",
+  "name": "webapp-backend",
+  "version": "1.0.0",
+  "main": "src/index.js",
+
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "nodemon": "^2.0.20",
+    "supertest": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+  
+}
