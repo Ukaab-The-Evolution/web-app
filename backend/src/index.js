@@ -1,24 +1,35 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import { createClient } from '@supabase/supabase-js'
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import globalErrorHandler from './controllers/errorController.js';
+import authRoutes from './routes/authRoutes.js';
 
-dotenv.config()
+const app = express();
+const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
 
-const app = express()
-const port = process.env.PORT || 5000
+// Body parser, reading data from body into req.body
+app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 
-//TODO: Uncomment the following lines to connect to the database 
-// (these lines are temporarily commented out only to avoid the database error)
+// Routes
+app.use('/api/v1/auth', authRoutes);
 
-//const supabase = createClient(
-//  process.env.SUPABASE_URL,
-//  process.env.SUPABASE_KEY
-//)
+// Health check endpoint
+app.get('/api/v1/health', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Server is running healthy'
+  });
+});
 
-app.get('/', (req, res) => {
-  res.send('Backend is running!')
-})
+// Error handling middleware
+app.use(globalErrorHandler);
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`)
-})
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`API Endpoint: http://localhost:${PORT}/api/v1`);
+  console.log(`Auth Endpoint: http://localhost:${PORT}/api/v1/auth`);
+  console.log(`Health Check: http://localhost:${PORT}/api/v1/health`);
+});
+
+export default app;
