@@ -1,0 +1,141 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+
+### 1. Health Check
+GET {{baseUrl}}/health HTTP/1.1
+
+### 2. Admin Signup
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com",
+  "password": "TestAdmin1234!",
+  "user_type": "admin",
+  "full_name": "Test Admin User",
+  "phone": "+923001234500"
+}
+
+### 3. Driver Signup (with phone)
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "phone": "+923001234501",
+  "password": "TestDriver1234!",
+  "user_type": "driver",
+  "full_name": "Test Driver User"
+}
+
+### 4. Shipper Signup
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testshipper@ukaabtest.com",
+  "password": "TestShipper1234!",
+  "user_type": "shipper",
+  "full_name": "Test Shipper User",
+  "phone": "+923001234502"
+}
+
+### 5. Admin Login
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com",
+  "password": "TestAdmin1234!"
+}
+
+### 6. Save Admin Token
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIsImlhdCI6MTc1NDEyOTU2MiwiZXhwIjoxNzYxOTA1NTYyfQ.fCKj4siK2gDqD2s025sUroBElvpEYdAH8LlJicJ00y0
+
+### 7. Driver Login (with phone)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "phone": "+923001234501",
+  "password": "TestDriver1234!"
+}
+
+### 8. Save Driver Token
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImlhdCI6MTc1NDEyOTg1NSwiZXhwIjoxNzYxOTA1ODU1fQ.8ucalnKaB6YIo3CVMu-8J65D_FnZtoZPjphvHLTeIzI
+
+### 9. Shipper Login
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testshipper@ukaabtest.com",
+  "password": "TestShipper1234!"
+}
+
+### 10. Save Shipper Token
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsImlhdCI6MTc1NDEyOTY4MSwiZXhwIjoxNzYxOTA1NjgxfQ.8HmhNCdzSVYMTY9puQbV_jxBH4Ovo3VYQisowlhycp0
+
+### 11. Get Admin Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 12. Get Driver Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+### 13. Get Shipper Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+### 14. Admin Updates Password
+PATCH {{authBaseUrl}}/updatePassword
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "TestAdmin1234!",
+  "newPassword": "NewTestAdmin1234!"
+}
+
+### 15. Login with New Admin Password
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com",
+  "password": "NewTestAdmin1234!"
+}
+
+### 16. Test Invalid Login (Wrong Password)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com",
+  "password": "WrongTestPassword"
+}
+
+### 17. Test Invalid Login (Nonexistent User)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "nonexistenttest@ukaabtest.com",
+  "password": "SomeTestPassword123"
+}
+
+### 18. Test Protected Route Without Token (Should Fail)
+GET {{authBaseUrl}}/me
+Content-Type: application/json
+
+### 19. Test Update Password Without Current Password (Should Fail)
+PATCH {{authBaseUrl}}/updatePassword
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newPassword": "NewTestPassword123!"
+}
