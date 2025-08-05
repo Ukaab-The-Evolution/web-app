@@ -32,6 +32,7 @@ export default function (state = initialState, action) {
     case LOGIN_FAIL:
     case REGISTER_FAIL:
     case AUTH_ERROR:
+    case RESET_PASSWORD_FAIL:
       return {
         ...state,
         isAuthenticated: false,
@@ -39,6 +40,7 @@ export default function (state = initialState, action) {
         error: payload,
       };
     case LOGOUT:
+    case RESET_PASSWORD_SUCCESS:
       return {
         ...state,
         isAuthenticated: false,

@@ -1,9 +1,4 @@
-import PropTypes from 'prop-types';
-
-const Landing = (props) => {
+const Landing = () => {
   return <div>Landing</div>;
 };
-
-Landing.propTypes = {};
-
 export default Landing;

@@ -1,3 +1,42 @@
+:root {
+  /* Font Families */
+  --font-poppins: 'Poppins', Arial, sans-serif;
+  --font-radley: 'Radley', serif;
+
+  /* Background Colors */
+  --color-bg-main: #f8fafc;
+  --color-bg-input: #e6f4ea;
+  --color-bg-social-hover: #f7fafc;
+  --color-bg-white: #ffffff;
+  --color-bg-green-dark: #166534;
+  --color-bg-green-gradient-start: #578c7a;
+  --color-bg-green-gradient-end: #1b2d27;
+  --color-bg-hover: #c1d0d859;
+
+  /* Border Colors */
+  --color-border-input: #d1e7dd;
+  --color-border-social: #578c7a;
+  --color-border-divider: #b2d7ca;
+
+  /* Text Colors */
+  --color-text-main: #333333;
+  --color-text-logo: #3b6255;
+
+  --color-text-link: #16a34a;
+  --color-text-social: #333333;
+  --color-text-divider: #b2d7ca;
+  --color-text-facebook: #1877f3;
+  --color-text-heading: #333333;
+  --color-text-input: #333333;
+  --color-text-placeholder: #333333;
+  --color-text-button: #ffffff;
+  --color-text-or: #b2d7ca;
+
+  --color-green-main: #3b6255;
+
+  --shadow-btn: 0 4px 16px 0 rgba(81, 107, 98, 0.23);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
