@@ -3,6 +3,7 @@ import { signToken } from '../config/authUtils.js';
 import AppError from '../utils/appError.js';
 import jwt from 'jsonwebtoken';
 import validator from 'validator';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 export const signup = async (req, res, next) => {
   try {
@@ -135,6 +136,68 @@ export const getMe = async (req, res, next) => {
           phone: user.phone
         }
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findByEmailOrPhone(email);
+    
+    if (!user) {
+      return res.status(200).json({ 
+        status: 'success',
+        message: 'If the email exists, a reset link will be sent'
+      });
+    }
+
+    const resetToken = await User.createPasswordResetToken(user.user_id);
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    
+    await sendPasswordResetEmail(user.email, resetUrl);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset link sent to email'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    // 1. Get user based on token
+    const { token } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return next(new AppError('Token and new password are required', 400));
+    }
+
+    // 2. Verify token
+    const tokenDoc = await User.verifyPasswordResetToken(token);
+    if (!tokenDoc) {
+      return next(new AppError('Token is invalid or has expired', 400));
+    }
+
+    // 3. Update password
+    await User.updatePassword(tokenDoc.user_id, newPassword);
+    
+    // 4. Invalidate token
+    await User.invalidateResetToken(tokenDoc.token_id);
+
+    // 5. Log the user in, send JWT
+    const user = await User.findById(tokenDoc.user_id);
+    const authToken = signToken(user.user_id);
+    
+    res.status(200).json({
+      status: 'success',
+      token: authToken,
+      message: 'Password updated successfully'
     });
   } catch (err) {
     next(err);

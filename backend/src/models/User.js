@@ -83,6 +83,48 @@ class User {
     return data[0];
   }
 
+  static async createPasswordResetToken(user_id) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const token_hash = crypto.createHash('sha256').update(token).digest('hex');
+  const expires_at = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  
+  const { data, error } = await supabase
+    .from('password_reset_tokens')
+    .insert([{
+      user_id,
+      token_hash,
+      expires_at: expires_at.toISOString()
+    }])
+    .select();
+
+  if (error) throw error;
+  return token; // Return the unhashed token for email
+}
+
+static async verifyPasswordResetToken(token) {
+  const token_hash = crypto.createHash('sha256').update(token).digest('hex');
+  
+  const { data, error } = await supabase
+    .from('password_reset_tokens')
+    .select('*')
+    .eq('token_hash', token_hash)
+    .gt('expires_at', new Date().toISOString())
+    .eq('used', false)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+static async invalidateResetToken(token_id) {
+  const { error } = await supabase
+    .from('password_reset_tokens')
+    .update({ used: true })
+    .eq('token_id', token_id);
+
+  if (error) throw error;
+}
+
   
 //   // Create password reset token (stores in documents table)
 //   static async createPasswordResetToken(user_id) {
