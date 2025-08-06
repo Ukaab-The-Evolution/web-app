@@ -83,3 +83,26 @@ export const login = (email, password) => async (dispatch) => {
     });
   }
 };
+
+//forgot password
+export const forgotPassword = (email) => async (dispatch) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+  const body = JSON.stringify({ email });
+  try {
+    const res = await axios.post(
+      `${API_URL}/api/auth/forgot-password`,
+      body,
+      config
+    );
+    dispatch(setAlert('Password reset link sent', 'success'));
+  } catch (err) {
+    const errors = err.response.data.errors;
+    if (errors) {
+      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
+    }
+  }
+};

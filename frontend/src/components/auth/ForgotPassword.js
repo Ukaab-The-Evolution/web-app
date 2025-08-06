@@ -1,4 +1,8 @@
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+import { useState } from 'react';
+import { forgotPassword } from '../../actions/auth';
+
 import { Navigate } from 'react-router-dom';
 
 const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
@@ -31,7 +35,7 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
 
 ForgotPassword.propTypes = {
   forgotPassword: PropTypes.func.isRequired,
-  isAuthenticated: PropTypes.bool.isRequired,
+  isAuthenticated: PropTypes.bool,
 };
 
 const mapStateToProps = (state) => ({

@@ -41,30 +41,30 @@ const Register = ({ register, isAuthenticated }) => {
     return <Navigate to='/dashboard' />;
   }
   return (
-    <div className='min-h-screen flex flex-col md:flex-row bg-[var(--color-bg-main)] font-[var(--font-poppins)]'>
+    <div className='border-box min-h-screen flex flex-col md:flex-row bg-[var(--color-bg-main)] font-[var(--font-poppins)]'>
       {/* Left Side */}
-      <main className='md:w-1/2 flex flex-col justify-center px-2 py-6 md:px-6 lg:px-12'>
-        <header className='mb-6 flex items-center justify-center md:justify-start'>
-          <img
-            src='/images/logo.svg'
-            alt='Ukaab Logo'
-            className='h-[38px] w-[88px] mr-2'
-          />
-          <p className='text-[30px] text-[var(--color-text-logo)] font-[var(--font-radley)]'>
+      <main className='md:w-1/2 flex flex-col justify-center px-6 py-8 md:px-10  lg:px-20 text-xl'>
+        <header className='mb-4 flex items-center justify-center md:justify-start'>
+          {/* <img
+                src='/images/logo.svg'
+                alt='Ukaab Logo'
+                className='h-[38px] w-[88px]'
+              /> */}
+          <p className='text-[30px]  text-[var(--color-text-logo)] font-[var(--font-radley)]'>
             Ukaab
           </p>
         </header>
-        <section className='bg-[var(--color-bg-white)] rounded-lg shadow-none md:shadow-lg p-6 md:p-8 max-w-xl mx-auto'>
+        <section className='p-6 md:p-8'>
           <h1 className='text-[40px] text-[var(--color-text-heading)] mb-2 leading-[1] font-[var(--font-poppins)]'>
             Sign Up
           </h1>
-          <p className='mb-2 text-[var(--color-text-main)] text-base font-[var(--font-poppins)]'>
-            Already have an account?{' '}
+          <p className='mb-6 text-[var(--color-text-main)] text-base  font-[var(--font-poppins)]'>
+            Don’t have an account?{' '}
             <Link
-              to='/login'
+              to='/register'
               className='text-[var(--color-text-link)] hover:underline font-[var(--font-poppins)]'
             >
-              Login
+              Create now
             </Link>
           </p>
           <form onSubmit={onSubmit} className='space-y-4'>
@@ -165,13 +165,13 @@ const Register = ({ register, isAuthenticated }) => {
                 placeholder='********'
               />
               <span
-                className='absolute right-3 top-1/2 -translate-y-1/2 h-6 w-px bg-[var(--color-border-input)]'
+                className='absolute right-10 bottom-0  h-[3vh] w-px bg-[var(--color-border-input)]'
                 aria-hidden='true'
               ></span>
               <button
                 type='button'
                 onClick={() => setShowPassword((prev) => !prev)}
-                className='absolute right-1 top-1/2 -translate-y-1/2 text-[var(--color-text-input)] focus:outline-none'
+                className='absolute right-2 bottom-[1vh] text-[var(--color-text-input)] focus:outline-none'
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
@@ -250,12 +250,12 @@ const Register = ({ register, isAuthenticated }) => {
         {/* Content inside ellipse */}
         <div className='absolute flex flex-col items-center justify-center h-full '>
           <h2 className='text-4xl text-white mb-4 text-center font-[var(--font-poppins)]'>
-            Welcome to Ukaab!
+            Welcome Back!
           </h2>
           <p className='text-white text-lg text-center max-w-md font-[var(--font-poppins)]'>
-            Get started in seconds — connect with shippers, fleets, and drivers
-            instantly to post requests, assign loads, and track in real time
-            across one unified platform.
+            Manage your shipments with speed and confidence — login to access
+            real-time tracking, instant load assignments, and seamless logistics
+            management.
           </p>
         </div>
       </div>

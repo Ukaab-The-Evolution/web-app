@@ -42,16 +42,16 @@ const Login = ({ login, isAuthenticated }) => {
       {/* Left Side */}
       <main className='md:w-1/2 flex flex-col justify-center px-6 py-8 md:px-12 lg:px-24'>
         <header className='mb-8 flex items-center justify-center md:justify-start'>
-          <img
+          {/* <img
             src='/images/logo.svg'
             alt='Ukaab Logo'
-            className='h-[38px] w-[88px] mr-2'
-          />
+            className='h-[38px] w-[88px]'
+          /> */}
           <p className='text-[30px]  text-[var(--color-text-logo)] font-[var(--font-radley)]'>
             Ukaab
           </p>
         </header>
-        <section className='bg-[var(--color-bg-white)] rounded-lg shadow-none md:shadow-lg p-6 md:p-8'>
+        <section className='p-6 md:p-8'>
           <h1 className='text-[40px] text-[var(--color-text-heading)] mb-2 leading-[1] font-[var(--font-poppins)]'>
             Login
           </h1>
