@@ -4,9 +4,9 @@ import {
   login,
   protect,
   updatePassword,
-  getMe
-  //forgotPassword,
-  //resetPassword
+  getMe,
+  forgotPassword,
+  resetPassword
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -14,8 +14,8 @@ const router = express.Router();
 // Public routes
 router.post('/signup', signup);
 router.post('/login', login);
-// router.post('/forgotPassword', forgotPassword);
-// router.patch('/resetPassword/:token', resetPassword);
+router.post('/forgotPassword', forgotPassword);
+router.patch('/resetPassword/:token', resetPassword);
 
 // Protected routes
 router.use(protect);
