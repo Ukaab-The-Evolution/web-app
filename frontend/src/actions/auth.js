@@ -94,7 +94,7 @@ export const forgotPassword = (email) => async (dispatch) => {
   const body = JSON.stringify({ email });
   try {
     const res = await axios.post(
-      `${API_URL}/api/auth/forgot-password`,
+      `${API_URL}/api/auth/forgotPassword`,
       body,
       config
     );
