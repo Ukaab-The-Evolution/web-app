@@ -13,6 +13,7 @@ import Landing from './components/layout/Landing';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
+import RoleSelection from './components/layout/RoleSelection';
 
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
@@ -30,6 +31,7 @@ root.render(
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
+          <Route exact path='/role-selection' element={<RoleSelection/>} />
         </Routes>
       </Router>
     </Provider>
