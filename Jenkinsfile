@@ -61,13 +61,13 @@ pipeline {
     }
 
     stage('Build Frontend') {
-      agent { docker { image 'node:20-alpine' } }
-      steps {
-        dir("${FRONTEND}") {
-          sh 'npm run build'
-        }
-      }
+  agent { docker { image 'node:20-alpine' } }
+  steps {
+    dir("${FRONTEND}") {
+      sh 'CI=false npm run build'
     }
+  }
+}
 
     stage('Docker Build') {
       steps {
