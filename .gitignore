@@ -12,4 +12,5 @@ supabase/types/
 .DS_Store
 Thumbs.db
 .vscode/
+**/.env
 
