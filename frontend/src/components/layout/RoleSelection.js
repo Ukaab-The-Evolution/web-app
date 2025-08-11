@@ -1,211 +1,160 @@
-import PropTypes from 'prop-types';
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { connect } from 'react-redux';
-import { MdOutlineSupportAgent } from 'react-icons/md';
-import { FaChevronDown } from 'react-icons/fa';
+import { MdOutlineSupportAgent } from "react-icons/md";
+import { FaAngleDoubleRight } from "react-icons/fa";
+import { FiChevronDown } from "react-icons/fi";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import Toast from "../ui/Toast";
 
-const RoleSelection = () => {
-    const [role, setRole] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const navigate = useNavigate();
-    const dropdownRef = useRef(null);
+function RoleSelection() {
+  const navigate = useNavigate();
+  const [toast, setToast] = useState(null);
 
-    const roleOptions = [
-      { value: 'company', label: 'Company' },
-      { value: 'truck-driver', label: 'Truck Driver' },
-      { value: 'shipper', label: 'Shipper' }
-    ];
+  const roles = [
+    { name: "Select Role", value: "" },
+    { name: "Shipper", value: "shipper" },
+    { name: "Trucking Company", value: "truckingCompany" },
+    { name: "Truck Driver", value: "truckDriver" },
+  ];
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setIsDropdownOpen(false);
-        }
-      };
+  const [selectedRole, setSelectedRole] = useState(roles[0]);
 
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, []);
+  const handleRoleSelection = () => {
+    if (!selectedRole?.value) {
+      setToast({ type: "error", message: "Please select a role before proceeding." });
+      return;
+    }
 
-    const handleRoleSelect = (selectedRole) => {
-      setRole(selectedRole);
-      setIsDropdownOpen(false);
-    };
+    navigate(`/register?role=${selectedRole.value}`);
+  };
 
-    const handleGetStarted = () => {
-      if (role) {
-        // Navigate to register page with role as query parameter
-        navigate(`/register?role=${role}`);
-      }
-    };
   return (
-     <div className='min-h-screen flex flex-col lg:flex-row bg-[var(--color-bg-main)] font-[var(--font-poppins)] relative'>
-      {/* Background Image for Medium Screens */}
-      <div className='hidden md:block lg:hidden absolute inset-0 bg-[var(--color-green-main)] z-0'>
-        <img
-          src='/images/bg_1.svg'
-          alt='Logistics Background'
-          className='absolute bottom-4 right-4 w-48 h-48 object-contain opacity-20 z-1'
+    <>
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
         />
+      )}
+    <div className="min-h-screen flex flex-col lg:flex-row relative font-poppins overflow-hidden">
+      {/* Top Left Logo */}
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center z-20">
+        <img
+          src="/images/IconGreen.png"
+          alt="Ukaab Logo"
+          className="h-8 sm:h-10 md:h-16"
+        />
+        <span className="text-lg sm:text-xl md:text-2xl font-bold font-radley text-[#3B6255] ml-2">
+          Ukaab
+        </span>
       </div>
 
-      {/* Left Side - Full width on mobile, half width on larger screens */}
-      <main className='w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-12 lg:px-12 xl:px-20 min-h-screen relative z-10 md:bg-[var(--color-green-main)] lg:bg-transparent'>
-        {/* Logo Section */}
-        <header className='mb-12 w-full max-w-md'>
-          <div className='flex items-center justify-center lg:justify-start mb-8'>
-            <img
-              src='/images/logo.svg'
-              alt='Ukaab Logo'
-              className='h-[38px] w-[88px] mr-3'
-            />
-            <h1 className='text-[30px] text-[var(--color-text-logo)] md:text-white lg:text-[var(--color-text-logo)] font-[var(--font-radley)]'>
-              Ukaab
-            </h1>
-          </div>
-        </header>
+      {/* Left Section */}
+      <div className="flex justify-center items-center p-4 sm:p-8 md:p-10 lg:px-20 pt-24 sm:pt-28 md:pt-32 lg:pt-36 lg:w-1/2 bg-white">
+        <div className="w-full max-w-lg">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-gray-900 mb-6">
+            Choose Your Role to Get Started
+          </h1>
 
-        {/* Content Section */}
-        <section className='w-full max-w-md space-y-6'>
-          {/* Main Heading */}
-          <div className='space-y-4'>
-            <h2 className='text-[32px] lg:text-[36px] xl:text-[40px] text-[var(--color-text-heading)] md:text-white lg:text-[var(--color-text-heading)] leading-tight font-[var(--font-poppins)]'>
-              Ready to transform your logistics?
-            </h2>
-            <p className='text-[18px] lg:text-[20px] text-[var(--color-green-main)] md:text-white lg:text-[var(--color-green-main)] font-[var(--font-poppins)]'>
-              Fast & Secure
-            </p>
-          </div>
-
-          {/* Role Selection */}
-          <div className='space-y-4'>
-            <label className='block text-[16px] text-[var(--color-text-heading)] md:text-white lg:text-[var(--color-text-heading)] font-[var(--font-poppins)]'>
-              Select your role
-            </label>
-            <div className='relative' ref={dropdownRef}>
-              <button
-                type='button'
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className='w-full flex items-center justify-between px-4 py-3 bg-white border border-[var(--color-border-input)] rounded-[10px] text-[var(--color-text-input)] text-[16px] font-[var(--font-poppins)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)] transition-colors'
-              >
-                <span className={role ? 'text-[var(--color-text-input)]' : 'text-[var(--color-text-placeholder)]'}>
-                  {role ? roleOptions.find(option => option.value === role)?.label : 'Choose your role'}
-                </span>
-                <FaChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && (
-                <div className='absolute top-full left-0 right-0 mt-1 bg-white border border-[var(--color-border-input)] rounded-[10px] shadow-lg z-50'>
-                  {roleOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type='button'
-                      onClick={() => handleRoleSelect(option.value)}
-                      className='w-full px-4 py-3 text-left text-[var(--color-text-input)] hover:bg-gray-50 font-[var(--font-poppins)] first:rounded-t-[10px] last:rounded-b-[10px] transition-colors'
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className='space-y-4'>
-            <p className='text-[15px] lg:text-[16px] text-[var(--color-text-main)] md:text-white/90 lg:text-[var(--color-text-main)] leading-relaxed font-[var(--font-poppins)]'>
-              Welcome to Ukaab — your all-in-one logistics partner. Track,
-              assign, and manage your shipments effortlessly and in real time!
-            </p>
-          </div>
-
-          {/* CTA Button */}
-          <div className='pt-4'>
-            <button
-              onClick={handleGetStarted}
-              disabled={!role}
-              className={`inline-flex items-center justify-center w-full px-8 py-3 rounded-[10px] text-[18px] transition-colors duration-200 shadow-lg font-[var(--font-poppins)] ${
-                role 
-                  ? 'bg-[var(--color-green-main)] md:bg-white lg:bg-[var(--color-green-main)] text-[var(--color-text-button)] md:text-[var(--color-green-main)] lg:text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)] md:hover:bg-gray-100 lg:hover:bg-[var(--color-bg-green-dark)]' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              style={role ? { boxShadow: 'var(--shadow-btn)' } : {}}
-            >
-              Get started
-              <svg
-                className='ml-2 w-5 h-5'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M13 7l5 5m0 0l-5 5m5-5H6'
-                />
-              </svg>
-            </button>
-          </div>
-        </section>
-
-        {/* Support Button for Medium Screens */}
-        <div className='hidden md:block lg:hidden absolute top-6 right-6 items-center gap-2 z-20'>
-          <MdOutlineSupportAgent className='text-white text-lg' />
-          <span className='text-white text-lg font-[var(--font-poppins)]'>
-            Support
-          </span>
-        </div>
-
-        {/* Text Content for Medium Screens */}
-        <div className='hidden md:block lg:hidden mt-12 space-y-3 max-w-sm text-center'>
-          <h3 className='text-xl text-white leading-tight font-[var(--font-poppins)]'>
-            No More Long Delays
-          </h3>
-          <p className='text-sm text-white/90 leading-relaxed font-[var(--font-poppins)]'>
-            Get your loads moving faster, smarter, and on time — every time.
+          <p className="text-gray-700 mb-6 sm:mb-8">
+            Tell us how you want to use Ukaab so we can set up the right
+            experience for you.
           </p>
-        </div>
-      </main>
 
-      {/* Right Side - Only shown on large screens */}
-      <div className='hidden lg:flex lg:w-1/2 relative items-center justify-center bg-[var(--color-green-main)] min-h-screen overflow-hidden'>
-        {/* Support Button */}
-        <div className='absolute top-6 lg:top-8  flex items-center gap-2 z-10'>
-          <MdOutlineSupportAgent className='text-white text-lg flex-center' />
-          <span className='text-white text-lg font-[var(--font-poppins)]'>
-            Support
-          </span>
-        </div>
+          {/* Role Dropdown */}
+          <div className="mb-6 w-full relative z-20">
+            <label
+              htmlFor="role"
+              className="block text-sm text-[var(--color-text-main)] mb-1 opacity-70"
+            >
+              Role
+            </label>
 
-        {/* Main Content Container */}
-        <div className='flex flex-col items-center justify-center px-6 py-12 lg:px-12 text-center h-full'>
-          {/* Image Container */}
-          <div className='mb-6 lg:mb-8 relative'>
-            <img
-              src='/images/bg_2.svg'
-              alt='Logistics Illustration'
-              className='w-60 h-48 md:w-56 md:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80 object-contain'
-            />
+            <Menu as="div" className="relative w-full">
+              <MenuButton className="w-full flex items-center justify-between rounded-[10px] bg-[var(--color-bg-input)] py-2 px-4 text-left border border-[var(--color-border-input)] text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)]">
+                {selectedRole?.name || "Select Role"}
+                <FiChevronDown className="w-4 h-4 text-[var(--color-text-main)] opacity-60" />
+              </MenuButton>
+
+              <MenuItems className="absolute left-0 mt-2 w-full rounded-[10px] bg-[var(--color-bg-input)] border border-[var(--color-border-input)] shadow-lg text-sm z-50 max-h-60 overflow-y-auto">
+                {roles.map((role, index) => (
+                  <MenuItem key={index} as="div">
+                    {({ active }) => (
+                      <button
+                        onClick={() => setSelectedRole(role)}
+                        className={`w-full text-left px-4 py-2 transition duration-150 ease-in-out rounded-[6px] ${
+                          active
+                            ? "bg-[var(--color-green-main)] text-white"
+                            : "text-[var(--color-text-main)]"
+                        }`}
+                      >
+                        {role.name}
+                      </button>
+                    )}
+                  </MenuItem>
+                ))}
+              </MenuItems>
+            </Menu>
           </div>
 
-          {/* Text Content */}
-          <div className='space-y-3 lg:space-y-4 max-w-sm lg:max-w-md'>
-            <h3 className='text-xl md:text-2xl lg:text-3xl xl:text-4xl text-white leading-tight font-[var(--font-poppins)]'>
-              No More Long Delays
-            </h3>
-            <p className='text-sm md:text-base lg:text-lg text-white/90 leading-relaxed font-[var(--font-poppins)]'>
-              Get your loads moving faster, smarter, and on time — every time.
-            </p>
-          </div>
+          <button
+            onClick={handleRoleSelection}
+            className="w-full py-2.5 rounded-[10px] bg-[var(--color-green-main)] text-[var(--color-text-button)] text-[18px] shadow-lg hover:bg-[var(--color-bg-green-dark)] transition flex items-center justify-center gap-2"
+          >
+            Next
+            <FaAngleDoubleRight className="text-xl" />
+          </button>
+        </div>
+      </div>
+
+      {/* Right Section */}
+      <div
+        className="flex w-full md:w-1/2 relative items-center justify-center overflow-hidden h-[50vh] sm:h-[60vh] md:h-screen"
+        style={{
+          backgroundImage: "url('/images/bg_1.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
+
+        {/* Support Icon */}
+        <div className="absolute top-6 sm:top-8  flex items-center gap-2 z-10 cursor-pointer hover:underline">
+          <MdOutlineSupportAgent className="text-white text-lg" />
+          <span className="text-white text-lg">Support</span>
+        </div>
+
+        {/* Responsive Circles */}
+        <div
+          className="absolute bottom-[-220px] right-[-80px] z-10 w-[400px] h-[400px]
+        backdrop-blur-[1px] overflow-hidden bg-white/20 rounded-full  
+        border border-white/30 hidden md:block lg:hidden"
+        />
+
+        {/* Large screen: full circle */}
+        <div
+          className="absolute bottom-[-360px] right-[-120px] z-10 w-[750px] h-[750px]
+        backdrop-blur-[1px] overflow-hidden bg-white/20 rounded-full  
+        border border-white/30 hidden lg:block"
+        />
+
+        {/* Text Content */}
+        <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-10 z-20 w-[90%] sm:w-[500px] p-4 sm:p-6 bg-transparent text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
+            Welcome to Ukaab!
+          </h2>
+          <p className="text-white text-sm sm:text-base font-bold">
+            Get started in seconds - connect with shippers, fleets, and drivers
+            instantly to post requests, assign loads, and track in real time
+            across one unified platform.
+          </p>
         </div>
       </div>
     </div>
-  )
+    </>
+  );
 }
 
 export default RoleSelection;

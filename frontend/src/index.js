@@ -31,7 +31,7 @@ root.render(
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
-          <Route exact path='/role-selection' element={<RoleSelection />} />
+          <Route exact path='/role-selection' element={<RoleSelection/>} />
         </Routes>
       </Router>
     </Provider>
