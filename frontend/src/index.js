@@ -30,12 +30,11 @@ import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import RoleSelection from './components/layout/RoleSelection';
 import AuthCallback from './components/auth/AuthCallback';
+import OTPVerification from "./components/auth/OTPVerification";
+import ResetPassword from "./components/auth/ResetPassword";
 
 // Providers
 import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
-
-
-
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -50,7 +49,8 @@ root.render(
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
           <Route exact path='/role-selection' element={<RoleSelection />} />
           <Route exact path='/auth/callback' element={<AuthCallback />} />
-
+          <Route exact path="/otp-verification" element={<OTPVerification />} />
+          <Route exact path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </Router>
       </SupabaseAuthProvider>
