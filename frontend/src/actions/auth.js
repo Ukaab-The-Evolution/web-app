@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../index';
 
 import {
   AUTH_ERROR,
@@ -10,6 +11,11 @@ import {
   REGISTER_SUCCESS,
   REGISTER_FAIL,
   USER_LOADED,
+  GOOGLE_AUTH_START,
+  GOOGLE_AUTH_SUCCESS,
+  GOOGLE_AUTH_FAIL,
+  SUPABASE_SESSION_LOADED,
+  SUPABASE_SIGNOUT,
 } from './types';
 import { setAlert } from './alert';
 
@@ -32,16 +38,22 @@ export const loadUser = () => async (dispatch) => {
 };
 
 export const register =
-  ({ name, email, password }) =>
+  (formData, role) =>
   async (dispatch) => {
     const config = {
       headers: {
         'Content-Type': 'application/json',
       },
     };
-    const body = JSON.stringify({ name, email, password });
+    const body = JSON.stringify({ 
+      email: formData.email, 
+      phone: formData.phone, 
+      password: formData.password, 
+      role, 
+      full_name: formData.full_name 
+    });
     try {
-      const res = await axios.post(`${API_URL}/api/users`, body, config);
+      const res = await axios.post(`/api/signup`, body, config);
       dispatch({
         type: REGISTER_SUCCESS,
         payload: res.data,
@@ -67,7 +79,7 @@ export const login = (email, password) => async (dispatch) => {
   };
   const body = JSON.stringify({ email, password });
   try {
-    const res = await axios.post(`${API_URL}/api/auth`, body, config);
+    const res = await axios.post(`/api/login`, body, config);
     dispatch({
       type: LOGIN_SUCCESS,
       payload: res.data,
@@ -94,7 +106,7 @@ export const forgotPassword = (email) => async (dispatch) => {
   const body = JSON.stringify({ email });
   try {
     const res = await axios.post(
-      `${API_URL}/api/auth/forgot-password`,
+      `${API_URL}/api/auth/forgotPassword`,
       body,
       config
     );
@@ -104,5 +116,126 @@ export const forgotPassword = (email) => async (dispatch) => {
     if (errors) {
       errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
     }
+  }
+};
+
+// Load Supabase session on app start
+export const loadSupabaseSession = () => async (dispatch) => {
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) throw error;
+
+    if (session) {
+      dispatch({
+        type: SUPABASE_SESSION_LOADED,
+        payload: {
+          user: session.user,
+          token: session.access_token,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error loading session:', error);
+  }
+};
+
+// Google OAuth sign in
+export const signInWithGoogle = () => async (dispatch) => {
+  try {
+    dispatch({ type: GOOGLE_AUTH_START });
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) throw error;
+
+    // OAuth redirect will handle the rest
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    dispatch({
+      type: GOOGLE_AUTH_FAIL,
+      payload: error.message,
+    });
+    dispatch(setAlert('Google authentication failed', 'danger'));
+  }
+};
+
+// Handle auth state changes
+export const handleAuthStateChange = (event, session) => async (dispatch) => {
+  try {
+    if (event === 'SIGNED_IN' && session) {
+      // Create or update user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile && !profileError) {
+        // Create new profile for first-time Google user
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: session.user.id,
+              email: session.user.email,
+              name:
+                session.user.user_metadata.full_name ||
+                session.user.user_metadata.name,
+              avatar_url: session.user.user_metadata.avatar_url,
+              provider: 'google',
+              created_at: new Date().toISOString(),
+            },
+          ]);
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
+      }
+
+      dispatch({
+        type: GOOGLE_AUTH_SUCCESS,
+        payload: {
+          user: session.user,
+          token: session.access_token,
+        },
+      });
+
+      dispatch(setAlert('Successfully signed in with Google', 'success'));
+    } else if (event === 'SIGNED_OUT') {
+      dispatch({ type: SUPABASE_SIGNOUT });
+    }
+  } catch (error) {
+    console.error('Auth state change error:', error);
+    dispatch({
+      type: GOOGLE_AUTH_FAIL,
+      payload: error.message,
+    });
+  }
+};
+
+// Sign out
+export const signOutUser = () => async (dispatch) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+
+    dispatch({ type: SUPABASE_SIGNOUT });
+    dispatch(setAlert('Successfully signed out', 'success'));
+  } catch (error) {
+    console.error('Sign out error:', error);
+    dispatch(setAlert('Error signing out', 'danger'));
   }
 };

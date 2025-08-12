@@ -42,12 +42,12 @@ const Login = ({ login, isAuthenticated }) => {
       {/* Left Side */}
       <main className='md:w-1/2 flex flex-col justify-center px-6 py-8 md:px-12 lg:px-24'>
         <header className='mb-8 flex items-center justify-center md:justify-start'>
-          {/* <img
-            src='/images/logo.svg'
+          { <img
+            src='/images/IconGreen.png'
             alt='Ukaab Logo'
             className='h-[38px] w-[88px]'
-          /> */}
-          <p className='text-[30px]  text-[var(--color-text-logo)] font-[var(--font-radley)]'>
+          /> }
+        <p className="text-4xl sm:text-xl md:text-2xl font-bold font-radley text-[#3B6255] ml-2">
             Ukaab
           </p>
         </header>
@@ -163,44 +163,47 @@ const Login = ({ login, isAuthenticated }) => {
               <FcGoogle className='text-2xl' />
               Continue with Google
             </button>
-            <button
-              type='button'
-              className='w-full flex items-center justify-center gap-3 py-3 px-6 rounded-[40px] border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)]'
-              aria-label='Continue with Facebook'
-            >
-              <FaFacebook className='text-2xl text-[var(--color-text-facebook)]' />
-              Continue with Facebook
-            </button>
+            
           </section>
         </section>
       </main>
       {/* Right Side */}
       <div
-        className='hidden md:flex md:w-1/2 relative items-center justify-center bg-green-900'
-        style={{
-          backgroundImage: "url('/images/bg_1.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className='absolute inset-0 bg-green-900 opacity-80 z-1'></div>
-        <div className='absolute top-8 flex items-center gap-2 z-2'>
-          <MdOutlineSupportAgent className='text-white text-lg' />
-          <span className='text-white text-lg'>Support</span>
-        </div>
-
-        {/* Content inside ellipse */}
-        <div className='absolute flex flex-col items-center justify-center h-full '>
-          <h2 className='text-4xl text-white mb-4 text-center font-[var(--font-poppins)]'>
-            Welcome Back!
-          </h2>
-          <p className='text-white text-lg text-center max-w-md font-[var(--font-poppins)]'>
-            Manage your shipments with speed and confidence — login to access
-            real-time tracking, instant load assignments, and seamless logistics
-            management.
-          </p>
-        </div>
-      </div>
+              className="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden h-screen"
+              style={{
+                backgroundImage: "url('/images/bg_1.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
+      
+              {/* Support Icon */}
+              <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline">
+                <MdOutlineSupportAgent className="text-white text-lg" />
+                <span className="text-white text-lg">Support</span>
+              </div>
+      
+              {/* Large screen: full circle */}
+              <div
+                className="absolute bottom-[-360px] right-[-120px] z-10 w-[750px] h-[750px]
+              backdrop-blur-[1px] overflow-hidden bg-white/20 rounded-full  
+              border border-white/30"
+              />
+      
+              {/* Text Content */}
+              <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-10 z-20 w-[90%] sm:w-[500px] p-4 sm:p-6 bg-transparent text-center">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
+                  Welcome to Ukaab!
+                </h2>
+                <p className="text-white text-sm sm:text-base font-bold">
+                  Get started in seconds - connect with shippers, fleets, and drivers
+                  instantly to post requests, assign loads, and track in real time
+                  across one unified platform.
+                </p>
+              </div>
+            </div>
     </div>
   );
 };
