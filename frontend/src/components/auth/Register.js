@@ -38,7 +38,7 @@ const Register = ({ register, isAuthenticated }) => {
 
   // Redirect if logged in
   if (isAuthenticated) {
-    return <Navigate to='/dashboard' />;
+    return <Navigate to='/otp-verification' />;
   }
   return (
     <div className='border-box min-h-screen flex flex-col md:flex-row bg-[var(--color-bg-main)] font-[var(--font-poppins)]'>
