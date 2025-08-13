@@ -4,79 +4,53 @@ pipeline {
   environment {
     BACKEND = 'backend'
     FRONTEND = 'frontend'
-    NODE_IMAGE = 'node:20-alpine' // unified Node version for consistency
-  }
-
-  options {
-    // Make sure we start from a clean state each run
-    skipDefaultCheckout()
   }
 
   stages {
-    stage('Workspace Cleanup & Checkout') {
-      steps {
-        deleteDir()         // Wipe old workspace
-        checkout scm        // Pull fresh code
-      }
-    }
-
     stage('Install') {
       parallel {
         stage('Backend') {
           agent {
             docker {
-              image "${NODE_IMAGE}"
+              image 'node:20-alpine'
               args '-v /var/run/docker.sock:/var/run/docker.sock'
             }
           }
           steps {
             dir("${BACKEND}") {
-              sh '''
-                rm -rf node_modules
-                npm cache clean --force
-                npm ci
-              '''
+              sh 'npm ci'
             }
           }
         }
-
         stage('Frontend') {
           agent {
             docker {
-              image "${NODE_IMAGE}"
+              image 'node:20-alpine'
               args '-v /var/run/docker.sock:/var/run/docker.sock'
             }
           }
           steps {
             dir("${FRONTEND}") {
-              sh '''
-                rm -rf node_modules
-                npm cache clean --force
-                npm ci
-              '''
+            sh 'rm -f package-lock.json && npm cache clean --force && npm install'
             }
           }
         }
+        
       }
     }
 
     stage('Test') {
       parallel {
         stage('Backend') {
-          agent {
-            docker { image "${NODE_IMAGE}" }
-          }
+          agent { docker { image 'node:20-alpine' } }
           steps {
             dir("${BACKEND}") {
               sh 'npm test || true'
             }
           }
         }
-
         stage('Frontend') {
-          agent {
-            docker { image "${NODE_IMAGE}" }
-          }
+          agent { docker { image 'node:20-alpine' } }
           steps {
             dir("${FRONTEND}") {
               sh 'npm test -- --watchAll=false || true'
@@ -87,17 +61,17 @@ pipeline {
     }
 
     stage('Build Frontend') {
-      agent { docker { image "${NODE_IMAGE}" } }
-      steps {
-        dir("${FRONTEND}") {
-          sh 'CI=false npm run build'
-        }
-      }
+  agent { docker { image 'node:20-alpine' } }
+  steps {
+    dir("${FRONTEND}") {
+      sh 'CI=false npm run build'
     }
+  }
+}
 
     stage('Docker Build') {
       steps {
-        sh 'docker-compose build --no-cache'
+        sh 'docker-compose build'
       }
     }
   }
@@ -108,3 +82,4 @@ pipeline {
     }
   }
 }
+//an project by algorizms
