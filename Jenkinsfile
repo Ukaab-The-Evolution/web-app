@@ -12,7 +12,7 @@ pipeline {
         stage('Backend') {
           agent {
             docker {
-              image 'node:18-alpine'
+              image 'node:20-alpine'
               args '-v /var/run/docker.sock:/var/run/docker.sock'
             }
           }
@@ -31,7 +31,7 @@ pipeline {
           }
           steps {
             dir("${FRONTEND}") {
-            sh 'rm -f package-lock.json && npm install'
+            sh 'rm -f package-lock.json && npm cache clean --force && npm install'
             }
           }
         }
@@ -42,7 +42,7 @@ pipeline {
     stage('Test') {
       parallel {
         stage('Backend') {
-          agent { docker { image 'node:18-alpine' } }
+          agent { docker { image 'node:20-alpine' } }
           steps {
             dir("${BACKEND}") {
               sh 'npm test || true'
@@ -61,7 +61,7 @@ pipeline {
     }
 
     stage('Build Frontend') {
-  agent { docker { image 'node:18-alpine' } }
+  agent { docker { image 'node:20-alpine' } }
   steps {
     dir("${FRONTEND}") {
       sh 'CI=false npm run build'

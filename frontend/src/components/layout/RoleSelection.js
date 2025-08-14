@@ -2,11 +2,13 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import { FaAngleDoubleRight } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useState } from "react";
 import Toast from "../ui/Toast";
+import PropTypes from 'prop-types';
+import { connect } from "react-redux";
 
-function RoleSelection() {
+const RoleSelection=({isAuthenticated})=> {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
 
@@ -16,7 +18,9 @@ function RoleSelection() {
     { name: "Truck Driver", value: "truckDriver" },
   ];
 
+
   const [selectedRole, setSelectedRole] = useState({ name: "", value: "" });
+
 
   const handleRoleSelection = () => {
     if (!selectedRole?.value) {
@@ -28,6 +32,10 @@ function RoleSelection() {
     }
     navigate(`/register?role=${selectedRole.value}`);
   };
+
+  if(isAuthenticated){
+    return <Navigate to="/dashboard" />;
+  }
 
   return (
     <>
@@ -173,4 +181,13 @@ function RoleSelection() {
   );
 }
 
-export default RoleSelection;
+const mapStateToProps = (state) => ({
+  isAuthenticated: state.auth.isAuthenticated,
+  supabaseUser: state.auth.supabaseUser,
+});
+
+RoleSelection.propTypes = {
+  isAuthenticated: PropTypes.bool,
+  supabaseUser: PropTypes.object,
+};
+export default connect(mapStateToProps)(RoleSelection);

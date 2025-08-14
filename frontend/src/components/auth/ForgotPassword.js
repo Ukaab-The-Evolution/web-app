@@ -6,7 +6,9 @@ import { forgotPassword } from '../../actions/auth';
 import { Navigate } from 'react-router-dom';
 
 const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(
+    {email: '',}
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
