@@ -1,12 +1,18 @@
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import Toast from "../ui/Toast";
 
 function OTPVerification({ email }) {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-    const [error, setError] = useState("");
+    const [toast, setToast] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const isPasswordReset = location.state?.isPasswordReset || 
+                            location.pathname.includes('reset') || 
+                            new URLSearchParams(location.search).get('type') === 'reset';
 
     const handleChange = (value, index) => {
         if (/^[0-9]?$/.test(value)) {
@@ -20,34 +26,74 @@ function OTPVerification({ email }) {
         }
     };
 
+    const handleKeyDown = (e, index) => {
+        if (e.key === 'Backspace' && !otp[index] && index > 0) {
+            const prevInput = document.getElementById(`otp-input-${index - 1}`);
+            if (prevInput) {
+                prevInput.focus();
+            }
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const enteredOtp = otp.join("");
 
         if (enteredOtp.length !== 6) {
-            setError("Please enter the complete 6-digit code.");
+            setToast({
+                type: "error",
+                message: "Please enter the complete 6-digit code.",
+            });
             return;
         }
 
         try {
-            const res = await axios.post("/api/verify-otp", {
-                email,
+            const apiEndpoint = isPasswordReset ? "/api/verify-reset-otp" : "/api/verify-signup-otp";
+
+            // insert backend api call here
+
+            const res = await axios.post(apiEndpoint, {
+                email: email || location.state?.email,
                 otp: enteredOtp,
             });
 
             if (res.data.success) {
-                navigate("/dashboard");
+                if (isPasswordReset) {
+                    navigate("/reset-password", {
+                        state: {
+                            email: email || location.state?.email,
+                            otpVerified: true 
+                        }
+                    });
+                } else {
+                    navigate("/login");
+                }
             } else {
-                setError("Invalid OTP. Please try again.");
+                setToast({
+                    type: "error",
+                    message: res.data.message || "Invalid OTP. Please try again.",
+                });
             }
         } catch (err) {
-            console.error(err);
-            setError("An error occurred. Please try again later.");
+            console.error("OTP verification error:", err);
+            setToast({
+                type: "error",
+                message: err.response?.data?.message ||  "An error occurred. Please try again later.",
+            });
         }
     };
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden">
+
+            {/* Toast */}
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    onClose={() => setToast(null)}
+                />
+            )}
       
             {/* Logo */}
             <div className="absolute top-4 left-4 sm:left-28 md:left-16 flex items-center z-20">
@@ -88,6 +134,7 @@ function OTPVerification({ email }) {
                                         placeholder="0"
                                         value={digit}
                                         onChange={(e) => handleChange(e.target.value, index)}
+                                        onKeyDown={(e) => handleKeyDown(e, index)}
                                         className="w-[45px] h-[50px] rounded-[5px] border border-[#578C7A] bg-[#B2D7CA3B] shadow-[inset_0px_2px_0px_0px_#E7EBEE33] px-2 py-[10px] font-[Poppins] font-normal text-[20px] leading-[100%] text-[#3B6255] text-center focus:outline-none"
                                     />
                                 ))}
@@ -143,7 +190,7 @@ function OTPVerification({ email }) {
                             Welcome to Ukaab!
                         </h2>
         
-                        <p className="font-poppins font-normal text-white/90 text-[16px] sm:text-[18px] leading-[1.38]">
+                        <p className="font-poppins font-medium text-white/90 text-[16px] sm:text-[18px] leading-[1.38]">
                             Get started in seconds – connect with shippers, fleets, and drivers
                             instantly to post requests, assign loads, and track in real time
                             across one unified platform.
