@@ -33,6 +33,8 @@ const ResetPassword = ({ isAuthenticated }) => {
         return <Navigate to='/dashboard' />;
     }
 
+    // Uncomment the following condition after connecting the page to the backend 
+
     //if (!email || !location.state?.otpVerified) {
       //  return <Navigate to='/forgot-password' />;
     //}
@@ -136,7 +138,7 @@ const ResetPassword = ({ isAuthenticated }) => {
     const isPasswordComplete = passwordValidation.hasUppercase && passwordValidation.hasMinLength && passwordValidation.hasNumberOrSymbol;
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden">
+        <div className="min-h-screen flex flex-col lg:flex-row items-stretch font-poppins overflow-hidden">
             
             {/* Toast */}
             {toast && (
@@ -160,7 +162,7 @@ const ResetPassword = ({ isAuthenticated }) => {
             </div>
           
             {/* Left Section */}
-            <div className="flex justify-center w-full lg:w-1/2 px-6 sm:px-10 md:px-16 lg:px-20 py-24 bg-white">
+            <div className="flex justify-center w-full lg:w-1/2 px-6 sm:px-10 md:px-16 lg:px-20 py-24 bg-white h-auto min-h-screen">
                 <div className="w-full max-w-md">
                 
                     {/* Header */}
@@ -173,7 +175,7 @@ const ResetPassword = ({ isAuthenticated }) => {
                         Setup your new password.
                     </p>
 
-                    <form onSubmit={onSubmit} className="space-y-6 lg:space-y-7">
+                    <form onSubmit={onSubmit}>
                  
                         {/* New Password Field */}
                         <div>
@@ -189,10 +191,10 @@ const ResetPassword = ({ isAuthenticated }) => {
                                     required
                                     value={formData.newPassword}
                                     onChange={onChange}
-                                    className={`w-full max-w-[500px] h-[49px] px-4 pr-12 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
+                                    className={`w-full max-w-[500px] h-[49px] px-4 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
                                     focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
-                                    transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33]
+                                    transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33] pr-[70px]
                                     ${ 
                                         formData.newPassword && !isPasswordComplete
                                         ? 'border-red-300 focus:ring-red-500' 
@@ -202,52 +204,58 @@ const ResetPassword = ({ isAuthenticated }) => {
                                     }`}
                                     placeholder="••••••••"
                                 />
-                
-                                <span className="absolute right-10 top-[12px] h-6 w-px bg-[#578C7A]" aria-hidden="true" />
+
+                                {/* Vertical Divider */}                
+                                <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
+                                
+                                {/* Eye Icon Container */}
                                 <button
                                     type="button"
                                     onClick={() => setShowNewPassword(prev => !prev)}
-                                    className="absolute right-2 top-[9px] text-[#3B6255] focus:outline-none"
+                                    className="absolute right-0 top-0 w-[50px] h-[50px] rounded-tr-[6px] rounded-br-[6px]
+                                    bg-transparent flex items-center justify-center focus:outline-none"
                                     tabIndex={-1}
                                     aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {showNewPassword ? (
-                                        <AiOutlineEyeInvisible size={22} />
-                                    ) : (
-                                        <AiOutlineEye size={22} />
-                                    )}
+                                    <div className="w-[24px] h-[24px] text-[#3B6255]">
+                                        {showNewPassword ? (
+                                            <AiOutlineEyeInvisible size={20} />
+                                        ) : (
+                                            <AiOutlineEye size={20} />
+                                        )}
+                                    </div>
                                 </button>
                             </div>
                         </div>
 
                         {/* Password requirements with dynamic validation */}
-                        <ul className="mt-0 mb-4 text-[12px] lg:text-[14px] space-y-2">
+                        <ul className="mt-2 mb-8 text-[12px] lg:text-[12px] space-y-1">
                             <li className="flex items-center gap-2">
-                                <span className={`${ passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400' }
+                                <span className={`${ passwordValidation.hasUppercase ? 'text-green-600' : 'text-[#525252]' }
                                     transition-colors duration-200 text-[16px]` }>
                                     { passwordValidation.hasUppercase ? '✓' : '○'  }
                                 </span>
-                                <span className={`${ passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700' }
+                                <span className={`${ passwordValidation.hasUppercase ? 'text-green-700' : 'text-[#525252]' }
                                     transition-colors duration-200`}>
                                     Contains at least one capital character
                                 </span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className={`${ passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400' }
+                                <span className={`${ passwordValidation.hasMinLength ? 'text-green-600' : 'text-[#525252]' }
                                     transition-colors duration-200 text-[16px]`}>
                                     {passwordValidation.hasMinLength ? '✓' : '○'}
                                 </span>
-                                <span className={`${ passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700' }
+                                <span className={`${ passwordValidation.hasMinLength ? 'text-green-700' : 'text-[#525252]' }
                                     transition-colors duration-200`}>
                                     At least 8 characters
                                 </span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className={`${ passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400' }
+                                <span className={`${ passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-[#525252]' }
                                     transition-colors duration-200 text-[16px]`}>
                                     {passwordValidation.hasNumberOrSymbol ? '✓' : '○'}
                                 </span>
-                                <span className={`${ passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700' }
+                                <span className={`${ passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-[#525252]' }
                                     transition-colors duration-200`}>
                                     Contains a number or symbol
                                 </span>
@@ -258,7 +266,7 @@ const ResetPassword = ({ isAuthenticated }) => {
                         <div>
                             <label 
                                 htmlFor="confirmPassword" 
-                                className="block mb-2 font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]"
+                                className="block w-[162px] h-[21px] font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]"
                             >
                                 Confirm New Password
                             </label>
@@ -284,22 +292,25 @@ const ResetPassword = ({ isAuthenticated }) => {
                                     placeholder="••••••••"
                                 />
                 
-                                <span
-                                    className="absolute right-10 top-[12px] h-6 w-px bg-[#578C7A]"
-                                    aria-hidden="true"
-                                />
+                                {/* Vertical Divider */}                
+                                <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
+
+                                {/* Eye Icon Container */}
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(prev => !prev)}
-                                    className="absolute right-2 top-[9px] text-[#3B6255] focus:outline-none"
+                                    className="absolute right-0 top-0 w-[50px] h-[50px] rounded-tr-[6px] rounded-br-[6px]
+                                    bg-transparent flex items-center justify-center focus:outline-none"
                                     tabIndex={-1}
                                     aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {showConfirmPassword ? (
-                                        <AiOutlineEyeInvisible size={22} />
-                                    ) : (
-                                        <AiOutlineEye size={22} />
-                                    )}
+                                    <div className="w-[24px] h-[24px] text-[#3B6255]">
+                                        {showConfirmPassword ? (
+                                            <AiOutlineEyeInvisible size={20} />
+                                        ) : (
+                                            <AiOutlineEye size={20} />
+                                        )}
+                                    </div>
                                 </button>
                             </div>
                         </div>
@@ -307,7 +318,7 @@ const ResetPassword = ({ isAuthenticated }) => {
                         {/* Save Button */}
                         <button
                             type="submit"
-                            disabled={isLoading || !isPasswordComplete || formData.newPassword !== formData.confirmPassword}
+                            disabled={isLoading}
                             className={`w-full sm:max-w-[500px] h-[50px] px-[25px] py-[9px] gap-[11px] rounded-[50px]
                             bg-gradient-to-t from-[#3B6255] to-[#578C7A] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)]
                             font-poppins font-semibold text-[18px] leading-[100%] text-white
@@ -323,7 +334,7 @@ const ResetPassword = ({ isAuthenticated }) => {
             </div>
       
             {/* Right Section */}
-            <div className="flex w-full md:w-1/2 relative items-center justify-center overflow-hidden h-[50vh] sm:h-[60vh] md:h-screen"
+            <div className="hidden lg:flex w-full md:w-1/2 relative items-center justify-center overflow-hidden h-auto min-h-screen"
                 style={{
                     backgroundImage: "url('/images/bg_1.jpg')",
                     backgroundSize: "cover",
