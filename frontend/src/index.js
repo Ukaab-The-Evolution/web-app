@@ -51,6 +51,7 @@ root.render(
           <Route exact path='/auth/callback' element={<AuthCallback />} />
           <Route exact path="/otp-verification" element={<OTPVerification />} />
           <Route exact path="/reset-password" element={<ResetPassword />} />
+
         </Routes>
       </Router>
       </SupabaseAuthProvider>

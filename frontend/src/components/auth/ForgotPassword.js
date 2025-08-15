@@ -128,7 +128,7 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
           
           {/* Description */}
           <p className="w-full sm:max-w-[500px] h-[48px] font-sans font-medium text-base leading-6 text-[#5F5F5F] opacity-100 mb-8 text-left sm:text-left">
-            Enter your email and we'll send you a password otp to reset your password.
+            Enter your email and we'll send you an OTP code to reset your password.
           </p>
   
           {/* Email Form */}
