@@ -29,6 +29,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import RoleSelection from './components/layout/RoleSelection';
+import OTPVerification from "./components/auth/OTPVerification";
 import AuthCallback from './components/auth/AuthCallback';
 import OTPVerification from "./components/auth/OTPVerification";
 import ResetPassword from "./components/auth/ResetPassword";
@@ -47,6 +48,7 @@ root.render(
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
+          <Route exact path="/otp-verification" element={<OTPVerification />} />
           <Route exact path='/role-selection' element={<RoleSelection />} />
           <Route exact path='/auth/callback' element={<AuthCallback />} />
           <Route exact path="/otp-verification" element={<OTPVerification />} />
