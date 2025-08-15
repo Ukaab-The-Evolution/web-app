@@ -99,8 +99,8 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
   };
 
   // Redirect if logged in
-  if (isAuthenticated || supabaseUser) {
-    return <Navigate to='/dashboard' />;
+  if (isAuthenticated) {
+    return <Navigate to='/otp-verification' />;
   }
 
   // Get dynamic configurations
