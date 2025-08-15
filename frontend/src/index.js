@@ -31,7 +31,6 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import RoleSelection from './components/layout/RoleSelection';
 import OTPVerification from "./components/auth/OTPVerification";
 import AuthCallback from './components/auth/AuthCallback';
-import OTPVerification from "./components/auth/OTPVerification";
 import ResetPassword from "./components/auth/ResetPassword";
 
 // Providers
