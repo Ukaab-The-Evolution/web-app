@@ -99,8 +99,8 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
   };
 
   // Redirect if logged in
-  if (isAuthenticated || supabaseUser) {
-    return <Navigate to='/dashboard' />;
+  if (isAuthenticated) {
+    return <Navigate to='/otp-verification' />;
   }
 
   // Get dynamic configurations
@@ -125,7 +125,7 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
       <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
         <label
           htmlFor={field.name}
-          className="block text-sm text-[var(--color-text-main)] mb-1 opacity-70"
+          className="block text-sm text-[#7B7F8D] mb-1"
         >
           {field.label}
         </label>
@@ -140,17 +140,17 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
             onChange={onChange}
             pattern={field.pattern}
             inputMode={field.inputMode}
-            className={`w-full px-4 py-2 ${isPasswordField ? 'pr-12' : ''
-              } rounded-[10px] bg-[var(--color-bg-input)] border ${isPasswordField && formData.password && !isPasswordComplete
+            className={`w-full px-4 py-2 ${isPasswordField ? 'pr-12' : ''}
+  rounded-[10px] bg-[var(--color-bg-input)] border focus:border-transparent
+  ${isPasswordField && formData.password && !isPasswordComplete
                 ? 'border-red-300 focus:ring-red-500'
                 : isPasswordField && formData.password && isPasswordComplete
                   ? 'border-green-300 focus:ring-green-500'
-                  : 'border-[var(--color-border-input)] focus:ring-[var(--color-green-main)]'
-              } text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+                  : 'border-[#578C7A] focus:ring-[#578C7A]  '
+              } 
+  text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+
             placeholder={field.placeholder}
-            style={{
-              border: "1.5px solid #578C7A",
-            }}
           />
 
           {isPasswordField && (
@@ -180,11 +180,11 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
   };
 
   return (
-    <div className="min-h-screen md:h-screen flex flex-col  lg:flex-row relative font-poppins bg-[#f8fafc]">
-       {/* Logo */}
+    <div className="min-h-screen flex flex-col  lg:flex-row relative font-poppins bg-[#f8fafc]">
+      {/* Logo */}
       <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-40 md:top-4 md:left-16 md:transform-none">
         <img
-          src="/images/IconGreen.png"
+          src="/images/IconGreenTransparent.png"
           alt="Ukaab Logo"
           className="w-[85px] mr-[-9px]"
         />
@@ -260,7 +260,7 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
               disabled={isLoading || (formData.password && !isPasswordComplete)}
               className={`w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-                       shadow-lg font-poppins font-semibold text-[18px] leading-[100%] 
+                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
                        hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ${isLoading || (formData.password && !isPasswordComplete)
                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
@@ -325,7 +325,7 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 
         {/* Text Content */}
         <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:bottom-0 md:right-0 font-poppins">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-8">
             Welcome to Ukaab!
           </h2>
           <p className="text-white text-sm sm:text-base font-medium font-poppins leading-relaxed">

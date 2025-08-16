@@ -38,7 +38,7 @@ const Login = ({ login, isAuthenticated }) => {
     return <Navigate to='/dashboard' />;
   }
   return (
-    <div className="h-screen  flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
+    <div className="min-h-screen  flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
       {/* Top Left Logo */}
       <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-40 md:top-4 md:left-16 md:transform-none">
         <img
@@ -52,10 +52,9 @@ const Login = ({ login, isAuthenticated }) => {
       </div>
 
       {/* Left Side */}
+      <main className="flex items-center justify-center flex-col p-4 sm:p-6  px-4 lg:px-16 pb-8 md:pt-20 w-full lg:w-1/2 min-h-screen lg:min-h-full">
 
-      <main className="flex items-center  justify-center  flex-col p-4 sm:p-6 md:p-8  px-4 lg:px-16  w-full lg:w-1/2 h-full">
-
-        <section className='px-6 md:px-0 w-full max-w-lg '>
+        <section className='px-6 md:px-0 w-full max-w-lg'>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-6">
             Login
           </h1>
@@ -72,7 +71,7 @@ const Login = ({ login, isAuthenticated }) => {
             <div>
               <label
                 htmlFor='email'
-                className='block text-sm text-[var(--color-text-main)] mb-1 opacity-70 font-[var(--font-poppins)]'
+                className='block text-sm text-[#7B7F8D] mb-1 font-[var(--font-poppins)]'
               >
                 Email
               </label>
@@ -84,19 +83,15 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={email}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[var(--color-border-input)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
+                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
 
                 placeholder='example@gmail.com'
-                style={{
-                  border: "1.5px solid #578C7A",
-                  height: '49px'
-                }}
               />
             </div>
             <div className='relative'>
               <label
                 htmlFor='password'
-                className='block text-sm text-[var(--color-text-main)] mb-1 opacity-70 font-[var(--font-poppins)]'
+                className='block text-sm text-[#7B7F8D] mb-1  font-[var(--font-poppins)]'
               >
                 Password
               </label>
@@ -108,18 +103,15 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={password}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[var(--color-border-input)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base  font-[var(--font-poppins)] pr-12'
+                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
                 placeholder='********'
-                style={{
-                  border: "1.5px solid #578C7A",
-                  height: '49px'
-                }}
               />
 
               <span
-                className='absolute right-10 bottom-[0.25vh]  h-11 w-px bg-[var(--color-border-input)]'
+                className='absolute right-10 bottom-[0.20vh]  h-10 w-[1px] bg-[#CFD9E0]'
                 aria-hidden='true'
               ></span>
+
               <button
                 type='button'
                 onClick={() => setShowPassword((prev) => !prev)}
@@ -154,7 +146,7 @@ const Login = ({ login, isAuthenticated }) => {
               disabled={isLoading}
               className="w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-                       shadow-lg font-poppins font-semibold text-[18px] leading-[100%] 
+                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
                        hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3"
               style={{ boxShadow: 'var(--shadow-btn)' }}
@@ -210,7 +202,7 @@ const Login = ({ login, isAuthenticated }) => {
 
         {/* Text Content */}
         <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:bottom-0 md:right-0 font-poppins">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-8">
             Welcome to Ukaab!
           </h2>
           <p className="text-white text-sm sm:text-base font-medium font-poppins leading-relaxed">
