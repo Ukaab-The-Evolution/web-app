@@ -2,6 +2,8 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import globalErrorHandler from './controllers/errorController.js';
 import authRoutes from './routes/authRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
@@ -12,6 +14,8 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {

@@ -1,61 +1,73 @@
 import jwt from 'jsonwebtoken';
-import User from '/Models/User.js';
+import { createClient } from '@supabase/supabase-js';
+import User from '../models/User.js';
 import AppError from '../utils/appError.js';
 
-// Protect routes - user must be logged in
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY, // Only used for admin operations
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
 export const protect = async (req, res, next) => {
   try {
-    // 1) Get token and check if it exists
-    let token;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies.jwt) {
-      token = req.cookies.jwt;
-    }
+    // 1. Get token from headers or cookies
+    const token = req.headers.authorization?.startsWith('Bearer') 
+      ? req.headers.authorization.split(' ')[1]
+      : req.cookies.jwt;
 
     if (!token) {
-      return next(
-        new AppError('You are not logged in! Please log in to get access.', 401)
-      );
+      return next(new AppError('Authentication required', 401));
     }
 
-    // 2) Verify token
+    // 2. Verify your application JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 3) Check if user still exists
+    // 3. Get user from database
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
-      return next(
-        new AppError('The user belonging to this token does no longer exist.', 401)
-      );
+      return next(new AppError('User not found', 401));
     }
 
-    // 4) Check if user changed password after the token was issued
-    if (User.changedPasswordAfter(currentUser.password_changed_at, decoded.iat)) {
-      return next(
-        new AppError('User recently changed password! Please log in again.', 401)
-      );
+    // 4. Ensure we have a valid Supabase auth user
+    if (!currentUser.auth_user_id) {
+      // Create auth user if doesn't exist
+      const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+        email: currentUser.email,
+        user_metadata: { app_user_id: currentUser._id }
+      });
+
+      if (error) throw error;
+      currentUser.auth_user_id = authUser.id;
+      await currentUser.save();
     }
 
-    // GRANT ACCESS TO PROTECTED ROUTE
-    req.user = currentUser;
+    // 5. Generate a short-lived Supabase token for this user
+    const { data: { access_token }, error: tokenError } = 
+      await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: currentUser.email,
+        options: {
+          redirectTo: process.env.SUPABASE_REDIRECT_URL || 'http://localhost:3001'
+        }
+      });
+
+    if (tokenError) throw tokenError;
+
+    // 6. Attach user data with both tokens
+    req.user = {
+      ...currentUser.toObject(),
+      app_token: token, // Your application JWT
+      supabase_token: access_token // Supabase-valid JWT
+    };
+
     next();
   } catch (err) {
-    next(err);
+    next(new AppError('Authentication failed', 401));
   }
-};
-
-// Restrict access to certain user types
-export const restrictTo = (...userTypes) => {
-  return (req, res, next) => {
-    if (!userTypes.includes(req.user.user_type)) {
-      return next(
-        new AppError('You do not have permission to perform this action', 403)
-      );
-    }
-    next();
-  };
 };

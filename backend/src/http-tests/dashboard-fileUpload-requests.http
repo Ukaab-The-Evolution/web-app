@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Save Admin Token
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsImF1dGhfdXNlcl9pZCI6IjkyYWQ5MDE4LTVkZGUtNDAwNC04YTNlLTQyMDQ1ZTM5YTY3NSIsImlhdCI6MTc1NTMzOTE5OCwiZXhwIjoxNzYzMTE1MTk4fQ.Yfk0_DACfJdqc2U9a4I5uZm6z7099PZlJyxWnFCz9Qw
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsImF1dGhfdXNlcl9pZCI6IjkyYWQ5MDE4LTVkZGUtNDAwNC04YTNlLTQyMDQ1ZTM5YTY3NSIsImlhdCI6MTc1NTM0MjE4OSwiZXhwIjoxNzYzMTE4MTg5fQ.axjL3FZRMUeEi_fmeK4S5-4zLCV8xN-dPw9jQre6xDg
 
 ### Driver Registration
 POST {{authBaseUrl}}/signup
@@ -53,7 +53,7 @@ Content-Type: application/json
 }
 
 ### Save Driver Token
-@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzUsImF1dGhfdXNlcl9pZCI6ImEyZTM0NjdjLTZkNDItNGJkNC1iNTg3LTdkODkxMTUwYTk1ZSIsImlhdCI6MTc1NTMzOTIxNSwiZXhwIjoxNzYzMTE1MjE1fQ.RU6foLy9TITNIuOnwcjPbZ5NpkkxqVC1ZYdPcpJHSRM
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzUsImF1dGhfdXNlcl9pZCI6ImEyZTM0NjdjLTZkNDItNGJkNC1iNTg3LTdkODkxMTUwYTk1ZSIsImlhdCI6MTc1NTM0MjIwNiwiZXhwIjoxNzYzMTE4MjA2fQ.AXIKVxhwLD9KGcfK8YjYVHNmLy1Ak_hP351yKn0AbTk
 
 ### Shipper Registration
 POST {{authBaseUrl}}/signup
@@ -77,7 +77,7 @@ Content-Type: application/json
 }
 
 ### Save Shipper Token
-@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzcsImF1dGhfdXNlcl9pZCI6ImI2NTAzZDZlLWNjZTEtNDUyZi1hNzcxLWFkMWZlODRhNmNkMCIsImlhdCI6MTc1NTMzOTIzMiwiZXhwIjoxNzYzMTE1MjMyfQ.k3eblsw3toYctELQis3Z55yBkSQZDYQGf12ziv5KsRo
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzcsImF1dGhfdXNlcl9pZCI6ImI2NTAzZDZlLWNjZTEtNDUyZi1hNzcxLWFkMWZlODRhNmNkMCIsImlhdCI6MTc1NTM0MjIyMCwiZXhwIjoxNzYzMTE4MjIwfQ.Pg38KuiBj1FXaHD_wfoXTfUkE-uRL8Q9NgzVm0ANJdc
 ### -------------------------------
 ### DASHBOARD API TESTS
 ### -------------------------------
@@ -132,7 +132,7 @@ license
 --WebAppBoundary--
 
 ### Save Document ID for Admin Review
-@uploadedDocId = 18
+@uploadedDocId = 20
 
 ### 2. Shipper Uploads Business License (Updated to match working format)
 POST {{uploadBaseUrl}}/upload
@@ -161,7 +161,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "document_id": 19,
+  "document_id": 20,
   "action": "approve"
 }
 
@@ -171,7 +171,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "document_id": 18,
+  "document_id": 21,
   "action": "reject"
 }
 
