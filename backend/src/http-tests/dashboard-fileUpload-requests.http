@@ -1,0 +1,202 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+@dashboardBaseUrl = {{baseUrl}}/dashboard
+@uploadBaseUrl = {{baseUrl}}/upload
+
+### -------------------------------
+### PREREQUISITE: GET AUTH TOKENS
+### -------------------------------
+
+### Admin Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testadmin4@ukaabtest.com",
+  "password": "TestAdmin12344!",
+  "user_type": "admin",
+  "full_name": "Test Admin User4",
+  "phone": "+923001234504"
+}
+
+### Admin Login (Get Token)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testadmin4@ukaabtest.com",
+  "password": "TestAdmin12344!"
+}
+
+### Save Admin Token
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsImF1dGhfdXNlcl9pZCI6IjkyYWQ5MDE4LTVkZGUtNDAwNC04YTNlLTQyMDQ1ZTM5YTY3NSIsImlhdCI6MTc1NTM0MjE4OSwiZXhwIjoxNzYzMTE4MTg5fQ.axjL3FZRMUeEi_fmeK4S5-4zLCV8xN-dPw9jQre6xDg
+
+### Driver Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testdriver6@ukaabtest.com",
+  "phone": "+923001234506",
+  "password": "TestDriver12346!",
+  "user_type": "driver",
+  "full_name": "Test Driver User6"
+}
+
+### Driver Login (Get Token)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testdriver6@ukaabtest.com",
+  "password": "TestDriver12346!"
+}
+
+### Save Driver Token
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzUsImF1dGhfdXNlcl9pZCI6ImEyZTM0NjdjLTZkNDItNGJkNC1iNTg3LTdkODkxMTUwYTk1ZSIsImlhdCI6MTc1NTM0MjIwNiwiZXhwIjoxNzYzMTE4MjA2fQ.AXIKVxhwLD9KGcfK8YjYVHNmLy1Ak_hP351yKn0AbTk
+
+### Shipper Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testshipper5@ukaabtest.com",
+  "phone": "+923001234507",
+  "password": "TestShipper1235!",
+  "user_type": "shipper",
+  "full_name": "Test Shipper User5"
+}
+
+### Shipper Login (Get Token)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testshipper5@ukaabtest.com",
+  "password": "TestShipper1235!"
+}
+
+### Save Shipper Token
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzcsImF1dGhfdXNlcl9pZCI6ImI2NTAzZDZlLWNjZTEtNDUyZi1hNzcxLWFkMWZlODRhNmNkMCIsImlhdCI6MTc1NTM0MjIyMCwiZXhwIjoxNzYzMTE4MjIwfQ.Pg38KuiBj1FXaHD_wfoXTfUkE-uRL8Q9NgzVm0ANJdc
+### -------------------------------
+### DASHBOARD API TESTS
+### -------------------------------
+
+### 1. Driver Dashboard Overview
+GET {{dashboardBaseUrl}}/overview
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+### 2. Driver Pie Chart Data
+GET {{dashboardBaseUrl}}/pie-chart
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+### 3. Shipper Dashboard Overview
+GET {{dashboardBaseUrl}}/overview
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+### 4. Shipper Pie Chart Data
+GET {{dashboardBaseUrl}}/pie-chart
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+### 5. Unauthorized Access (No Token)
+GET {{dashboardBaseUrl}}/overview
+Content-Type: application/json
+
+### 6. Wrong User Type Access (Admin trying to access dashboard)
+GET {{dashboardBaseUrl}}/overview
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### -------------------------------
+### FILE UPLOAD API TESTS
+### -------------------------------
+
+### 1. Driver Uploads License Document (Working Format)
+POST {{uploadBaseUrl}}/upload
+Authorization: Bearer {{driverToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="document"; filename="license.pdf"
+Content-Type: application/pdf
+
+< ./test-files/sample-license.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="document_type"
+
+license
+--WebAppBoundary--
+
+### Save Document ID for Admin Review
+@uploadedDocId = 20
+
+### 2. Shipper Uploads Business License (Updated to match working format)
+POST {{uploadBaseUrl}}/upload
+Authorization: Bearer {{shipperToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="document"; filename="business-license.pdf"
+Content-Type: application/pdf
+
+< ./test-files/sample-business-license.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="document_type"
+
+license
+--WebAppBoundary--
+
+### 3. Admin Views Pending Documents
+GET {{uploadBaseUrl}}/pending
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 4. Admin Approves a Document
+PATCH {{uploadBaseUrl}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "document_id": 20,
+  "action": "approve"
+}
+
+### 5. Admin Rejects a Document (Example)
+PATCH {{uploadBaseUrl}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "document_id": 21,
+  "action": "reject"
+}
+
+### 6. Invalid Document Upload (Missing File - Updated format)
+POST {{uploadBaseUrl}}/upload
+Authorization: Bearer {{driverToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="document_type"
+
+license
+--WebAppBoundary--
+
+### 7. Unauthorized Upload Attempt (Updated format)
+POST {{uploadBaseUrl}}/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="document"; filename="license.pdf"
+Content-Type: application/pdf
+
+< ./test-files/sample-license.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="document_type"
+
+license
+--WebAppBoundary--

@@ -1,31 +1,85 @@
+import supabase from '../config/supabase.js';
 import User from '../models/User.js';
-import { signToken } from '../config/authUtils.js';
-import AppError from '../utils/appError.js';
 import jwt from 'jsonwebtoken';
+import AppError from '../utils/appError.js';
 import validator from 'validator';
-import { sendPasswordResetEmail } from '../services/emailService.js';
+import { supabaseAdmin } from '../config/supabase.js';
+import catchAsync from '../utils/catchAsync.js';
+
+// Move the signToken function outside of exports to avoid redeclaration
+const signToken = (user_id, auth_user_id) => {
+  return jwt.sign(
+    { id: user_id, auth_user_id },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  );
+};
 
 export const signup = async (req, res, next) => {
   try {
-    // Validate that either email or phone is provided
     if (!req.body.email && !req.body.phone) {
       return next(new AppError('Please provide either email or phone number', 400));
     }
 
+    // Create base user
     const newUser = await User.create(req.body);
-    const token = signToken(newUser.user_id);
+    
+    // Create auth user if email exists
+    if (req.body.email) {
+      try {
+        const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+          email: req.body.email,
+          user_metadata: { 
+            app_user_id: newUser.user_id,
+            user_type: newUser.user_type
+          }
+        });
+
+        if (!error && authUser) {
+          await supabase
+            .from('users')
+            .update({ auth_user_id: authUser.id })
+            .eq('user_id', newUser.user_id);
+          newUser.auth_user_id = authUser.id;
+        }
+      } catch (authError) {
+        console.error('Auth user creation failed:', authError);
+      }
+    }
+
+    // For trucking companies, create company record
+    if (req.body.user_type === 'trucking_company') {
+      const { company_name, company_address, fleet_size } = req.body;
+      const { error: companyError } = await supabase
+        .from('trucking_companies')
+        .update({
+          company_name,
+          company_address,
+          fleet_size: fleet_size || 0,
+          verification_status: 'pending'
+        })
+        .eq('user_id', newUser.user_id);
+
+      if (companyError) throw companyError;
+    }
+
+    const token = signToken(newUser.user_id, newUser.auth_user_id);
+    
+    // Get complete user data with company info if applicable
+    let responseData = await User.findById(newUser.user_id);
+    if (req.body.user_type === 'trucking_company') {
+      const { data: companyData } = await supabase
+        .from('trucking_companies')
+        .select('*')
+        .eq('user_id', newUser.user_id)
+        .single();
+      responseData.company = companyData;
+    }
     
     res.status(201).json({
       status: 'success',
       token,
-      data: {
-        user: {
-          user_id: newUser.user_id,
-          email: newUser.email,
-          phone: newUser.phone, // Include phone in response
-          user_type: newUser.user_type
-        }
-      }
+      data: { user: responseData }
     });
   } catch (err) {
     next(err);
@@ -36,12 +90,10 @@ export const login = async (req, res, next) => {
   try {
     const { email, phone, password } = req.body;
 
-    // Check that either email or phone is provided with password
     if ((!email && !phone) || !password) {
       return next(new AppError('Please provide email/phone and password!', 400));
     }
 
-    // Find user by email or phone
     const identifier = email || phone;
     const user = await User.findByEmailOrPhone(identifier);
     
@@ -49,19 +101,12 @@ export const login = async (req, res, next) => {
       return next(new AppError('Incorrect credentials', 401));
     }
 
-    const token = signToken(user.user_id);
+    const token = signToken(user.user_id, user.auth_user_id);
     
     res.status(200).json({
       status: 'success',
       token,
-      data: {
-        user: {
-          user_id: user.user_id,
-          email: user.email,
-          phone: user.phone, // Include phone in response
-          user_type: user.user_type
-        }
-      }
+      data: { user }
     });
   } catch (err) {
     next(err);
@@ -75,21 +120,35 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    if (!token) {
-      return next(new AppError('You are not logged in!', 401));
-    }
+    if (!token) return next(new AppError('Not logged in!', 401));
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const currentUser = await User.findById(decoded.id);
     
-    if (!currentUser) {
-      return next(new AppError('User no longer exists!', 401));
+    if (!currentUser) return next(new AppError('User no longer exists!', 401));
+
+    if (currentUser.email && !currentUser.auth_user_id) {
+      const authUserId = await User.getAuthUserId(currentUser.email);
+      if (authUserId) {
+        await supabase
+          .from('users')
+          .update({ auth_user_id: authUserId })
+          .eq('user_id', currentUser.user_id);
+        currentUser.auth_user_id = authUserId;
+      }
     }
 
-    req.user = currentUser;
+    req.user = {
+      _id: currentUser.user_id,
+      user_id: currentUser.user_id,
+      auth_user_id: currentUser.auth_user_id,
+      email: currentUser.email,
+      user_type: currentUser.user_type
+    };
+
     next();
   } catch (err) {
-    next(err);
+    next(new AppError('Authentication failed', 401));
   }
 };
 
@@ -110,7 +169,7 @@ export const updatePassword = async (req, res, next) => {
     }
 
     await User.updatePassword(user.user_id, req.body.newPassword);
-    const token = signToken(user.user_id);
+    const token = signToken(user.user_id, user.auth_user_id);
     
     res.status(200).json({
       status: 'success',
@@ -125,16 +184,29 @@ export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.user_id);
     
+    let responseData = {
+      user_id: user.user_id,
+      email: user.email,
+      user_type: user.user_type,
+      full_name: user.full_name,
+      phone: user.phone,
+      auth_user_id: user.auth_user_id
+    };
+
+    // Add company details if trucking company
+    if (user.user_type === 'trucking_company') {
+      const { data: companyData } = await supabase
+        .from('trucking_companies')
+        .select('*')
+        .eq('user_id', user.user_id)
+        .single();
+      responseData.company = companyData;
+    }
+    
     res.status(200).json({
       status: 'success',
       data: {
-        user: {
-          user_id: user.user_id,
-          email: user.email,
-          user_type: user.user_type,
-          full_name: user.full_name,
-          phone: user.phone
-        }
+        user: responseData
       }
     });
   } catch (err) {
@@ -170,7 +242,6 @@ export const forgotPassword = async (req, res, next) => {
 
 export const resetPassword = async (req, res, next) => {
   try {
-    // 1. Get user based on token
     const { token } = req.params;
     const { newPassword } = req.body;
     
@@ -178,21 +249,16 @@ export const resetPassword = async (req, res, next) => {
       return next(new AppError('Token and new password are required', 400));
     }
 
-    // 2. Verify token
     const tokenDoc = await User.verifyPasswordResetToken(token);
     if (!tokenDoc) {
       return next(new AppError('Token is invalid or has expired', 400));
     }
 
-    // 3. Update password
     await User.updatePassword(tokenDoc.user_id, newPassword);
-    
-    // 4. Invalidate token
     await User.invalidateResetToken(tokenDoc.token_id);
 
-    // 5. Log the user in, send JWT
     const user = await User.findById(tokenDoc.user_id);
-    const authToken = signToken(user.user_id);
+    const authToken = signToken(user.user_id, user.auth_user_id);
     
     res.status(200).json({
       status: 'success',
@@ -204,59 +270,56 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-// export const forgotPassword = async (req, res, next) => {
-//   try {
-//     // 1. Get user based on email/username
-//     const user = await User.findByEmailOrPhone(req.body.emailOrUsername);
-//     if (!user) {
-//       return next(new AppError('No user found with that email/username', 404));
-//     }
+export const createAdmin = catchAsync(async (req, res, next) => {
+  // Only allow existing admins to create new admins
+  if (req.user?.user_type !== 'admin') {
+    return next(new AppError('Unauthorized', 403));
+  }
 
-//     // 2. Generate reset token
-//     const resetToken = await User.createPasswordResetToken(user.user_id);
+  const { email, phone, password, full_name } = req.body;
 
-//     // 3. Send email with reset token (implementation depends on your email service)
-//     // Example: await sendResetEmail(user.email, resetToken);
-//     console.log(`Password reset token: ${resetToken}`); // For testing
+  // Validate inputs
+  if (!email && !phone) {
+    return next(new AppError('Please provide either email or phone number', 400));
+  }
 
-//     res.status(200).json({
-//       status: 'success',
-//       message: 'Token sent to email!',
-//       token: resetToken // Only for testing - remove in production
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+  // Create admin user
+  const newUser = await User.create({ 
+    email, 
+    phone, 
+    password, 
+    user_type: 'admin', 
+    full_name 
+  });
 
-// export const resetPassword = async (req, res, next) => {
-//   try {
-//     // 1. Get user based on token
-//     const tokenDoc = await User.verifyPasswordResetToken(req.params.token);
-//     if (!tokenDoc) {
-//       return next(new AppError('Token is invalid or has expired', 400));
-//     }
+  // Create auth user if email exists
+  if (email) {
+    try {
+      const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        user_metadata: { 
+          app_user_id: newUser.user_id,
+          user_type: 'admin'
+        }
+      });
 
-//     // 2. Get user
-//     const user = await User.findById(tokenDoc.user_id);
-//     if (!user) {
-//       return next(new AppError('User no longer exists', 400));
-//     }
+      if (!error && authUser) {
+        await supabase
+          .from('users')
+          .update({ auth_user_id: authUser.id })
+          .eq('user_id', newUser.user_id);
+        newUser.auth_user_id = authUser.id;
+      }
+    } catch (authError) {
+      console.error('Auth user creation failed:', authError);
+    }
+  }
 
-//     // 3. Update password
-//     await User.updatePassword(user.user_id, req.body.password);
-
-//     // 4. Delete the token
-//     await User.clearPasswordResetToken(tokenDoc.document_id);
-
-//     // 5. Log the user in, send JWT
-//     const token = signToken(user.user_id);
-    
-//     res.status(200).json({
-//       status: 'success',
-//       token
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
+  const token = signToken(newUser.user_id, newUser.auth_user_id);
+  
+  res.status(201).json({
+    status: 'success',
+    token,
+    data: { user: newUser }
+  });
+});
