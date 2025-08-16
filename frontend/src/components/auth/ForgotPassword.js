@@ -83,22 +83,22 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Logo */}
+      <div className="absolute top-4 left-4 sm:left-28 md:left-16 flex items-center z-20">
+        <img
+          src="/images/IconGreenTransparent.png"
+          alt="Ukaab Logo"
+          className="w-[70px] h-[55px] sm:w-[80px] sm:h-[63px] md:w-[85px] md:h-[67px] -mr-2"
+        />
+        <span className="text-xl sm:text-2xl md:text-[25px] font-radley font-normal text-[#3B6255] leading-none">
+          Ukaab
+        </span>
+      </div>
       
       {/* Left Section */}
       <div className="flex justify-center w-full lg:w-1/2 px-6 sm:px-10 md:px-16 lg:px-20 py-24 bg-white">
         <div className="w-full max-w-md">
-
-          {/* Logo */}
-          <div className="absolute top-4 left-4 sm:left-28 md:left-16 flex items-center z-20">
-            <img
-              src="/images/IconGreen.png"
-              alt="Ukaab Logo"
-              className="w-[70px] h-[55px] sm:w-[80px] sm:h-[63px] md:w-[85px] md:h-[67px] -mr-2"
-            />
-            <span className="text-xl sm:text-2xl md:text-[25px] font-radley font-normal text-[#3B6255] leading-none">
-              Ukaab
-            </span>
-          </div>
 
           {/* Back Arrow and Header */}
           <div className="flex items-center mb-6">

@@ -43,7 +43,7 @@ const Login = ({ login, isAuthenticated }) => {
       <main className='md:w-1/2 flex flex-col justify-center px-6 py-8 md:px-12 lg:px-24'>
         <header className='mb-8 flex items-center justify-center md:justify-start'>
           { <img
-            src='/images/IconGreen.png'
+            src='/images/IconGreenTransparent.png'
             alt='Ukaab Logo'
             className='h-[38px] w-[88px]'
           /> }

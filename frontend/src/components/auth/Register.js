@@ -183,7 +183,7 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
       {/* Top Left Logo */}
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center z-20">
         <img
-          src="/images/IconGreen.png"
+          src="/images/IconGreenTransparent.png"
           alt="Ukaab Logo"
           className="h-8 sm:h-10 md:h-12"
         />
