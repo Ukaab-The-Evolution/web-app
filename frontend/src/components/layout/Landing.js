@@ -13,7 +13,7 @@ const Landing = () => {
   md:top-4 md:left-16 md:transform-none
 ">
         <img
-          src="/images/IconGreen.png"
+          src="/images/IconGreenTransparent.png"
           alt="Ukaab Logo"
           className="w-[85px] h-[67px] mr-[-9px]"
         />

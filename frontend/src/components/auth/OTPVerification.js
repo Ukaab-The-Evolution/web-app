@@ -98,7 +98,7 @@ function OTPVerification({ email }) {
             {/* Logo */}
             <div className="absolute top-4 left-4 sm:left-28 md:left-16 flex items-center z-20">
                 <img
-                    src="/images/IconGreen.png"
+                    src="/images/IconGreenTransparent.png"
                     alt="Ukaab Logo"
                     className="w-[70px] h-[55px] sm:w-[80px] sm:h-[63px] md:w-[85px] md:h-[67px] -mr-2"
                 />
