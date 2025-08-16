@@ -38,28 +38,31 @@ const Login = ({ login, isAuthenticated }) => {
     return <Navigate to='/dashboard' />;
   }
   return (
-    <div className='min-h-screen flex flex-col md:flex-row bg-[var(--color-bg-main)] font-[var(--font-poppins)]'>
+    <div className="min-h-screen  flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
+      {/* Top Left Logo */}
+      <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-40 md:top-4 md:left-16 md:transform-none">
+        <img
+          src="/images/IconGreen.png"
+          alt="Ukaab Logo"
+          className="w-[85px] mr-[-9px]"
+        />
+        <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
+          Ukaab
+        </span>
+      </div>
+
       {/* Left Side */}
-      <main className='md:w-1/2 flex flex-col justify-center px-6 py-8 md:px-12 lg:px-24'>
-        <header className='mb-8 flex items-center justify-center md:justify-start'>
-          { <img
-            src='/images/IconGreenTransparent.png'
-            alt='Ukaab Logo'
-            className='h-[38px] w-[88px]'
-          /> }
-        <p className="text-4xl sm:text-xl md:text-2xl font-bold font-radley text-[#3B6255] ml-2">
-            Ukaab
-          </p>
-        </header>
-        <section className='p-6 md:p-8'>
-          <h1 className='text-[40px] text-[var(--color-text-heading)] mb-2 leading-[1] font-[var(--font-poppins)]'>
+      <main className="flex items-center justify-center flex-col p-4 sm:p-6  px-4 lg:px-16 pb-8 md:pt-20 w-full lg:w-1/2 min-h-screen lg:min-h-full">
+
+        <section className='px-6 md:px-0 w-full max-w-lg'>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-6">
             Login
           </h1>
-          <p className='mb-6 text-[var(--color-text-main)] text-base  font-[var(--font-poppins)]'>
+          <p className='mb-6 text-[#7b7f8d]   font-poppins'>
             Don’t have an account?{' '}
             <Link
               to='/register'
-              className='text-[var(--color-text-link)] hover:underline font-[var(--font-poppins)]'
+              className="text-[var(--color-green-main)]  underline font-semibold font-poppins"
             >
               Create now
             </Link>
@@ -68,7 +71,7 @@ const Login = ({ login, isAuthenticated }) => {
             <div>
               <label
                 htmlFor='email'
-                className='block text-sm text-[var(--color-text-main)] mb-1 font-[var(--font-poppins)]'
+                className='block text-sm text-[#7B7F8D] mb-1 font-[var(--font-poppins)]'
               >
                 Email
               </label>
@@ -80,15 +83,15 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={email}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[var(--color-border-input)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base  placeholder:text-[var(--color-text-placeholder)] font-[var(--font-poppins)]'
+                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
+
                 placeholder='example@gmail.com'
-                style={{ height: '49px' }}
               />
             </div>
             <div className='relative'>
               <label
                 htmlFor='password'
-                className='block text-sm text-[var(--color-text-main)] mb-1 font-[var(--font-poppins)]'
+                className='block text-sm text-[#7B7F8D] mb-1  font-[var(--font-poppins)]'
               >
                 Password
               </label>
@@ -100,15 +103,15 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={password}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[var(--color-border-input)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base placeholder:text-[var(--color-text-placeholder)] font-[var(--font-poppins)] pr-12'
+                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
                 placeholder='********'
-                style={{ height: '49px' }}
               />
 
               <span
-                className='absolute right-10 bottom-[0.25vh]  h-11 w-px bg-[var(--color-border-input)]'
+                className='absolute right-10 bottom-[0.20vh]  h-10 w-[1px] bg-[#CFD9E0]'
                 aria-hidden='true'
               ></span>
+
               <button
                 type='button'
                 onClick={() => setShowPassword((prev) => !prev)}
@@ -133,7 +136,7 @@ const Login = ({ login, isAuthenticated }) => {
               </label>
               <Link
                 to='/forgot-password'
-                className='text-[var(--color-text-link)] hover:underline font-[var(--font-poppins)]'
+                className='text-[var(--color-green-main)]  underline font-semibold font-poppins'
               >
                 Forgot Password?
               </Link>
@@ -141,69 +144,73 @@ const Login = ({ login, isAuthenticated }) => {
             <button
               type='submit'
               disabled={isLoading}
-              className='w-full py-2 rounded-md bg-[var(--color-green-main)] text-[var(--color-text-button)] font-[var(--font-poppins)] text-lg shadow-none hover:bg-[var(--color-bg-green-dark)] transition'
+              className="w-full h-[45px] px-[25px] rounded-full 
+                       bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+                       text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
+                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3"
               style={{ boxShadow: 'var(--shadow-btn)' }}
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
           <div className='flex items-center my-6' aria-label='or-divider'>
-            <hr className='flex-grow border-[var(--color-border-divider)]' />
-            <span className='mx-2 text-[var(--color-text-or)] text-base font-[var(--font-poppins)]'>
+            <hr className='flex-grow border-[var(--color-green-main)]' />
+            <span className='mx-2 text-[#737373] text-base font-poppins'>
               OR
             </span>
-            <hr className='flex-grow border-[var(--color-border-divider)]' />
+            <hr className='flex-grow border-[var(--color-green-main)]' />
           </div>
           <section className='space-y-3'>
             <button
               type='button'
-              className='w-full flex items-center justify-center gap-3 py-3 px-6 rounded-[40px] border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)]'
+              className='w-full flex items-center justify-center gap-3  h-[45px] px-[25px] rounded-full border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)]'
               aria-label='Continue with Google'
             >
               <FcGoogle className='text-2xl' />
               Continue with Google
             </button>
-            
+
           </section>
         </section>
       </main>
-      {/* Right Side */}
+      {/* Right Section */}
       <div
-              className="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden h-screen"
-              style={{
-                backgroundImage: "url('/images/bg_1.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
-      
-              {/* Support Icon */}
-              <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline">
-                <MdOutlineSupportAgent className="text-white text-lg" />
-                <span className="text-white text-lg">Support</span>
-              </div>
-      
-              {/* Large screen: full circle */}
-              <div
-                className="absolute bottom-[-360px] right-[-120px] z-10 w-[750px] h-[750px]
-              backdrop-blur-[1px] overflow-hidden bg-white/20 rounded-full  
-              border border-white/30"
-              />
-      
-              {/* Text Content */}
-              <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-10 z-20 w-[90%] sm:w-[500px] p-4 sm:p-6 bg-transparent text-center">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
-                  Welcome to Ukaab!
-                </h2>
-                <p className="text-white text-sm sm:text-base font-bold">
-                  Get started in seconds - connect with shippers, fleets, and drivers
-                  instantly to post requests, assign loads, and track in real time
-                  across one unified platform.
-                </p>
-              </div>
-            </div>
+        className="hidden md:flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
+             bg-cover bg-center md:overflow-hidden"
+        style={{
+          backgroundImage: "url('/images/bg_1.jpg')",
+        }}
+      >
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
+
+        {/* Support Icon */}
+        <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline hover:decoration-white">
+          <MdOutlineSupportAgent className="text-white text-lg" />
+          <span className="text-white text-lg">Support</span>
+        </div>
+
+        {/* Decorative Circle (desktop only) */}
+        <div
+          className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
+               bg-gradient-to-b from-white/30 to-transparent 
+               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+               pointer-events-none"
+        />
+
+        {/* Text Content */}
+        <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5 md:right-5 font-poppins">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
+            Welcome Back!
+          </h2>
+          <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
+            Manage your shipments with speed and confidence - login to access real-time tracking, instant load assignmnets, and seamless logistics management.
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 };

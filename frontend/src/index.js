@@ -34,12 +34,21 @@ import ResetPassword from "./components/auth/ResetPassword";
 // Providers
 import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
 
+
+import DashboardLayout from './components/layout/DashboardLayout';
+import Shipments from './components/dashboard/shipments/Shipments';
+import LoadRequest from './components/dashboard/loadRequest/LoadRequest';
+import ProfileLayout from './components/layout/ProfileLayout';
+import Settings from './components/dashboard/settings/Settings';
+import Toast from './components/ui/Toast';
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <Provider store={store}>
       <SupabaseAuthProvider>
       <Router>
+        <Toast />
         <Routes>
           <Route exact path='/' element={<Landing />} />
           <Route exact path='/login' element={<Login />} />
@@ -49,6 +58,16 @@ root.render(
           <Route exact path='/role-selection' element={<RoleSelection />} />
           <Route exact path='/auth/callback' element={<AuthCallback />} />
           <Route exact path="/reset-password" element={<ResetPassword />} />
+
+
+            {/* Dashboard routes with shared layout */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            
+            <Route path="shipments" element={<Shipments />} />
+            <Route path="load-request" element={<LoadRequest />} />
+            <Route path="profile" element={<ProfileLayout />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
 
         </Routes>
       </Router>

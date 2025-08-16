@@ -46,3 +46,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;              /* narrow width */
+  height: 6px; 
+  border-radius: 50%;            /* for horizontal scrollbars */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* keep it minimal */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #2d4d41; /* matches your theme */
+  border-radius: 9999px;                     /* pill/rounded look */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-green-main); /* darker shade on hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width:thin;
+  scrollbar-color: var(--color-green-main) transparent;
+}

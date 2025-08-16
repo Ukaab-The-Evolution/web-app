@@ -1,54 +1,53 @@
 import PropTypes from 'prop-types';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { register } from '../../actions/auth';
+import { sendOTP, register } from '../../actions/auth'; // <-- Use sendOTP, not register
 import { useState, useEffect } from 'react';
 
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import GoogleSignInButton from './GoogleSignInButton';
 
-// Import utilities
-import { 
-  getFieldsForRole, 
-  getInitialFormData, 
-  getRoleContent,
+import {
+  getFieldsForRole,
+  getInitialFormData,
   isValidRole,
   validateFieldInput
 } from '../../utils/fieldsConfig';
 
-const Register = ({ register, isAuthenticated, supabaseUser }) => {
+const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState('');
   const [formData, setFormData] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Password validation state
+
   const [passwordValidation, setPasswordValidation] = useState({
     hasUppercase: false,
     hasMinLength: false,
     hasNumberOrSymbol: false
   });
 
-  // Extract role from URL params and initialize form
+  // Track field errors
+  const [fieldErrors, setFieldErrors] = useState({});
+
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
-    
+
     if (roleParam && isValidRole(roleParam)) {
       setRole(roleParam);
       setFormData(getInitialFormData(roleParam));
-    } else{
+      setFieldErrors({});
+    } else {
       setRole(null);
     }
   }, [location.search]);
 
-  if(role === null) {
+  if (role === null) {
     return <Navigate to='/role-selection' />;
   }
 
-  // Password validation function
   const validatePassword = (password) => {
     const hasUppercase = /[A-Z]/.test(password);
     const hasMinLength = password.length >= 8;
@@ -65,67 +64,85 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    
-    // Validate field input (especially for numeric fields)
-    if (!validateFieldInput(name, value)) {
-      return; // Prevent invalid input
+    let valid = validateFieldInput(name, value);
+
+    setFieldErrors(prev => ({
+      ...prev,
+      [name]: !valid
+    }));
+
+    if (!valid) {
+      setFormData(prev => ({ ...prev, [name]: value })); // Still update so user can see what they typed
+      return;
     }
 
-    const updatedFormData = { ...formData, [name]: value };
-    setFormData(updatedFormData);
+    setFormData({ ...formData, [name]: value });
 
-    // Validate password in real-time
     if (name === 'password') {
       validatePassword(value);
     }
   };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Final password validation before submission
-    const isPasswordValid = validatePassword(formData.password || '');
-    
-    if (!isPasswordValid) {
-      return; // Prevent submission if password doesn't meet requirements
-    }
-
-    setIsLoading(true);
-    try {
-      await register(formData, role);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Redirect if logged in
-  if (isAuthenticated) {
-    return <Navigate to='/otp-verification' />;
-  }
-
-  // Get dynamic configurations
   const fields = getFieldsForRole(role);
-  const roleContentData = getRoleContent(role);
-
-  // Separate password field and other fields
   const passwordField = fields.find(field => field.name === 'password');
   const otherFields = fields.filter(field => field.name !== 'password');
 
-  // Check if all password requirements are met
-  const isPasswordComplete = passwordValidation.hasUppercase && 
-                            passwordValidation.hasMinLength && 
-                            passwordValidation.hasNumberOrSymbol;
+  const isPasswordComplete = passwordValidation.hasUppercase &&
+    passwordValidation.hasMinLength &&
+    passwordValidation.hasNumberOrSymbol;
 
-  // Render form field
+  // Check all fields for validity before submit
+  const isFormValid = () => {
+    let valid = true;
+    let errors = {};
+    for (const field of fields) {
+      const value = formData[field.name] || '';
+      if (!validateFieldInput(field.name, value)) {
+        errors[field.name] = true;
+        valid = false;
+      }
+    }
+    setFieldErrors(errors);
+    return valid;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!isFormValid()) {
+      console.log('Form validation failed');
+      return;
+    }
+
+    const isPasswordValid = validatePassword(formData.password || '');
+    if (!isPasswordValid) {
+      setFieldErrors(prev => ({ ...prev, password: true }));
+      return;
+    }
+
+    try {
+      await register({ ...formData }, role);
+      console.log();
+      navigate(`/otp-verification?email=${encodeURIComponent(formData.email)}&from=register`);
+    } catch (error) {
+      console.error('OTP send error:', error);
+    }
+  };
+
+  if (isAuthenticated || supabaseUser) {
+    return <Navigate to='/dashboard' />;
+  }
+
   const renderField = (field) => {
     const isPasswordField = field.type === 'password';
     const inputType = isPasswordField && showPassword ? 'text' : field.type;
+    const error = fieldErrors[field.name];
 
     return (
       <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
         <label
           htmlFor={field.name}
-          className="block text-sm text-[var(--color-text-main)] mb-1 opacity-70"
+          className="block text-sm text-[#7B7F8D] mb-1"
         >
           {field.label}
         </label>
@@ -140,18 +157,25 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
             onChange={onChange}
             pattern={field.pattern}
             inputMode={field.inputMode}
-            className={`w-full px-4 py-2 ${
-              isPasswordField ? 'pr-12' : ''
-            } rounded-[10px] bg-[var(--color-bg-input)] border ${
-              isPasswordField && formData.password && !isPasswordComplete
-                ? 'border-red-300 focus:ring-red-500' 
+            className={`w-full px-4 py-2 ${isPasswordField ? 'pr-12' : ''}
+  rounded-[10px] bg-[var(--color-bg-input)] border focus:border-transparent
+  ${error
+                ? 'border-red-300 focus:ring-red-500'
                 : isPasswordField && formData.password && isPasswordComplete
-                ? 'border-green-300 focus:ring-green-500'
-                : 'border-[var(--color-border-input)] focus:ring-[var(--color-green-main)]'
-            } text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+                  ? 'border-green-300 focus:ring-green-500'
+                  : 'border-[#578C7A] focus:ring-[#578C7A]'
+              } 
+  text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+
             placeholder={field.placeholder}
           />
-          
+
+          {error && (
+            <span className="text-[10px] text-red-500">
+              Invalid {field.label}
+            </span>
+          )}
+
           {isPasswordField && (
             <>
               <span
@@ -179,80 +203,76 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
   };
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row relative font-poppins overflow-hidden">
-      {/* Top Left Logo */}
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center z-20">
+    <div className="min-h-screen flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
+      {/* Logo */}
+      <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-40 md:top-4 md:left-16 md:transform-none">
         <img
           src="/images/IconGreenTransparent.png"
           alt="Ukaab Logo"
-          className="h-8 sm:h-10 md:h-12"
+          className="w-[85px] mr-[-9px]"
         />
-        <span className="text-lg sm:text-xl md:text-2xl font-bold font-radley text-[#3B6255] ml-2">
+        <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
           Ukaab
         </span>
       </div>
 
       {/* Left Section - Register Form */}
-      <div className="flex justify-center items-center p-4 sm:p-6 md:p-8 lg:px-16 pt-20 sm:pt-24 md:pt-28 lg:pt-32 w-full lg:w-1/2 bg-white">
-        <div className="w-full max-w-lg">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight text-gray-900 mb-4 lg:mb-6">
+      <div className="flex items-center justify-center p-4 sm:p-6 pt-20 sm:pt-20 md:pt-28 md:p-8 lg:px-16 px-4  w-full lg:w-1/2 h-full">
+
+        <div className="w-full max-w-lg px-6 md:px-0 ">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-2">
             Sign Up
           </h1>
 
-          <p className="text-gray-700 mb-4 lg:mb-6">
+          <p className="text-[#7b7f8d] mb-4 lg:mb-6">
             Already have an account?{' '}
             <Link
               to='/login'
-              className="text-[var(--color-text-link)] hover:underline font-[var(--font-poppins)]"
+              className="text-[var(--color-green-main)] underline font-semibold font-poppins"
             >
-              Login now
+              Login
             </Link>
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-3 lg:space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
             {/* Dynamic form fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
+            >
               {otherFields.map(renderField)}
             </div>
-            
+
             {/* Password field - full width */}
             {passwordField && renderField(passwordField)}
 
             {/* Password requirements with dynamic validation */}
-            <ul className="mt-2 mb-3 text-[12px] lg:text-[14px] space-y-1">
+            <ul className="text-[12px] lg:text-[14px] space-y-1">
               <li className="flex items-center gap-2">
-                <span className={`${
-                  passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'
+                  } transition-colors duration-200`}>
                   {passwordValidation.hasUppercase ? '✓' : '○'}
                 </span>
-                <span className={`${
-                  passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'
+                  } transition-colors duration-200`}>
                   Contains at least one capital character
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className={`${
-                  passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'
+                  } transition-colors duration-200`}>
                   {passwordValidation.hasMinLength ? '✓' : '○'}
                 </span>
-                <span className={`${
-                  passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'
+                  } transition-colors duration-200`}>
                   At least 8 characters
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className={`${
-                  passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'
+                  } transition-colors duration-200`}>
                   {passwordValidation.hasNumberOrSymbol ? '✓' : '○'}
                 </span>
-                <span className={`${
-                  passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'
-                } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'
+                  } transition-colors duration-200`}>
                   Contains a number or symbol
                 </span>
               </li>
@@ -260,32 +280,34 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 
             <button
               type="submit"
-              disabled={isLoading || (formData.password && !isPasswordComplete)}
-              className={`w-full py-2.5 rounded-[10px] text-[16px] lg:text-[18px] shadow-lg transition flex items-center justify-center gap-2 ${
-                isLoading || (formData.password && !isPasswordComplete)
+              disabled={(formData.password && !isPasswordComplete)}
+              className={`w-full h-[45px] px-[25px] rounded-full 
+                       bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+                       text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
+                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ${loading || (formData.password && !isPasswordComplete)
                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                   : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
-              }`}
+                }`}
             >
-              {isLoading ? 'Signing Up...' : 'Sign Up'}
+              Sign Up
             </button>
           </form>
 
-          <div className="flex items-center my-4 lg:my-6" aria-label="or-divider">
-            <hr className="flex-grow border-[var(--color-border-divider)]" />
-            <span className="mx-2 text-gray-700 text-base">
+          <div className='flex items-center my-3' aria-label='or-divider'>
+            <hr className='flex-grow border-[var(--color-green-main)]' />
+            <span className='mx-2 text-[#737373] text-base font-poppins'>
               OR
             </span>
-            <hr className="flex-grow border-[var(--color-border-divider)]" />
+            <hr className='flex-grow border-[var(--color-green-main)]' />
           </div>
 
-          <section className="space-y-3 pb-4">
+          <section className="space-y-2 pb-2">
             <GoogleSignInButton />
           </section>
 
-          {/* Back to role selection link */}
           {role && (
-            <div className="text-center mt-4">
+            <div className="text-center">
               <Link
                 to="/role-selection"
                 className="text-sm text-[var(--color-text-link)] hover:underline"
@@ -297,38 +319,33 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
         </div>
       </div>
 
-      {/* Right Section - Background Image */}
+      {/* Right Section */}
       <div
-        className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden h-screen"
+        className="hidden lg:flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
+             bg-cover bg-center md:overflow-hidden"
         style={{
           backgroundImage: "url('/images/bg_1.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
         }}
       >
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
-
-        {/* Support Icon */}
-        <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline">
+        <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline hover:decoration-white">
           <MdOutlineSupportAgent className="text-white text-lg" />
           <span className="text-white text-lg">Support</span>
         </div>
-
-        {/* Large screen: full circle */}
         <div
-          className="absolute bottom-[-360px] right-[-120px] z-10 w-[750px] h-[750px]
-        backdrop-blur-[1px] overflow-hidden bg-white/20 rounded-full  
-        border border-white/30"
+          className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
+               bg-gradient-to-b from-white/30 to-transparent 
+               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+               pointer-events-none"
         />
-
-        {/* Dynamic Text Content */}
-        <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-10 z-20 w-[90%] sm:w-[500px] p-4 sm:p-6 bg-transparent text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">
-            {roleContentData.title}
+        <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5  md:right-5 font-poppins">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
+            Welcome to Ukaab!
           </h2>
-          <p className="text-white text-sm sm:text-base font-bold">
-            {roleContentData.description}
+          <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
+            Get started in seconds – connect with shippers, fleets, and drivers instantly to post
+            requests, assign loads, and track in real time across one unified platform.
           </p>
         </div>
       </div>
@@ -339,12 +356,14 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 const mapStateToProps = (state) => ({
   isAuthenticated: state.auth.isAuthenticated,
   supabaseUser: state.auth.supabaseUser,
+  loading: state.auth.loading,
 });
 
 Register.propTypes = {
   register: PropTypes.func.isRequired,
   isAuthenticated: PropTypes.bool,
   supabaseUser: PropTypes.object,
+  loading: PropTypes.bool,
 };
 
 export default connect(mapStateToProps, { register })(Register);
