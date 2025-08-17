@@ -15,7 +15,7 @@ const GoogleSignInButton = ({
     }
   };
 
-  const baseClasses = "w-full flex items-center justify-center gap-3 py-3 px-6 rounded-[40px] border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)] transition-colors";
+  const baseClasses = "w-full flex items-center justify-center  h-[45px] px-[25px] gap-3 rounded-full border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)] transition-colors";
   
   const disabledClasses = (googleLoading || disabled) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
 
