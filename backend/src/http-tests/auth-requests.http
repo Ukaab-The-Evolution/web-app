@@ -4,8 +4,16 @@
 ### -------------------------------
 ### 1. HEALTH CHECK
 ### -------------------------------
+### -------------------------------
+### 1. HEALTH CHECK
+### -------------------------------
 GET {{baseUrl}}/health HTTP/1.1
 
+### -------------------------------
+### 2. USER REGISTRATION
+### -------------------------------
+
+### 2.1 Admin Registration
 ### -------------------------------
 ### 2. USER REGISTRATION
 ### -------------------------------
@@ -23,6 +31,7 @@ Content-Type: application/json
 }
 
 ### 2.2 Driver Registration (Phone Only)
+### 2.2 Driver Registration (Phone Only)
 POST {{authBaseUrl}}/signup
 Content-Type: application/json
 
@@ -33,6 +42,18 @@ Content-Type: application/json
   "full_name": "Test Driver User"
 }
 
+### 2.3 Driver Registration (With Email)
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testdriver@ukaabtest.com",
+  "password": "TestDriver1234!",
+  "user_type": "driver",
+  "full_name": "Test Driver User"
+}
+
+### 2.4 Shipper Registration
 ### 2.3 Driver Registration (With Email)
 POST {{authBaseUrl}}/signup
 Content-Type: application/json
@@ -61,6 +82,11 @@ Content-Type: application/json
 ### -------------------------------
 
 ### 3.1 Admin Login (Email)
+### -------------------------------
+### 3. LOGIN TESTS
+### -------------------------------
+
+### 3.1 Admin Login (Email)
 POST {{authBaseUrl}}/login
 Content-Type: application/json
 
@@ -71,7 +97,10 @@ Content-Type: application/json
 
 ### Save Admin Token
 @adminToken = {{response.body.token}}
+### Save Admin Token
+@adminToken = {{response.body.token}}
 
+### 3.2 Driver Login (Phone)
 ### 3.2 Driver Login (Phone)
 POST {{authBaseUrl}}/login
 Content-Type: application/json
@@ -81,6 +110,22 @@ Content-Type: application/json
   "password": "TestDriver1234!"
 }
 
+### Save Phone Driver Token
+@phoneDriverToken = {{response.body.token}}
+
+### 3.3 Driver Login (Email)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testdriver@ukaabtest.com",
+  "password": "TestDriver1234!"
+}
+
+### Save Email Driver Token
+@emailDriverToken = {{response.body.token}}
+
+### 3.4 Shipper Login
 ### Save Phone Driver Token
 @phoneDriverToken = {{response.body.token}}
 
@@ -131,6 +176,32 @@ Content-Type: application/json
 ### -------------------------------
 
 ### 4.1 Get Admin Profile
+### Save Shipper Token
+@shipperToken = {{response.body.token}}
+
+### 3.5 Invalid Login (Wrong Password)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com",
+  "password": "WrongTestPassword"
+}
+
+### 3.6 Invalid Login (Nonexistent User)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "nonexistenttest@ukaabtest.com",
+  "password": "SomeTestPassword123"
+}
+
+### -------------------------------
+### 4. PROFILE TESTS
+### -------------------------------
+
+### 4.1 Get Admin Profile
 GET {{authBaseUrl}}/me
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -141,15 +212,32 @@ Authorization: Bearer {{phoneDriverToken}}
 Content-Type: application/json
 
 ### 4.3 Get Driver Profile (Email)
+### 4.2 Get Driver Profile (Phone)
 GET {{authBaseUrl}}/me
+Authorization: Bearer {{phoneDriverToken}}
+Content-Type: application/json
+
+### 4.3 Get Driver Profile (Email)
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{emailDriverToken}}
 Authorization: Bearer {{emailDriverToken}}
 Content-Type: application/json
 
+### 4.4 Get Shipper Profile
 ### 4.4 Get Shipper Profile
 GET {{authBaseUrl}}/me
 Authorization: Bearer {{shipperToken}}
 Content-Type: application/json
 
+### 4.5 Unauthorized Profile Access
+GET {{authBaseUrl}}/me
+Content-Type: application/json
+
+### -------------------------------
+### 5. PASSWORD UPDATE TESTS
+### -------------------------------
+
+### 5.1 Admin Updates Password
 ### 4.5 Unauthorized Profile Access
 GET {{authBaseUrl}}/me
 Content-Type: application/json
@@ -168,6 +256,7 @@ Content-Type: application/json
   "newPassword": "NewTestAdmin1234!"
 }
 
+### 5.2 Verify Admin Password Update
 ### 5.2 Verify Admin Password Update
 POST {{authBaseUrl}}/login
 Content-Type: application/json
@@ -208,11 +297,52 @@ Content-Type: application/json
 }
 
 ### Step 3: Verify New Password
+### 5.3 Invalid Password Update (Missing Current Password)
+PATCH {{authBaseUrl}}/updatePassword
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newPassword": "NewTestPassword123!"
+}
+
+### -------------------------------
+### 6. PASSWORD RESET TESTS
+### -------------------------------
+
+### 6.1 Admin Password Reset Flow
+### Step 1: Request Reset
+POST {{authBaseUrl}}/forgotPassword
+Content-Type: application/json
+
+{
+  "email": "testadmin@ukaabtest.com"
+}
+
+### Step 2: Reset Password (Replace ADMIN_RESET_TOKEN)
+PATCH {{authBaseUrl}}/resetPassword/ADMIN_RESET_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "newPassword": "NewAdminPass123!"
+}
+
+### Step 3: Verify New Password
 POST {{authBaseUrl}}/login
 Content-Type: application/json
 
 {
   "email": "testadmin@ukaabtest.com",
+  "password": "NewAdminPass123!"
+}
+
+### 6.2 Driver Password Reset Flow (Email)
+### Step 1: Request Reset
+POST {{authBaseUrl}}/forgotPassword
+Content-Type: application/json
+
+{
+  "email": "testdriver@ukaabtest.com"
   "password": "NewAdminPass123!"
 }
 
@@ -260,10 +390,59 @@ Content-Type: application/json
 }
 
 ### Step 3: Verify New Password
+### Step 2: Reset Password (Replace DRIVER_RESET_TOKEN)
+PATCH {{authBaseUrl}}/resetPassword/DRIVER_RESET_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "newPassword": "NewDriverPass123!"
+}
+
+### Step 3: Verify New Password
 POST {{authBaseUrl}}/login
 Content-Type: application/json
 
 {
+  "email": "testdriver@ukaabtest.com",
+  "password": "NewDriverPass123!"
+}
+
+### 6.3 Shipper Password Reset Flow
+### Step 1: Request Reset
+POST {{authBaseUrl}}/forgotPassword
+Content-Type: application/json
+
+{
+  "email": "testshipper@ukaabtest.com"
+}
+
+### Step 2: Reset Password (Replace SHIPPER_RESET_TOKEN)
+PATCH {{authBaseUrl}}/resetPassword/SHIPPER_RESET_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "newPassword": "NewShipperPass123!"
+}
+
+### Step 3: Verify New Password
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testshipper@ukaabtest.com",
+  "password": "NewShipperPass123!"
+}
+
+### -------------------------------
+### 7. NEGATIVE TEST CASES
+### -------------------------------
+
+### 7.1 Invalid Reset Token
+PATCH {{authBaseUrl}}/resetPassword/INVALID_TOKEN_123
+Content-Type: application/json
+
+{
+  "newPassword": "ShouldFail123!"
   "email": "testshipper@ukaabtest.com",
   "password": "NewShipperPass123!"
 }
@@ -321,3 +500,33 @@ Content-Type: application/json
 ###    - Execute Step 2 (resetPassword)
 ###    - Verify with Step 3 (login)
 ### 3. Token validity: 15 minutes (default)
+
+### 1. Trucking Company Registration
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "fleet.master3@test.com",
+  "password": "SecurePass456!",
+  "user_type": "trucking_company",
+  "full_name": "Fleet Master Logistics3",
+  "company_name": "Fleet Master Transport3",
+  "company_address": "45 Industrial Road, Lahore",
+  "fleet_size": 12
+}
+
+### 2. Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "fleet.master3@test.com",
+  "password": "SecurePass456!"
+}
+
+### Save Token
+@truckingToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDYsImF1dGhfdXNlcl9pZCI6IjJmNzJiM2IzLWJhMTQtNGVmMi1hZmQ4LWE3MjQ2NGVjN2RmNyIsImlhdCI6MTc1NTM0MjM1MCwiZXhwIjoxNzYzMTE4MzUwfQ.aAI3HZENkpdsk-hAOvwzo3oQu-ekAhipPF0Md1RhbHQ
+
+### 3. Get Profile (verify company data)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{truckingToken}}
