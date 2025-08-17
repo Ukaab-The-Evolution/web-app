@@ -65,7 +65,7 @@ const Landing = () => {
 
           <h2 className="text-2xl md:text-4xl font-bold mb-4 font-poppins">No More Long Delays</h2>
 
-          <p className="text-lg font-poppins">
+          <p className="text-base md:text-lg lg:text-lg xl:text-xl font-poppins">
             Get your loads moving faster, smarter, and on time — every time.
           </p>
         </div>

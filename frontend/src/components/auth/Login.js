@@ -201,11 +201,11 @@ const Login = ({ login, isAuthenticated }) => {
         />
 
         {/* Text Content */}
-        <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:bottom-0 md:right-0 font-poppins">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-8">
+        <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5 md:right-5 font-poppins">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
             Welcome Back!
           </h2>
-          <p className="text-white text-sm sm:text-base font-medium font-poppins leading-relaxed">
+          <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
             Manage your shipments with speed and confidence - login to access real-time tracking, instant load assignmnets, and seamless logistics management.
           </p>
         </div>
