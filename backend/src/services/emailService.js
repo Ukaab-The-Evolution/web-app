@@ -35,25 +35,32 @@ const transporter = nodemailer.createTransport(
 );
 
 export const sendPasswordResetEmail = async (email, resetLink) => {
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || '"Ukaab Auth" <no-reply@ukaab.com>',
-    to: email,
-    subject: 'Password Reset Request',
-    text: `You requested a password reset. Click here: ${resetLink}`,
-    html: `
-      <div>
-        <h2>Password Reset</h2>
-        <p>Click the link below to reset your password (valid for 15 minutes):</p>
-        <a href="${resetLink}">Reset Password</a>
-        <p>If you didn't request this, please ignore this email.</p>
-      </div>
-    `
-  };
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"Ukaab Auth" <no-reply@ukaab.com>',
+      to: email,
+      subject: 'Password Reset Request',
+      text: `You requested a password reset. Click here: ${resetLink}`,
+      html: `
+        <div>
+          <h2>Password Reset</h2>
+          <p>Click the link below to reset your password (valid for 15 minutes):</p>
+          <a href="${resetLink}">Reset Password</a>
+          <p>If you didn't request this, please ignore this email.</p>
+        </div>
+      `
+    };
 
-  const info = await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
 
-  // Only log in development for Ethereal
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Ethereal Preview URL:', nodemailer.getTestMessageUrl(info));
+    // Only log in development for Ethereal
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Ethereal Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Email sending failed:', error);
+    throw new Error('Failed to send password reset email');
   }
 };
