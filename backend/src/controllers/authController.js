@@ -5,6 +5,8 @@ import AppError from '../utils/appError.js';
 import validator from 'validator';
 import { supabaseAdmin } from '../config/supabase.js';
 import catchAsync from '../utils/catchAsync.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
+
 
 // Move the signToken function outside of exports to avoid redeclaration
 const signToken = (user_id, auth_user_id) => {
@@ -214,12 +216,18 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-export const forgotPassword = async (req, res, next) => {
+export const forgotPassword = catchAsync(async (req, res, next) => {
   try {
     const { email } = req.body;
+    
+    if (!email) {
+      return next(new AppError('Email is required', 400));
+    }
+
     const user = await User.findByEmailOrPhone(email);
     
     if (!user) {
+      // Return success to prevent email enumeration
       return res.status(200).json({ 
         status: 'success',
         message: 'If the email exists, a reset link will be sent'
@@ -229,6 +237,7 @@ export const forgotPassword = async (req, res, next) => {
     const resetToken = await User.createPasswordResetToken(user.user_id);
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     
+    // Send email and handle potential failures
     await sendPasswordResetEmail(user.email, resetUrl);
     
     res.status(200).json({
@@ -236,9 +245,16 @@ export const forgotPassword = async (req, res, next) => {
       message: 'Password reset link sent to email'
     });
   } catch (err) {
+    console.error('Password reset error:', err);
+    
+    // Don't reveal specific errors to client for security
+    if (err.message.includes('email') || err.message.includes('send')) {
+      return next(new AppError('Failed to send reset email. Please try again later.', 500));
+    }
+    
     next(err);
   }
-};
+});
 
 export const resetPassword = async (req, res, next) => {
   try {

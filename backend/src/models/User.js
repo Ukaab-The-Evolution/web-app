@@ -155,16 +155,24 @@ class User {
 
   static async verifyPasswordResetToken(token) {
     const token_hash = crypto.createHash('sha256').update(token).digest('hex');
-    
-    const { data, error } = await supabase
-      .from('password_reset_tokens')
-      .select('*')
-      .eq('token_hash', token_hash)
-      .gt('expires_at', new Date().toISOString())
-      .eq('used', false)
-      .maybeSingle();
 
-    if (error) throw error;
+    const { data, error } = await supabase
+    .from('password_reset_tokens')
+    .select('*')
+    .eq('token_hash', token_hash)
+    .gt('expires_at', new Date().toISOString())
+    .eq('used', false)
+    .maybeSingle();
+
+    if (error) {
+    console.error('Token verification error:', error);
+    throw new Error('Token verification failed');
+    }
+
+    if (!data) {
+    throw new Error('Invalid or expired token');
+    }
+
     return data;
   }
 
