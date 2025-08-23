@@ -12,10 +12,10 @@ POST {{authBaseUrl}}/signup
 Content-Type: application/json
 
 {
-  "email": "testadmin4@ukaabtest.com",
-  "password": "TestAdmin12344!",
+  "email": "testadmin@ukaabtest.com",
+  "password": "TestAdmin1234!",
   "user_type": "admin",
-  "full_name": "Test Admin User4",
+  "full_name": "Test Admin User",
   "phone": "+923001234504"
 }
 
@@ -24,23 +24,23 @@ POST {{authBaseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "testadmin4@ukaabtest.com",
-  "password": "TestAdmin12344!"
+  "email": "testadmin@ukaabtest.com",
+  "password": "TestAdmin1234!"
 }
 
 ### Save Admin Token
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsImF1dGhfdXNlcl9pZCI6IjkyYWQ5MDE4LTVkZGUtNDAwNC04YTNlLTQyMDQ1ZTM5YTY3NSIsImlhdCI6MTc1NTM0MjE4OSwiZXhwIjoxNzYzMTE4MTg5fQ.axjL3FZRMUeEi_fmeK4S5-4zLCV8xN-dPw9jQre6xDg
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImF1dGhfdXNlcl9pZCI6IjM0ZDhmNDUxLTFmMWYtNDgzYy1iM2ViLWJlN2NkMzIzNWUwMCIsImlhdCI6MTc1NTk2ODgzMCwiZXhwIjoxNzYzNzQ0ODMwfQ.IOnW717kvALZpnRXjEbYrclBcop7lGsoV2iew4nvrGw
 
 ### Driver Registration
 POST {{authBaseUrl}}/signup
 Content-Type: application/json
 
 {
-  "email": "testdriver6@ukaabtest.com",
+  "email": "testdriver1@ukaabtest.com",
   "phone": "+923001234506",
-  "password": "TestDriver12346!",
+  "password": "TestDriver1234!",
   "user_type": "driver",
-  "full_name": "Test Driver User6"
+  "full_name": "Test Driver User"
 }
 
 ### Driver Login (Get Token)
@@ -48,23 +48,23 @@ POST {{authBaseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "testdriver6@ukaabtest.com",
-  "password": "TestDriver12346!"
+  "email": "testdriver1@ukaabtest.com",
+  "password": "TestDriver1234!"
 }
 
 ### Save Driver Token
-@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzUsImF1dGhfdXNlcl9pZCI6ImEyZTM0NjdjLTZkNDItNGJkNC1iNTg3LTdkODkxMTUwYTk1ZSIsImlhdCI6MTc1NTM0MjIwNiwiZXhwIjoxNzYzMTE4MjA2fQ.AXIKVxhwLD9KGcfK8YjYVHNmLy1Ak_hP351yKn0AbTk
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImF1dGhfdXNlcl9pZCI6Ijg3Y2RjZmNkLWEzMjQtNGVjNy1hY2JkLWJjYTQwNjdjMGRmMiIsImlhdCI6MTc1NTk2ODg5NiwiZXhwIjoxNzYzNzQ0ODk2fQ.phWfymMknzn_z6VYZuvC61Yq0Ew5HyjVtcobMPX9sn0
 
 ### Shipper Registration
 POST {{authBaseUrl}}/signup
 Content-Type: application/json
 
 {
-  "email": "testshipper5@ukaabtest.com",
+  "email": "testshipper@ukaabtest.com",
   "phone": "+923001234507",
   "password": "TestShipper1235!",
   "user_type": "shipper",
-  "full_name": "Test Shipper User5"
+  "full_name": "Test Shipper User"
 }
 
 ### Shipper Login (Get Token)
@@ -72,44 +72,13 @@ POST {{authBaseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "testshipper5@ukaabtest.com",
+  "email": "testshipper@ukaabtest.com",
   "password": "TestShipper1235!"
 }
 
 ### Save Shipper Token
-@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzcsImF1dGhfdXNlcl9pZCI6ImI2NTAzZDZlLWNjZTEtNDUyZi1hNzcxLWFkMWZlODRhNmNkMCIsImlhdCI6MTc1NTM0MjIyMCwiZXhwIjoxNzYzMTE4MjIwfQ.Pg38KuiBj1FXaHD_wfoXTfUkE-uRL8Q9NgzVm0ANJdc
-### -------------------------------
-### DASHBOARD API TESTS
-### -------------------------------
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsImF1dGhfdXNlcl9pZCI6IjlkNTNmYzhmLTc0MTctNDU1Yi1iNjlmLTA0ZjVlOTA3YjJhYSIsImlhdCI6MTc1NTk2ODkzMCwiZXhwIjoxNzYzNzQ0OTMwfQ.To-DGwHPI1WV-5z6tXSp_zF0CaoOqiDHvCXeOB45nC4
 
-### 1. Driver Dashboard Overview
-GET {{dashboardBaseUrl}}/overview
-Authorization: Bearer {{driverToken}}
-Content-Type: application/json
-
-### 2. Driver Pie Chart Data
-GET {{dashboardBaseUrl}}/pie-chart
-Authorization: Bearer {{driverToken}}
-Content-Type: application/json
-
-### 3. Shipper Dashboard Overview
-GET {{dashboardBaseUrl}}/overview
-Authorization: Bearer {{shipperToken}}
-Content-Type: application/json
-
-### 4. Shipper Pie Chart Data
-GET {{dashboardBaseUrl}}/pie-chart
-Authorization: Bearer {{shipperToken}}
-Content-Type: application/json
-
-### 5. Unauthorized Access (No Token)
-GET {{dashboardBaseUrl}}/overview
-Content-Type: application/json
-
-### 6. Wrong User Type Access (Admin trying to access dashboard)
-GET {{dashboardBaseUrl}}/overview
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
 
 ### -------------------------------
 ### FILE UPLOAD API TESTS
@@ -132,7 +101,7 @@ license
 --WebAppBoundary--
 
 ### Save Document ID for Admin Review
-@uploadedDocId = 20
+@uploadedDocId = 4
 
 ### 2. Shipper Uploads Business License (Updated to match working format)
 POST {{uploadBaseUrl}}/upload
@@ -161,7 +130,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "document_id": 20,
+  "document_id": 1,
   "action": "approve"
 }
 
@@ -171,7 +140,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "document_id": 21,
+  "document_id": 2,
   "action": "reject"
 }
 

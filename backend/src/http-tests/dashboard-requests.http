@@ -1,0 +1,269 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+@dashboardBaseUrl = {{baseUrl}}/dashboard
+
+### -------------------------------
+### PREREQUISITE: GET AUTH TOKENS
+### -------------------------------
+
+### Driver Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testdriver_dashboard@ukaabtest.com",
+  "phone": "+923001234888",
+  "password": "TestDriverDash123!",
+  "user_type": "driver",
+  "full_name": "Test Driver Dashboard"
+}
+
+### Driver Login (Get Token)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testdriver_dashboard@ukaabtest.com",
+  "password": "TestDriverDash123!"
+}
+
+### Save Driver Token
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiYXV0aF91c2VyX2lkIjoiNmZiNmVkOTktNGZjMS00OTNkLWE2MmQtZTZiM2JmZTVkNjMzIiwiaWF0IjoxNzU1ODg1Njg2LCJleHAiOjE3NjM2NjE2ODZ9.zteXW148EWrUUbnx8uPiC5DCNLPxhEx7m72euLZzoaI
+
+### Shipper Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "testshipper_dashboard@ukaabtest.com",
+  "phone": "+923001234999",
+  "password": "TestShipperDash123!",
+  "user_type": "shipper",
+  "full_name": "Test Shipper Dashboard"
+}
+
+### Shipper Login (Get Token)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "testshipper_dashboard@ukaabtest.com",
+  "password": "TestShipperDash123!"
+}
+
+### Save Shipper Token
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImF1dGhfdXNlcl9pZCI6ImMwMTgxYTBkLTQ3YWEtNDAxNi04MWYwLWE3NDdmZDZhY2I3MiIsImlhdCI6MTc1NTg4NTczNiwiZXhwIjoxNzYzNjYxNzM2fQ.QfTym1J1TNA33BD0igxfnHt7ZW5qaC6meVRR4L4SbB0
+
+### -------------------------------
+### 1. DASHBOARD OVERVIEW & CHARTS
+### -------------------------------
+
+### 1.1 Driver Dashboard Overview
+GET {{dashboardBaseUrl}}/overview
+Authorization: Bearer {{driverToken}}
+
+### 1.2 Driver Pie Chart Data
+GET {{dashboardBaseUrl}}/pie-chart
+Authorization: Bearer {{driverToken}}
+
+### 1.3 Shipper Dashboard Overview
+GET {{dashboardBaseUrl}}/overview
+Authorization: Bearer {{shipperToken}}
+
+### 1.4 Shipper Pie Chart Data
+GET {{dashboardBaseUrl}}/pie-chart
+Authorization: Bearer {{shipperToken}}
+
+### -------------------------------
+### 2. LOAD/SHIPMENT LISTING APIS
+### -------------------------------
+
+### 2.1 Get Available Loads for Driver
+GET {{dashboardBaseUrl}}/loads/available
+Authorization: Bearer {{driverToken}}
+
+### 2.2 Get Available Loads with Pagination
+GET {{dashboardBaseUrl}}/loads/available?page=1&limit=5
+Authorization: Bearer {{driverToken}}
+
+### 2.3 Get Available Loads with Search Filter
+GET {{dashboardBaseUrl}}/loads/available?search=lahore
+Authorization: Bearer {{driverToken}}
+
+### 2.4 Get Available Loads with Cargo Type Filter
+GET {{dashboardBaseUrl}}/loads/available?cargo_type=general
+Authorization: Bearer {{driverToken}}
+
+### 2.5 Get Shipper Shipments
+GET {{dashboardBaseUrl}}/shipments
+Authorization: Bearer {{shipperToken}}
+
+### 2.6 Get Shipper Shipments with Pagination
+GET {{dashboardBaseUrl}}/shipments?page=1&limit=5
+Authorization: Bearer {{shipperToken}}
+
+### 2.7 Get Shipper Shipments with Status Filter
+GET {{dashboardBaseUrl}}/shipments?status=pending
+Authorization: Bearer {{shipperToken}}
+
+### -------------------------------
+### 3. SEARCH FUNCTIONALITY
+### -------------------------------
+
+### 3.1 Driver Search Loads
+GET {{dashboardBaseUrl}}/search?search=karachi
+Authorization: Bearer {{driverToken}}
+
+### 3.2 Driver Search with Multiple Filters
+GET {{dashboardBaseUrl}}/search?search=islamabad&cargo_type=general&min_weight=1000&max_weight=5000&min_payment=5000&max_payment=20000
+Authorization: Bearer {{driverToken}}
+
+### 3.3 Shipper Search Shipments
+GET {{dashboardBaseUrl}}/search?search=delivered
+Authorization: Bearer {{shipperToken}}
+
+### 3.4 Shipper Search with Status Filter
+GET {{dashboardBaseUrl}}/search?status=delivered&min_payment=10000
+Authorization: Bearer {{shipperToken}}
+
+### -------------------------------
+### 4. DETAILED VIEWS APIS
+### -------------------------------
+
+### 4.1 Get Load Details (Replace :load_id with actual ID)
+GET {{dashboardBaseUrl}}/loads/1
+Authorization: Bearer {{driverToken}}
+
+### 4.2 Get Shipment Details (Replace :load_id with actual ID)
+GET {{dashboardBaseUrl}}/shipments/1
+Authorization: Bearer {{shipperToken}}
+
+### 4.3 Get Non-Existent Load Details
+GET {{dashboardBaseUrl}}/loads/9999
+Authorization: Bearer {{driverToken}}
+
+### 4.4 Unauthorized Access to Shipment Details
+GET {{dashboardBaseUrl}}/shipments/1
+Authorization: Bearer {{driverToken}}
+
+### -------------------------------
+### 5. BIDDING/ACCEPTANCE APIS
+### -------------------------------
+
+### 5.1 Submit Bid on a Load (Replace load_id with actual ID)
+POST {{dashboardBaseUrl}}/bids
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 1,
+  "bid_amount": 15000.50
+}
+
+### Save Bid ID for reference
+@bidId = {{response.body.data.bid.bid_id}}
+
+### 5.2 Submit Bid with Invalid Amount
+POST {{dashboardBaseUrl}}/bids
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 1,
+  "bid_amount": "invalid_amount"
+}
+
+### 5.3 Submit Bid on Non-Existent Load
+POST {{dashboardBaseUrl}}/bids
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 9999,
+  "bid_amount": 15000.50
+}
+
+### 5.4 Accept Load (Pooling Model - Replace load_id and vehicle_id)
+POST {{dashboardBaseUrl}}/accept-load
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 2,
+  "vehicle_id": 1
+}
+
+### 5.5 Accept Load with Invalid Vehicle
+POST {{dashboardBaseUrl}}/accept-load
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 2,
+  "vehicle_id": 9999
+}
+
+### 5.6 Shipper Trying to Submit Bid (Should Fail)
+POST {{dashboardBaseUrl}}/bids
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "load_id": 1,
+  "bid_amount": 15000.50
+}
+
+### -------------------------------
+### 6. ERROR CASES & VALIDATION
+### -------------------------------
+
+### 6.1 Unauthorized Access (No Token)
+GET {{dashboardBaseUrl}}/loads/available
+
+### 6.2 Wrong User Type Access (Driver accessing shipper endpoints)
+GET {{dashboardBaseUrl}}/shipments
+Authorization: Bearer {{driverToken}}
+
+### 6.3 Invalid Pagination Parameters
+GET {{dashboardBaseUrl}}/loads/available?page=0&limit=100
+Authorization: Bearer {{driverToken}}
+
+### 6.4 Malformed Search Query
+GET {{dashboardBaseUrl}}/search?min_weight=abc
+Authorization: Bearer {{driverToken}}
+
+### 6.5 Missing Required Fields in Bid
+POST {{dashboardBaseUrl}}/bids
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "load_id": 1
+}
+
+### -------------------------------
+### 7. ADMIN DASHBOARD APIS (If implemented)
+### -------------------------------
+
+### 7.1 Admin Get All Loads (If admin dashboard exists)
+GET {{dashboardBaseUrl}}/admin/loads
+Authorization: Bearer {{adminToken}}
+
+### 7.2 Admin Get System Stats
+GET {{dashboardBaseUrl}}/admin/stats
+Authorization: Bearer {{adminToken}}
+
+### -------------------------------
+### TESTING INSTRUCTIONS
+### -------------------------------
+### 1. Run prerequisite requests first to get valid tokens
+### 2. Replace placeholder IDs (1, 2, etc.) with actual IDs from your database
+### 3. Test in sequence: Overview → Listing → Detailed Views → Actions
+### 4. For bidding/acceptance tests, ensure you have actual load IDs available
+### 5. Check console logs for any SQL errors or validation issues
+### 6. Verify proper error handling for invalid requests
+
+### Note: You may need to seed your database with test data first:
+### - Create some loads with status 'available'
+### - Create vehicles for drivers
+### - Create some shipments for shippers
