@@ -64,3 +64,42 @@ export const sendPasswordResetEmail = async (email, resetLink) => {
     throw new Error('Failed to send password reset email');
   }
 };
+
+// Add this function to your existing emailService.js
+export const sendOtpEmail = async (email, otpCode, purpose = 'registration') => {
+  try {
+    const subject = purpose === 'registration' 
+      ? 'Verify Your Account Registration' 
+      : 'Your Verification Code';
+    
+    const text = `Your verification code is: ${otpCode}. This code will expire in 15 minutes.`;
+    
+    const html = `
+      <div>
+        <h2>Verification Code</h2>
+        <p>Your verification code is: <strong>${otpCode}</strong></p>
+        <p>This code will expire in 15 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"Ukaab Auth" <no-reply@ukaab.com>',
+      to: email,
+      subject,
+      text,
+      html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Ethereal Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('OTP email sending failed:', error);
+    throw new Error('Failed to send verification email');
+  }
+};

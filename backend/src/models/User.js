@@ -12,7 +12,8 @@ class User {
     full_name,
     company_name,
     company_address,
-    fleet_size 
+    fleet_size ,
+    cnic
   }) {
     // Validate inputs
     if (email && !validator.isEmail(email)) {
@@ -20,6 +21,9 @@ class User {
     }
     if (phone && !validator.isMobilePhone(phone)) {
       throw new Error('Invalid phone number');
+    }
+    if (cnic && !validator.matches(cnic, /^[0-9]{5}-[0-9]{7}-[0-9]{1}$/)) {
+      throw new Error('Invalid CNIC format (XXXXX-XXXXXXX-X)');
     }
     if (!validator.isStrongPassword(password, { 
       minLength: 8, 
