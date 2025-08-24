@@ -347,3 +347,66 @@ Content-Type: application/json
 ### 3. Token validity: 15 minutes
 ### 4. All passwords must meet complexity requirements:
 ###    - 8+ characters, 1 uppercase, 1 lowercase, 1 number, 1 symbol
+
+
+## Test User Registration (Signup) with OTP
+POST {{authBaseUrl}}/signup HTTP/1.1
+Content-Type: application/json
+Host: localhost:3000
+
+{
+  "email": "testdriverOTP2@example.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Test Driver OTP2",
+  "cnic": "12345-6789012-3",
+  "owns_company": true,
+  "company_name": "Test Driver Company OTP",
+  "company_address": "123 Test Street",
+  "fleet_size": 2
+}
+
+### Test OTP Verification
+POST {{authBaseUrl}}/verify-otp HTTP/1.1
+Content-Type: application/json
+Host: localhost:3000
+
+{
+  "user_id": 18,
+  "otp_code": "234978" 
+}
+
+### Test Resend OTP
+POST {{authBaseUrl}}/resend-otp HTTP/1.1
+Content-Type: application/json
+Host: localhost:3000
+
+{
+  "user_id": 15
+}
+
+### Test Login (Before Verification - Should Fail)
+POST {{authBaseUrl}}/login HTTP/1.1
+Content-Type: application/json
+Host: localhost:3000
+
+{
+  "email": "testdriverOTP2@example.com",
+  "password": "Secure123!"
+}
+
+### Test Login (After Verification - Should Succeed)
+POST {{authBaseUrl}}/login HTTP/1.1
+Content-Type: application/json
+Host: localhost:3000
+
+{
+  "email": "testdriverOTP2@example.com",
+  "password": "Secure123!"
+}
+
+### Test Protected Route Access
+GET {{baseUrl}}/dashboard/overview HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsImF1dGhfdXNlcl9pZCI6ImQ0YzIwYzBmLTU5ODktNGRkYS1iODA4LTRhZmM3NGVmNTZkMyIsImlhdCI6MTc1NjAyMjg5NywiZXhwIjoxNzYzNzk4ODk3fQ.ycgbKij4_WlPdrhn7Wb0rpjMLzcLpNtRxF_vAoi8plQ
+Host: localhost:3000
+

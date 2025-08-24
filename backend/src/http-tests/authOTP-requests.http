@@ -1,0 +1,245 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+
+### -------------------------------
+### 1. HEALTH CHECK
+### -------------------------------
+GET {{baseUrl}}/health HTTP/1.1
+
+### -------------------------------
+### 2. USER REGISTRATION WITH OTP
+### -------------------------------
+
+### 2.1 Company Driver Registration (Driver who owns a company)
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "companydriver@example.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Company Driver",
+  "cnic": "54321-0987654-3",
+  "owns_company": true,
+  "company_name": "My Trucking Co",
+  "company_address": "456 Business Ave",
+  "fleet_size": 5
+}
+
+### Save Company Driver ID
+@companyDriverId = 19
+
+### 2.2 Regular Driver Registration (Driver without company)
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "regulardriver@example.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Regular Driver",
+  "cnic": "11111-2222222-3"
+}
+
+### Save Regular Driver ID
+@regularDriverId = 20
+
+### 2.3 Shipper Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "shipper@example.com",
+  "password": "Secure123!",
+  "user_type": "shipper",
+  "full_name": "Test Shipper"
+}
+
+### Save Shipper ID
+@shipperId = 21
+
+### -------------------------------
+### 3. OTP VERIFICATION TESTS
+### -------------------------------
+
+### 3.1 Verify Company Driver OTP (Check console for OTP)
+POST {{authBaseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "user_id": {{companyDriverId}},
+  "otp_code": "316846"
+}
+
+### Save Company Driver Token
+@companyDriverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTksImF1dGhfdXNlcl9pZCI6ImE5OTg3OGQxLThjYzAtNDgwYi1iNDE3LWQ5YmNmYTk3NjVkYiIsImlhdCI6MTc1NjAyMzUzNywiZXhwIjoxNzYzNzk5NTM3fQ.QSPne0TGTn-nOj5iuA5ojcy9HxspZX2RH5CMsdJEvfM
+
+### 3.2 Verify Regular Driver OTP (Check console for OTP)
+POST {{authBaseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "user_id": {{regularDriverId}},
+  "otp_code": "736837"
+}
+
+### Save Regular Driver Token
+@regularDriverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjAsImF1dGhfdXNlcl9pZCI6IjgxYTRiZTYxLTYyZGUtNDFhNi1hMDQzLTY2MjVjNjAwOTVjZiIsImlhdCI6MTc1NjAyMzY0MCwiZXhwIjoxNzYzNzk5NjQwfQ.K5eMEc7K0TnT6LzvCew_RIgyw4IVQtloRrpNjU9DRUo
+
+### 3.3 Verify Shipper OTP (Check console for OTP)
+POST {{authBaseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "user_id": {{shipperId}},
+  "otp_code": "765335"
+}
+
+### Save Shipper Token
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjEsImF1dGhfdXNlcl9pZCI6ImM3MWUxN2FkLWVlY2YtNGZhMi1iZTYxLTMwMmM4ZDVmZjk1MCIsImlhdCI6MTc1NjAyMzc0MywiZXhwIjoxNzYzNzk5NzQzfQ.mCniTRgP3f4Jn5rBmckb4FkykhlA74N5ryTJYEm72sk
+
+### 3.4 Test Resend OTP
+POST {{authBaseUrl}}/resend-otp
+Content-Type: application/json
+
+{
+  "user_id": {{companyDriverId}}
+}
+
+### 3.5 Test Invalid OTP
+POST {{authBaseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "user_id": {{companyDriverId}},
+  "otp_code": "999999"
+}
+
+### -------------------------------
+### 4. LOGIN TESTS (AFTER VERIFICATION)
+### -------------------------------
+
+### 4.1 Company Driver Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "companydriver@example.com",
+  "password": "Secure123!"
+}
+
+### 4.2 Regular Driver Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "regulardriver@example.com",
+  "password": "Secure123!"
+}
+
+### 4.3 Shipper Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "shipper@example.com",
+  "password": "Secure123!"
+}
+
+### 4.4 Test Login Before Verification (Should Fail)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "companydriver@example.com",
+  "password": "Secure123!"
+}
+
+### -------------------------------
+### 5. PROTECTED ROUTE TESTS
+### -------------------------------
+
+### 5.1 Company Driver Dashboard Access
+GET {{baseUrl}}/dashboard/overview
+Authorization: Bearer {{companyDriverToken}}
+
+### 5.2 Regular Driver Dashboard Access
+GET {{baseUrl}}/dashboard/overview
+Authorization: Bearer {{regularDriverToken}}
+
+### 5.3 Shipper Dashboard Access
+GET {{baseUrl}}/dashboard/overview
+Authorization: Bearer {{shipperToken}}
+
+### 5.4 Unauthorized Access (No Token)
+GET {{baseUrl}}/dashboard/overview
+
+### 5.5 Unauthorized Access (Invalid Token)
+GET {{baseUrl}}/dashboard/overview
+Authorization: Bearer invalid.token.here
+
+### -------------------------------
+### 6. PROFILE TESTS
+### -------------------------------
+
+### 6.1 Get Company Driver Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{companyDriverToken}}
+
+### 6.2 Get Regular Driver Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{regularDriverToken}}
+
+### 6.3 Get Shipper Profile
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{shipperToken}}
+
+### -------------------------------
+### 7. NEGATIVE TEST CASES
+### -------------------------------
+
+### 7.1 Test Duplicate Email Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "companydriver@example.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Duplicate Driver"
+}
+
+### 7.2 Test Invalid CNIC Format
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "invalidcnic@example.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Invalid CNIC Driver",
+  "cnic": "invalid-format"
+}
+
+### 7.3 Test Weak Password
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "weakpassword@example.com",
+  "password": "weak",
+  "user_type": "driver",
+  "full_name": "Weak Password Driver"
+}
+
+### -------------------------------
+### TESTING INSTRUCTIONS
+### -------------------------------
+### 1. Run tests in sequence from top to bottom
+### 2. After each registration, check console for OTP code
+### 3. Replace "REPLACE_WITH_ACTUAL_OTP" with actual OTP from console
+### 4. OTP validity: 15 minutes
+### 5. Maximum OTP attempts: 3
+### 6. All passwords must meet complexity requirements:
+###    - 8+ characters, 1 uppercase, 1 lowercase, 1 number, 1 symbol
+### 7. CNIC format: XXXXX-XXXXXXX-X (15 characters with hyphens)
