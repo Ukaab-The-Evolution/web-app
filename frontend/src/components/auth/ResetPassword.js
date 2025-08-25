@@ -7,7 +7,8 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import axios from 'axios';
 import Toast from '../ui/Toast';
 
-const ResetPassword = ({ isAuthenticated }) => {
+const ResetPassword = ({ isAuthenticated }) =>
+    {
     const location = useLocation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
