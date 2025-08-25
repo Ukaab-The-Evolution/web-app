@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../index';
 import { signInWithGoogle, signOutUser } from '../actions/auth';
 
 export const useSupabaseAuth = () => {
