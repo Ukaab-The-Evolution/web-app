@@ -6,6 +6,8 @@ import validator from 'validator';
 import { supabaseAdmin } from '../config/supabase.js';
 import catchAsync from '../utils/catchAsync.js';
 import { sendPasswordResetEmail } from '../services/emailService.js';
+import { sendOtpEmail } from '../services/emailService.js'; // Update import
+import { OTPService } from '../services/otpService.js';
 
 
 // Move the signToken function outside of exports to avoid redeclaration
@@ -24,17 +26,27 @@ export const signup = async (req, res, next) => {
     }
 
     // Create base user
-    const newUser = await User.create(req.body);
-    
-    // Create auth user if email exists
+    const newUser = await User.create({
+      ...req.body, 
+      cnic: req.body.cnic
+    });
+
+    // Generate and send OTP using the new service
+    const otp = OTPService.generateOTP(newUser.user_id, 'registration');
+
     if (req.body.email) {
+      await sendOtpEmail(req.body.email, otp, 'registration');
+    
+    
+    // Create auth user but don't activate yet
       try {
         const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
           email: req.body.email,
           user_metadata: { 
             app_user_id: newUser.user_id,
             user_type: newUser.user_type
-          }
+          },
+          email_confirm: false
         });
 
         if (!error && authUser) {
@@ -65,6 +77,23 @@ export const signup = async (req, res, next) => {
       if (companyError) throw companyError;
     }
 
+    // For drivers who also own a company
+    if (req.body.user_type === 'driver' && req.body.owns_company) {
+      const { company_name, company_address, fleet_size } = req.body;
+      const { error: companyError } = await supabase
+        .from('trucking_companies')
+        .insert([{
+          user_id: newUser.user_id,
+          company_name: company_name || `${newUser.full_name}'s Company`,
+          company_address: company_address || 'Address to be provided',
+          fleet_size: fleet_size || 1,
+          verification_status: 'pending'
+        }])
+        .select();
+
+      if (companyError) throw companyError;
+    }
+
     const token = signToken(newUser.user_id, newUser.auth_user_id);
     
     // Get complete user data with company info if applicable
@@ -80,8 +109,102 @@ export const signup = async (req, res, next) => {
     
     res.status(201).json({
       status: 'success',
+      message: 'User created. Please verify your email with the OTP sent.',
+      data: { 
+        user_id: newUser.user_id,
+        needs_verification: true
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// verifyOtp function - updated to use OTPService
+export const verifyOtp = async (req, res, next) => {
+  try {
+    const { user_id, otp_code } = req.body;
+
+    if (!user_id || !otp_code) {
+      return next(new AppError('User ID and OTP code are required', 400));
+    }
+
+    const result = OTPService.verifyOTP(user_id, otp_code, 'registration');
+    
+    if (!result.valid) {
+      let message = 'Invalid OTP';
+      if (result.reason === 'OTP_EXPIRED') message = 'OTP has expired';
+      if (result.reason === 'TOO_MANY_ATTEMPTS') message = 'Too many failed attempts';
+      if (result.reason === 'OTP_NOT_FOUND') message = 'No OTP found for this user';
+      
+      return next(new AppError(message, 400));
+    }
+
+    // Mark user as verified
+    await supabase
+      .from('users')
+      .update({ is_verified: true })
+      .eq('user_id', user_id);
+
+    // If user has email, confirm their auth account
+    const { data: user } = await supabase
+      .from('users')
+      .select('email, auth_user_id')
+      .eq('user_id', user_id)
+      .single();
+
+    if (user.email && user.auth_user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(
+        user.auth_user_id,
+        { email_confirm: true }
+      );
+    }
+
+    const token = signToken(user_id, user.auth_user_id);
+    
+    res.status(200).json({
+      status: 'success',
       token,
-      data: { user: responseData }
+      message: 'Account verified successfully'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// resendOtp function - updated to use OTPService
+export const resendOtp = async (req, res, next) => {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return next(new AppError('User ID is required', 400));
+    }
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('email, is_verified')
+      .eq('user_id', user_id)
+      .single();
+
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+
+    if (user.is_verified) {
+      return next(new AppError('User is already verified', 400));
+    }
+
+    // Generate new OTP using the service
+    const otp = OTPService.resendOTP(user_id, 'registration');
+    
+    if (user.email) {
+      await sendOtpEmail(user.email, otp, 'registration');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'New OTP sent successfully'
     });
   } catch (err) {
     next(err);
@@ -101,6 +224,11 @@ export const login = async (req, res, next) => {
     
     if (!user || !(await User.comparePassword(password, user.password_hash))) {
       return next(new AppError('Incorrect credentials', 401));
+    }
+
+    // Check if user is verified
+    if (!user.is_verified) {
+      return next(new AppError('Please verify your account before logging in', 401));
     }
 
     const token = signToken(user.user_id, user.auth_user_id);

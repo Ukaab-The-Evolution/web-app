@@ -8,7 +8,9 @@ import {
   forgotPassword,
   resetPassword,
   restrictTo,
-  createAdmin
+  createAdmin,
+  verifyOtp,
+  resendOtp
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -19,6 +21,8 @@ router.post('/login', login);
 router.post('/forgotPassword', forgotPassword);
 router.patch('/resetPassword/:token', resetPassword);
 router.post('/createAdmin', protect, restrictTo('admin'), createAdmin);
+router.post('/verify-otp', verifyOtp);
+router.post('/resend-otp', resendOtp);
 
 // Protected routes
 router.use(protect);
