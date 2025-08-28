@@ -311,9 +311,14 @@ export const updatePassword = async (req, res, next) => {
 };
 
 export const getMe = async (req, res, next) => {
+  console.log("👉 Entered getMe controller");
+  
   try {
+    console.log("🔹 Extracting user_id from req.user:", req.user?.user_id);
+
     const user = await User.findById(req.user.user_id);
-    
+    console.log("✅ User found in DB:", user);
+
     let responseData = {
       user_id: user.user_id,
       email: user.email,
@@ -322,24 +327,39 @@ export const getMe = async (req, res, next) => {
       phone: user.phone,
       auth_user_id: user.auth_user_id
     };
+    console.log("📦 Base responseData prepared:", responseData);
 
     // Add company details if trucking company
     if (user.user_type === 'trucking_company') {
-      const { data: companyData } = await supabase
+      console.log("🏢 User is trucking company, fetching company details...");
+
+      const { data: companyData, error } = await supabase
         .from('trucking_companies')
         .select('*')
         .eq('user_id', user.user_id)
         .single();
-      responseData.company = companyData;
+
+      if (error) {
+        console.log("❌ Error fetching company details:", error);
+      } else {
+        console.log("✅ Company data fetched:", companyData);
+        responseData.company = companyData;
+      }
+    } else {
+      console.log("👤 User is not a trucking company, skipping company details.");
     }
     
+    console.log("📤 Final responseData ready to send:", responseData);
+
     res.status(200).json({
       status: 'success',
       data: {
         user: responseData
       }
     });
+    console.log("✅ Response sent successfully.");
   } catch (err) {
+    console.log("❌ Error in getMe controller:", err);
     next(err);
   }
 };
