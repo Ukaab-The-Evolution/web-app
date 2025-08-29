@@ -4,6 +4,7 @@ import globalErrorHandler from './controllers/errorController.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3000; // Use environment variable or default to
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+app.use(cors());
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
