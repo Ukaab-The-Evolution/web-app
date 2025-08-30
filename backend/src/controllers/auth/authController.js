@@ -32,10 +32,10 @@ export const signup = async (req, res, next) => {
     });
 
     // Generate and send OTP using the new service
-    const otp = OTPService.generateOTP(newUser.user_id, 'registration');
+    // const otp = OTPService.generateOTP(newUser.user_id, 'registration');
 
     if (req.body.email) {
-      await sendOtpEmail(req.body.email, otp, 'registration');
+    //   await sendOtpEmail(req.body.email, otp, 'registration');
     
     
     // Create auth user but don't activate yet
@@ -109,7 +109,7 @@ export const signup = async (req, res, next) => {
     
     res.status(201).json({
       status: 'success',
-      message: 'User created. Please verify your email with the OTP sent.',
+      message: 'User created. You can request OTP now.',
       data: { 
         user_id: newUser.user_id,
         needs_verification: true
