@@ -11,7 +11,7 @@ import { sendOtpEmail } from '../../services/emailService.js'; // Update import
 
 
 // Move the signToken function outside of exports to avoid redeclaration
-const signToken = (user_id, auth_user_id) => {
+export const signToken = (user_id, auth_user_id) => {
   return jwt.sign(
     { id: user_id, auth_user_id },
     process.env.JWT_SECRET,
