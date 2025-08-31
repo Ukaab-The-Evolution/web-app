@@ -1,13 +1,13 @@
-import supabase from '../config/supabase.js';
-import User from '../models/User.js';
+import supabase from '../../config/supabase.js';
+import User from '../../models/User.js';
 import jwt from 'jsonwebtoken';
-import AppError from '../utils/appError.js';
+import AppError from '../../utils/appError.js';
 import validator from 'validator';
-import { supabaseAdmin } from '../config/supabase.js';
-import catchAsync from '../utils/catchAsync.js';
-import { sendPasswordResetEmail } from '../services/emailService.js';
-import { sendOtpEmail } from '../services/emailService.js'; // Update import
-import { OTPService } from '../services/otpService.js';
+import { supabaseAdmin } from '../../config/supabase.js';
+import catchAsync from '../../utils/catchAsync.js';
+import { sendPasswordResetEmail } from '../../services/emailService.js';
+import { sendOtpEmail } from '../../services/emailService.js'; // Update import
+// import { OTPService } from '../../services/otpService.js';
 
 
 // Move the signToken function outside of exports to avoid redeclaration
@@ -32,10 +32,10 @@ export const signup = async (req, res, next) => {
     });
 
     // Generate and send OTP using the new service
-    const otp = OTPService.generateOTP(newUser.user_id, 'registration');
+    // const otp = OTPService.generateOTP(newUser.user_id, 'registration');
 
     if (req.body.email) {
-      await sendOtpEmail(req.body.email, otp, 'registration');
+    //   await sendOtpEmail(req.body.email, otp, 'registration');
     
     
     // Create auth user but don't activate yet
@@ -109,7 +109,7 @@ export const signup = async (req, res, next) => {
     
     res.status(201).json({
       status: 'success',
-      message: 'User created. Please verify your email with the OTP sent.',
+      message: 'User created. You can request OTP now.',
       data: { 
         user_id: newUser.user_id,
         needs_verification: true
@@ -120,96 +120,96 @@ export const signup = async (req, res, next) => {
   }
 };
 
-// verifyOtp function - updated to use OTPService
-export const verifyOtp = async (req, res, next) => {
-  try {
-    const { user_id, otp_code } = req.body;
+// // verifyOtp function - updated to use OTPService
+// export const verifyOtp = async (req, res, next) => {
+//   try {
+//     const { user_id, otp_code } = req.body;
 
-    if (!user_id || !otp_code) {
-      return next(new AppError('User ID and OTP code are required', 400));
-    }
+//     if (!user_id || !otp_code) {
+//       return next(new AppError('User ID and OTP code are required', 400));
+//     }
 
-    const result = OTPService.verifyOTP(user_id, otp_code, 'registration');
+//     const result = OTPService.verifyOTP(user_id, otp_code, 'registration');
     
-    if (!result.valid) {
-      let message = 'Invalid OTP';
-      if (result.reason === 'OTP_EXPIRED') message = 'OTP has expired';
-      if (result.reason === 'TOO_MANY_ATTEMPTS') message = 'Too many failed attempts';
-      if (result.reason === 'OTP_NOT_FOUND') message = 'No OTP found for this user';
+//     if (!result.valid) {
+//       let message = 'Invalid OTP';
+//       if (result.reason === 'OTP_EXPIRED') message = 'OTP has expired';
+//       if (result.reason === 'TOO_MANY_ATTEMPTS') message = 'Too many failed attempts';
+//       if (result.reason === 'OTP_NOT_FOUND') message = 'No OTP found for this user';
       
-      return next(new AppError(message, 400));
-    }
+//       return next(new AppError(message, 400));
+//     }
 
-    // Mark user as verified
-    await supabase
-      .from('users')
-      .update({ is_verified: true })
-      .eq('user_id', user_id);
+//     // Mark user as verified
+//     await supabase
+//       .from('users')
+//       .update({ is_verified: true })
+//       .eq('user_id', user_id);
 
-    // If user has email, confirm their auth account
-    const { data: user } = await supabase
-      .from('users')
-      .select('email, auth_user_id')
-      .eq('user_id', user_id)
-      .single();
+//     // If user has email, confirm their auth account
+//     const { data: user } = await supabase
+//       .from('users')
+//       .select('email, auth_user_id')
+//       .eq('user_id', user_id)
+//       .single();
 
-    if (user.email && user.auth_user_id) {
-      await supabaseAdmin.auth.admin.updateUserById(
-        user.auth_user_id,
-        { email_confirm: true }
-      );
-    }
+//     if (user.email && user.auth_user_id) {
+//       await supabaseAdmin.auth.admin.updateUserById(
+//         user.auth_user_id,
+//         { email_confirm: true }
+//       );
+//     }
 
-    const token = signToken(user_id, user.auth_user_id);
+//     const token = signToken(user_id, user.auth_user_id);
     
-    res.status(200).json({
-      status: 'success',
-      token,
-      message: 'Account verified successfully'
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       token,
+//       message: 'Account verified successfully'
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
-// resendOtp function - updated to use OTPService
-export const resendOtp = async (req, res, next) => {
-  try {
-    const { user_id } = req.body;
+// // resendOtp function - updated to use OTPService
+// export const resendOtp = async (req, res, next) => {
+//   try {
+//     const { user_id } = req.body;
 
-    if (!user_id) {
-      return next(new AppError('User ID is required', 400));
-    }
+//     if (!user_id) {
+//       return next(new AppError('User ID is required', 400));
+//     }
 
-    const { data: user } = await supabase
-      .from('users')
-      .select('email, is_verified')
-      .eq('user_id', user_id)
-      .single();
+//     const { data: user } = await supabase
+//       .from('users')
+//       .select('email, is_verified')
+//       .eq('user_id', user_id)
+//       .single();
 
-    if (!user) {
-      return next(new AppError('User not found', 404));
-    }
+//     if (!user) {
+//       return next(new AppError('User not found', 404));
+//     }
 
-    if (user.is_verified) {
-      return next(new AppError('User is already verified', 400));
-    }
+//     if (user.is_verified) {
+//       return next(new AppError('User is already verified', 400));
+//     }
 
-    // Generate new OTP using the service
-    const otp = OTPService.resendOTP(user_id, 'registration');
+//     // Generate new OTP using the service
+//     const otp = OTPService.resendOTP(user_id, 'registration');
     
-    if (user.email) {
-      await sendOtpEmail(user.email, otp, 'registration');
-    }
+//     if (user.email) {
+//       await sendOtpEmail(user.email, otp, 'registration');
+//     }
 
-    res.status(200).json({
-      status: 'success',
-      message: 'New OTP sent successfully'
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       message: 'New OTP sent successfully'
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 export const login = async (req, res, next) => {
   try {
