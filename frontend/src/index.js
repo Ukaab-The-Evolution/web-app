@@ -38,7 +38,7 @@ import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Shipments from './components/dashboard/shipments/Shipments';
 import LoadRequest from './components/dashboard/loadRequest/LoadRequest';
-import Profile from './components/dashboard/profile/Profile';
+import ProfileLayout from './components/layout/ProfileLayout';
 import Settings from './components/dashboard/settings/Settings';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -63,7 +63,7 @@ root.render(
             
             <Route path="shipments" element={<Shipments />} />
             <Route path="load-request" element={<LoadRequest />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="profile" element={<ProfileLayout />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 
