@@ -1,18 +1,20 @@
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { useState } from "react";
+import PropTypes from 'prop-types';
+import { connect } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
 import Toast from "../ui/Toast";
+import { verifyOTP } from "../../actions/auth";
 
-function OTPVerification({ email }) {
+const OTPVerification = ({verifyOTP, isAuthenticated }) => {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [toast, setToast] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    const isPasswordReset = location.state?.isPasswordReset ||
-        location.pathname.includes('reset') ||
-        new URLSearchParams(location.search).get('type') === 'reset';
+    // Registration data passed from Register page
+    const registrationData = location.state?.registrationData;
+    const email = registrationData?.email;
 
     const handleChange = (value, index) => {
         if (/^[0-9]?$/.test(value)) {
@@ -26,12 +28,13 @@ function OTPVerification({ email }) {
         }
     };
 
+    if (isAuthenticated) {
+        navigate('/dashboard');
+    }
+
     const handleKeyDown = (e, index) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            const prevInput = document.getElementById(`otp-input-${index - 1}`);
-            if (prevInput) {
-                prevInput.focus();
-            }
+            document.getElementById(`otp-input-${index - 1}`)?.focus();
         }
     };
 
@@ -47,35 +50,11 @@ function OTPVerification({ email }) {
             return;
         }
 
+        setLoading(true);
+
         try {
-            const apiEndpoint = isPasswordReset ? "/api/verify-reset-otp" : "/api/verify-signup-otp";
-
-            // insert backend api call here
-
-            const res = await axios.post(apiEndpoint, {
-                email: email || location.state?.email,
-                otp: enteredOtp,
-            });
-
-            if (res.data.success) {
-                if (isPasswordReset) {
-                    navigate("/reset-password", {
-                        state: {
-                            email: email || location.state?.email,
-                            otpVerified: true
-                        }
-                    });
-                } else {
-                    navigate("/login");
-                }
-            } else {
-                setToast({
-                    type: "error",
-                    message: res.data.message || "Invalid OTP. Please try again.",
-                });
-            }
+            await verifyOTP(enteredOtp, registrationData);
         } catch (err) {
-            console.error("OTP verification error:", err);
             setToast({
                 type: "error",
                 message: err.response?.data?.message || "An error occurred. Please try again later.",
@@ -198,4 +177,14 @@ function OTPVerification({ email }) {
     );
 }
 
-export default OTPVerification;
+
+const mapStateToProps = (state) => ({
+    isAuthenticated: state.auth.isAuthenticated,
+});
+
+OTPVerification.propTypes = {
+    verifyOTP: PropTypes.func.isRequired,
+    isAuthenticated: PropTypes.bool,
+};
+
+export default connect(mapStateToProps, { verifyOTP })(OTPVerification);

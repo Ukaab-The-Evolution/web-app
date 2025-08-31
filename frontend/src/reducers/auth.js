@@ -6,8 +6,14 @@ import {
   REGISTER_FAIL,
   USER_LOADED,
   AUTH_ERROR,
+  OTP_SEND_SUCCESS,
+  OTP_SEND_FAIL,
+  OTP_VERIFY_SUCCESS,
+  OTP_VERIFY_FAIL,
   RESET_PASSWORD_SUCCESS,
   RESET_PASSWORD_FAIL,
+  OTP_RESEND_SUCCESS,
+  OTP_RESEND_FAIL,
   GOOGLE_AUTH_START,
   GOOGLE_AUTH_SUCCESS,
   GOOGLE_AUTH_FAIL,
@@ -22,6 +28,8 @@ const initialState = {
   user: null,
   supabaseUser: null,
   googleLoading: false,
+  otpEmail: null,
+  otpError: null,
 };
 
 export default function (state = initialState, action) {
@@ -37,28 +45,25 @@ export default function (state = initialState, action) {
       };
     case REGISTER_SUCCESS:
     case LOGIN_SUCCESS:
+    case OTP_VERIFY_SUCCESS:
+    case GOOGLE_AUTH_SUCCESS:
+    case SUPABASE_SESSION_LOADED:
       localStorage.setItem('token', payload.token);
       return {
         ...state,
         ...payload,
-        isAuthenticated: true,
-        loading: false,
-      };
-    case GOOGLE_AUTH_START:
-      return {
-        ...state,
-        googleLoading: true,
-      };
-    case GOOGLE_AUTH_SUCCESS:
-    case SUPABASE_SESSION_LOADED:
-      return {
-        ...state,
         supabaseUser: payload.user,
         token: payload.token,
         isAuthenticated: true,
         loading: false,
         googleLoading: false,
       };
+    case GOOGLE_AUTH_START:
+      return {
+        ...state,
+        googleLoading: true,
+      };
+     
     case AUTH_ERROR:
     case LOGIN_FAIL:
     case REGISTER_FAIL:
@@ -74,6 +79,7 @@ export default function (state = initialState, action) {
         googleLoading: false,
       };
     case SUPABASE_SIGNOUT:
+    case LOGOUT:
       localStorage.removeItem('token');
       return {
         ...state,
@@ -84,7 +90,30 @@ export default function (state = initialState, action) {
         supabaseUser: null,
         googleLoading: false,
       };
+    
+
+  case OTP_SEND_SUCCESS:
+    return {
+      ...state,
+      otpEmail: payload.email,
+      otpError: null,
+    };
+  case OTP_SEND_FAIL:
+  case OTP_VERIFY_FAIL:
+    return {
+      ...state,
+      otpError: payload,
+    };
+  case OTP_VERIFY_SUCCESS:
+  case OTP_VERIFY_FAIL:
+    return{
+      ...state,
+      otpEmail: null,
+      otpError: null,
+    }
+  
     default:
       return state;
+  
   }
 }

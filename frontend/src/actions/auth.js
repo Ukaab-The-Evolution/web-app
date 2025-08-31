@@ -16,6 +16,7 @@ import {
   GOOGLE_AUTH_FAIL,
   SUPABASE_SESSION_LOADED,
   SUPABASE_SIGNOUT,
+
 } from './types';
 import { setAlert } from './alert';
 
@@ -48,9 +49,9 @@ export const register =
     const body = JSON.stringify({ 
       email: formData.email, 
       phone: formData.phone, 
-      password: formData.password, 
-      role, 
-      full_name: formData.full_name 
+      password: formData.password,  
+      full_name: formData.full_name,
+      user_type: role
     });
     try {
       const res = await axios.post(`/api/signup`, body, config);
@@ -58,7 +59,10 @@ export const register =
         type: REGISTER_SUCCESS,
         payload: res.data,
       });
-      dispatch(loadUser()); // Load user after successful registration
+      dispatch(sendOTP(formData.email));
+      
+      
+      // Load user after successful registration
     } catch (err) {
       const errors = err.response.data.errors;
       if (errors) {
@@ -84,7 +88,7 @@ export const login = (email, password) => async (dispatch) => {
       type: LOGIN_SUCCESS,
       payload: res.data,
     });
-    dispatch(loadUser()); // Load user after successful login
+    dispatch(loadUser()); 
   } catch (err) {
     const errors = err.response.data.errors;
     if (errors) {
@@ -105,8 +109,8 @@ export const forgotPassword = (email) => async (dispatch) => {
   };
   const body = JSON.stringify({ email });
   try {
-    const res = await axios.post(
-      `${API_URL}/api/auth/forgotPassword`,
+    await axios.post(
+      `/api/forgotPassword`,
       body,
       config
     );
@@ -235,7 +239,89 @@ export const signOutUser = () => async (dispatch) => {
     dispatch({ type: SUPABASE_SIGNOUT });
     dispatch(setAlert('Successfully signed out', 'success'));
   } catch (error) {
-    console.error('Sign out error:', error);
     dispatch(setAlert('Error signing out', 'danger'));
   }
 };
+
+// Send OTP for registration
+export const resendOTP = (email) => async (dispatch) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const body = JSON.stringify({
+    email,
+  });
+
+  try {
+
+    const res = await axios.post('/api/resendOtp', body, config);
+    dispatch({
+      type: OTP_SEND_SUCCESS,
+      payload: res.data,
+    });
+    
+    dispatch(setAlert('OTP sent to your email', 'success'));
+
+  } catch (err) {
+    const errors = err.response?.data?.errors;
+    if (errors) {
+      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
+    } else {
+      dispatch(setAlert(err.response?.data?.message || 'Failed to send OTP', 'danger'));
+    }
+
+    dispatch({
+      type: OTP_SEND_FAIL,
+      payload: err.response?.data?.message || 'Failed to send OTP',
+    });
+
+  }
+};
+
+// Verify OTP and complete registration
+export const verifyOTP = (formdata, otp) => async (dispatch) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const body = JSON.stringify({ formdata, otp });
+
+  try {
+
+    const res = await axios.post('/api/verifyOtp', body, config);
+
+    dispatch({
+      type: OTP_VERIFY_SUCCESS,
+      payload: res.data,
+    });
+
+    dispatch({
+      type: REGISTER_SUCCESS,
+      payload: res.data,
+    });
+
+    dispatch(setAlert('Registration completed successfully!', 'success'));
+    dispatch(loadUser());
+
+
+  } catch (err) {
+    const errors = err.response?.data?.errors;
+    if (errors) {
+      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
+    } else {
+      dispatch(setAlert(err.response?.data?.message || 'Invalid or expired OTP', 'danger'));
+    }
+
+    dispatch({
+      type: OTP_VERIFY_FAIL,
+      payload: err.response?.data?.message || 'OTP verification failed',
+    });
+
+  }
+};
+

@@ -1,37 +1,33 @@
 import PropTypes from 'prop-types';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { register } from '../../actions/auth';
+import { sendOTP } from '../../actions/auth'; // <-- Use sendOTP, not register
 import { useState, useEffect } from 'react';
 
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import GoogleSignInButton from './GoogleSignInButton';
 
-// Import utilities
 import {
   getFieldsForRole,
   getInitialFormData,
-  getRoleContent,
   isValidRole,
   validateFieldInput
 } from '../../utils/fieldsConfig';
 
-const Register = ({ register, isAuthenticated, supabaseUser }) => {
+const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState('');
   const [formData, setFormData] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Password validation state
   const [passwordValidation, setPasswordValidation] = useState({
     hasUppercase: false,
     hasMinLength: false,
     hasNumberOrSymbol: false
   });
 
-  // Extract role from URL params and initialize form
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
@@ -48,7 +44,6 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
     return <Navigate to='/role-selection' />;
   }
 
-  // Password validation function
   const validatePassword = (password) => {
     const hasUppercase = /[A-Z]/.test(password);
     const hasMinLength = password.length >= 8;
@@ -66,57 +61,46 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
   const onChange = (e) => {
     const { name, value } = e.target;
 
-    // Validate field input (especially for numeric fields)
     if (!validateFieldInput(name, value)) {
-      return; // Prevent invalid input
+      return;
     }
 
     const updatedFormData = { ...formData, [name]: value };
     setFormData(updatedFormData);
 
-    // Validate password in real-time
     if (name === 'password') {
       validatePassword(value);
     }
   };
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Final password validation before submission
     const isPasswordValid = validatePassword(formData.password || '');
-
     if (!isPasswordValid) {
-      return; // Prevent submission if password doesn't meet requirements
+      return;
     }
 
-    setIsLoading(true);
     try {
-      await register(formData, role);
-    } finally {
-      setIsLoading(false);
+      await register({ ...formData, user_type: role }); // Send all registration data
+      navigate('/otp-verification', { state: { registrationData: formData } });
+    } catch (error) {
+      console.error('OTP send error:', error);
     }
   };
 
-  // Redirect if logged in
-  if (isAuthenticated) {
-    return <Navigate to='/otp-verification' />;
+  if (isAuthenticated || supabaseUser) {
+    return <Navigate to='/dashboard' />;
   }
 
-  // Get dynamic configurations
   const fields = getFieldsForRole(role);
-  const roleContentData = getRoleContent(role);
-
-  // Separate password field and other fields
   const passwordField = fields.find(field => field.name === 'password');
   const otherFields = fields.filter(field => field.name !== 'password');
 
-  // Check if all password requirements are met
   const isPasswordComplete = passwordValidation.hasUppercase &&
     passwordValidation.hasMinLength &&
     passwordValidation.hasNumberOrSymbol;
 
-  // Render form field
   const renderField = (field) => {
     const isPasswordField = field.type === 'password';
     const inputType = isPasswordField && showPassword ? 'text' : field.type;
@@ -211,7 +195,7 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
             </Link>
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-3 lg:space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
             {/* Dynamic form fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
             >
@@ -257,17 +241,17 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 
             <button
               type="submit"
-              disabled={isLoading || (formData.password && !isPasswordComplete)}
+              disabled={loading || (formData.password && !isPasswordComplete)}
               className={`w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
-                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ${isLoading || (formData.password && !isPasswordComplete)
+                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ${loading || (formData.password && !isPasswordComplete)
                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                   : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
                 }`}
             >
-              {isLoading ? 'Signing Up...' : 'Sign Up'}
+              Sign Up
             </button>
           </form>
 
@@ -283,7 +267,6 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
             <GoogleSignInButton />
           </section>
 
-          {/* Back to role selection link */}
           {role && (
             <div className="text-center">
               <Link
@@ -305,16 +288,11 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
           backgroundImage: "url('/images/bg_1.jpg')",
         }}
       >
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
-
-        {/* Support Icon */}
         <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline hover:decoration-white">
           <MdOutlineSupportAgent className="text-white text-lg" />
           <span className="text-white text-lg">Support</span>
         </div>
-
-        {/* Decorative Circle (desktop only) */}
         <div
           className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
                bg-gradient-to-b from-white/30 to-transparent 
@@ -322,8 +300,6 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
                lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
                pointer-events-none"
         />
-
-        {/* Text Content */}
         <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5  md:right-5 font-poppins">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
             Welcome to Ukaab!
@@ -334,7 +310,6 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
           </p>
         </div>
       </div>
-
     </div>
   );
 };
@@ -342,12 +317,14 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
 const mapStateToProps = (state) => ({
   isAuthenticated: state.auth.isAuthenticated,
   supabaseUser: state.auth.supabaseUser,
+  loading: state.auth.loading,
 });
 
 Register.propTypes = {
   register: PropTypes.func.isRequired,
   isAuthenticated: PropTypes.bool,
   supabaseUser: PropTypes.object,
+  loading: PropTypes.bool,
 };
 
 export default connect(mapStateToProps, { register })(Register);
