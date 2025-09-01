@@ -9,8 +9,11 @@ import WeeklyShipmentsChart from '../../ui/WeeklyShipmentsChart';
 import DeliveriesDonutChart from '../../ui/DeliveriesDonutChart';
 import ShipmentsList from '../../ui/ShipmentsList';
 import { RiWechatLine } from "react-icons/ri";
+import { connect } from 'react-redux';
+import PropTypes from 'prop-types';
+import { getDashboardOverview, getDashboardPieChart } from '../../../actions/dashboard';
 
-const ShipperDashboard = () => {
+const ShipperDashboard = ({getDashboardOverview, getDashboardPieChart }) => {
     const { user } = useSupabaseAuth();
     const [searchQuery, setSearchQuery] = useState('')
     const [dashboardData, setDashboardData] = useState({
@@ -24,6 +27,8 @@ const ShipperDashboard = () => {
             { id: 'SHP-1004', description: 'Truck #C45 - Container', status: 'in transit' }
         ]
     });
+
+    getDashboardOverview();
 
     const handleSearch = (query) => {
         setSearchQuery(query);
@@ -102,4 +107,4 @@ const ShipperDashboard = () => {
     );
 };
 
-export default ShipperDashboard;
+export default connect(null, { getDashboardOverview, getDashboardPieChart })(ShipperDashboard);
