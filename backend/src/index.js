@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import cors from 'cors';
+import path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
@@ -13,6 +14,9 @@ const PORT = process.env.PORT || 3000; // Use environment variable or default to
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 app.use(cors());
+
+// Asset File
+app.use('/.well-known', express.static(path.join(process.cwd(), '.well-known')));
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
