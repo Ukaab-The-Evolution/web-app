@@ -276,6 +276,30 @@ export const protect = async (req, res, next) => {
       user_type: currentUser.user_type
     };
 
+    // Add role-specific IDs
+    if (currentUser.user_type === 'shipper') {
+      const { data: shipper } = await supabase
+        .from('shippers')
+        .select('shipper_id')
+        .eq('user_id', currentUser.user_id)
+        .single();
+      
+      if (shipper) {
+        req.user.shipper_id = shipper.shipper_id;
+      }
+    } else if (currentUser.user_type === 'driver') {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('driver_id')
+        .eq('user_id', currentUser.user_id)
+        .single();
+      
+      if (driver) {
+        req.user.driver_id = driver.driver_id;
+      }
+    }
+
+
     next();
   } catch (err) {
     next(new AppError('Authentication failed', 401));
