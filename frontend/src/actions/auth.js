@@ -20,13 +20,15 @@ import {
 } from './types';
 import { setAlert } from './alert';
 
+const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/auth`;
+
 export const loadUser = () => async (dispatch) => {
   if (localStorage.token) {
     axios.defaults.headers.common['Authorization'] = localStorage.token;
   }
 
   try {
-    const res = await axios.get('/api/auth');
+    const res = await axios.get(API_URL);
     dispatch({
       type: USER_LOADED,
       payload: res.data,
@@ -54,7 +56,7 @@ export const register =
       user_type: role
     });
     try {
-      const res = await axios.post(`/api/signup`, body, config);
+      const res = await axios.post(`${API_URL}/signup`, body, config);
       dispatch({
         type: REGISTER_SUCCESS,
         payload: res.data,
@@ -83,7 +85,7 @@ export const login = (email, password) => async (dispatch) => {
   };
   const body = JSON.stringify({ email, password });
   try {
-    const res = await axios.post(`/api/login`, body, config);
+    const res = await axios.post(`${API_URL}/login`, body, config);
     dispatch({
       type: LOGIN_SUCCESS,
       payload: res.data,
@@ -109,8 +111,13 @@ export const forgotPassword = (email) => async (dispatch) => {
   };
   const body = JSON.stringify({ email });
   try {
+<<<<<<< HEAD
     await axios.post(
       `/api/forgotPassword`,
+=======
+    const res = await axios.post(
+      `${API_URL}/forgotPassword`,
+>>>>>>> origin/main
       body,
       config
     );

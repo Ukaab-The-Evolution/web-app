@@ -1,0 +1,243 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+@profileBaseUrl = {{baseUrl}}/profile
+
+### -------------------------------
+### 1. HEALTH CHECK
+### -------------------------------
+GET {{baseUrl}}/health HTTP/1.1
+
+### -------------------------------
+### 2. USER REGISTRATION
+### -------------------------------
+
+### 2.1 Trucking Company Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "veroxi6079@mogash.com",
+  "password": "Secure123!",
+  "user_type": "trucking_company",
+  "full_name": "Trucking Company Owner",
+  "company_name": "Best Trucking Co",
+  "company_address": "123 Trucking Ave",
+  "fleet_size": 10
+}
+
+### Request Otp
+POST {{authBaseUrl}}/send-otp
+Content-Type: application/json
+
+{
+    "toEmail": "veroxi6079@mogash.com"
+}
+
+### Verify Otp
+POST  {{authBaseUrl}}/verify-otp 
+Content-Type: application/json
+
+{
+    "toEmail": "veroxi6079@mogash.com",
+    "otp": "651670"
+}
+
+### Company Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "veroxi6079@mogash.com",
+  "password": "Secure123!"
+}
+
+### Save Trucking Company Token (after verification)
+@truckingCompanyToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OTIsImF1dGhfdXNlcl9pZCI6ImNlMjQ1NDc3LWFkN2ItNDA1Yi1hMjVhLWY0NGIwNjZkNTgzNiIsImlhdCI6MTc1NjkxMjMzNCwiZXhwIjoxNzY0Njg4MzM0fQ.CklX29Iwvyyh3MjRwliY7KohYenY4CNyhOsYZlzRMbQ
+
+### 2.2 Driver Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "wocono9842@mogash.com",
+  "password": "Secure123!",
+  "user_type": "driver",
+  "full_name": "Test Driver"
+}
+
+### Request Otp
+POST {{authBaseUrl}}/send-otp
+Content-Type: application/json
+
+{
+    "toEmail": "wocono9842@mogash.com"
+}
+
+### Verify Otp
+POST  {{authBaseUrl}}/verify-otp 
+Content-Type: application/json
+
+{
+    "toEmail": "wocono9842@mogash.com",
+    "otp": "905498"
+}
+
+### Regular Driver Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "wocono9842@mogash.com",
+  "password": "Secure123!"
+}
+
+
+### Regular Driver Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "gosihi5793@mogash.com",
+  "password": "Secure123!"
+}
+
+
+### Save Driver Token (after verification)
+@driverToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OTMsImF1dGhfdXNlcl9pZCI6ImI3MmIwMjNkLTcwZmMtNDNhYi05MDc3LTE0YTNhNmYxYjg2YiIsImlhdCI6MTc1NjkxMjI5NSwiZXhwIjoxNzY0Njg4Mjk1fQ.3aE10unYTo35ymGo0BjTwMzEEzMqxRwNSDkrLtHXMYQ
+### 2.3 Shipper Registration
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "shipper@example.com",
+  "password": "Secure123!",
+  "user_type": "shipper",
+  "full_name": "Test Shipper"
+}
+
+### Shipper Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "cimev53676@lespedia.com",
+  "password": "Secure123!"
+}
+
+### Save Shipper Token (after verification)
+@shipperToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OTAsImF1dGhfdXNlcl9pZCI6IjkyMTA5OTMzLTY3NWYtNDkzMy04MDI5LTMwMWFmZGZjNWIyNCIsImlhdCI6MTc1NjkwNTQwNywiZXhwIjoxNzY0NjgxNDA3fQ.XAiG5bDXPUT6JbITdWURt8BbJQ71SkKswKMlNV80Ah8
+
+### -------------------------------
+### 3. PROFILE TESTS
+### -------------------------------
+
+### 3.1 Get Profile (Trucking Company)
+GET {{profileBaseUrl}}
+Authorization: Bearer {{truckingCompanyToken}}
+
+### 3.2 Update Trucking Company Profile
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{truckingCompanyToken}}
+Content-Type: application/json
+
+{
+  "full_name": "Updated Trucking Owner",
+  "phone": "+12345678967",
+  "company_name": "Updated Trucking Co",
+  "company_address": "456 Updated Ave"
+}
+
+### 3.3 Get Profile (Driver)
+GET {{profileBaseUrl}}
+Authorization: Bearer {{driverToken}}
+
+### 3.4 Update Driver Profile (Basic Info Only)
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "full_name": "Updated Driver Name",
+  "email": "updated.driver@example.com",
+  "phone": "09876541192"
+}
+
+### 3.5 Get Profile (Shipper)
+GET {{profileBaseUrl}}
+Authorization: Bearer {{shipperToken}}
+
+### 3.6 Update Shipper Profile (With Company)
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "full_name": "Updated Shipper Name",
+  "email": "updated.shipper@example.com",
+  "phone": "+1122334455",
+  "company_name": "Shipper Company",
+  "company_address": "789 Shipper Street"
+}
+
+### 3.7 Generate Invite Code (Trucking Company)
+POST {{profileBaseUrl}}/generate-invite-code
+Authorization: Bearer {{truckingCompanyToken}}
+Content-Type: application/json
+
+{}
+
+### Save Invite Code
+@inviteCode = b7121b88-821d-435c-8a98-9aec3d4b314c
+### 3.8 Join Company (Driver)
+POST {{profileBaseUrl}}/join-company
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "invite_code": "{{inviteCode}}"
+}
+
+### 3.9 Try to Update Company as Driver (Should Fail)
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "company_name": "Driver Trying to Update Company"
+}
+
+### 3.10 Try Invalid Invite Code
+POST {{profileBaseUrl}}/join-company
+Authorization: Bearer {{driverToken}}
+Content-Type: application/json
+
+{
+  "invite_code": "invalid-invite-code"
+}
+
+### 3.11 Try Duplicate Email Update
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{truckingCompanyToken}}
+Content-Type: application/json
+
+{
+  "email": "shipper@example.com"
+}
+
+### 3.12 Try Invalid Email Format
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{truckingCompanyToken}}
+Content-Type: application/json
+
+{
+  "email": "invalid-email"
+}
+
+### 3.13 Try Invalid Phone Format
+PATCH {{profileBaseUrl}}
+Authorization: Bearer {{truckingCompanyToken}}
+Content-Type: application/json
+
+{
+  "phone": "invalid-phone"
+}
