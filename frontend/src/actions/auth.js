@@ -111,13 +111,8 @@ export const forgotPassword = (email) => async (dispatch) => {
   };
   const body = JSON.stringify({ email });
   try {
-<<<<<<< HEAD
-    await axios.post(
-      `/api/forgotPassword`,
-=======
     const res = await axios.post(
       `${API_URL}/forgotPassword`,
->>>>>>> origin/main
       body,
       config
     );
