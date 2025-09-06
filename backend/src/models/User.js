@@ -41,13 +41,13 @@ class User {
     }
 
     // Additional validation for trucking companies
-    if (user_type === 'trucking_company') {
-      if (!company_address) throw new Error('Company address is required');
-      if (fleet_size && !Number.isInteger(Number(fleet_size))) {
-        throw new Error('Fleet size must be a number');
-      }
-      // Company name is now optional since it will be set by trigger
-    }
+    // if (user_type === 'trucking_company') {
+    //   if (!company_address) throw new Error('Company address is required');
+    //   if (fleet_size && !Number.isInteger(Number(fleet_size))) {
+    //     throw new Error('Fleet size must be a number');
+    //   }
+    //   // Company name is now optional since it will be set by trigger
+    // }
 
     // Hash password
     const salt = await bcrypt.genSalt(12);

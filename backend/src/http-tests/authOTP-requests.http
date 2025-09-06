@@ -26,6 +26,58 @@ Content-Type: application/json
   "fleet_size": 5
 }
 
+### Company regsitartion
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "full_name": "Mike Johnson",
+  "email": "fogod93415@knilok.com",
+  "password": "Password123!",
+  "user_type": "trucking_company"
+}
+
+### Request Otp
+POST {{authBaseUrl}}/send-otp
+Content-Type: application/json
+
+{
+    "toEmail": "fogod93415@knilok.com"
+}
+
+### Verify Otp
+POST  {{authBaseUrl}}/verify-otp 
+Content-Type: application/json
+
+{
+    "toEmail": "fogod93415@knilok.com",
+    "otp": "599094"
+}
+
+### Company Login (Should Succeed)
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "fogod93415@knilok.com",
+  "password": "Password123!"
+}
+
+### Update company profile
+PATCH {{baseUrl}}/profile
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAwLCJhdXRoX3VzZXJfaWQiOiJiOTYyNGMyMC1iZWViLTQxYTYtODY2NC1hMDUxYjY4YzMxY2UiLCJpYXQiOjE3NTcxNTIxNzAsImV4cCI6MTc2NDkyODE3MH0.cX6OqFRdTneRFyTObMBS04I6hM7A9t6bVHOrKXzXpFo
+
+{
+  "full_name": "Complete Update User",
+  "email": "fogod93415@knilok.com",
+  "phone": "+19876543210",
+  "company_name": "Complete Logistics",
+  "company_address": "100 Corporate Blvd, Business City",
+  "fleet_size": 25
+}
+
+
 ### Save Company Driver ID
 @companyDriverId = 19
 
