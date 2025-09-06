@@ -83,7 +83,7 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={email}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
+                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-1 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
 
                 placeholder='example@gmail.com'
               />
@@ -103,27 +103,29 @@ const Login = ({ login, isAuthenticated }) => {
                 required
                 value={password}
                 onChange={onChange}
-                className='w-full px-4 py-2 rounded-[10px] border border-[#578C7A] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)]'
+                className='w-full px-4 py-2 rounded-[10px] justify-center items-center border border-[#578C7A] focus:outline-none focus:ring-1 focus:border-none focus:ring-[#578C7A] bg-[var(--color-bg-input)] text-[var(--color-text-input)] text-base font-[var(--font-poppins)] placeholder:relative placeholder:top-[3px]'
                 placeholder='********'
               />
 
               <span
-                className='absolute right-10 bottom-[0.20vh]  h-10 w-[1px] bg-[#CFD9E0]'
+                className='absolute right-12 bottom-[0.70vh] h-8 w-[1px] bg-[#CFD9E0]'
                 aria-hidden='true'
               ></span>
 
               <button
                 type='button'
                 onClick={() => setShowPassword((prev) => !prev)}
-                className='absolute right-3 bottom-[1.5vh] text-[var(--color-text-input)] focus:outline-none'
+                className='absolute right-0 bottom-[-0.80vh] w-[50px] h-[50px] rounded-tr-[6px] rounded-br-[6px] bg-transparent flex items-center justify-center text-[var(--color-text-main)] focus:outline-none'
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
+                <div className="w-[24px] h-[24px] text-[#3B6255]">
                 {showPassword ? (
-                  <AiOutlineEyeInvisible size={22} />
+                  <AiOutlineEyeInvisible size={20} />
                 ) : (
-                  <AiOutlineEye size={22} />
+                  <AiOutlineEye size={20} />
                 )}
+                </div>
               </button>
             </div>
             <div className='flex items-center justify-between text-sm mb-2'>

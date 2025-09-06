@@ -198,8 +198,9 @@ const ResetPassword = ({ isAuthenticated }) =>
                                     onChange={onChange}
                                     className={`w-full h-[49px] px-4 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
-                                    focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
+                                    focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-transparent
                                     transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33] pr-[70px]
+                                    placeholder:relative placeholder:top-[2px]
                                     ${formData.newPassword && !isPasswordComplete
                                             ? 'border-red-300 focus:ring-red-500'
                                             : formData.newPassword && isPasswordComplete
@@ -284,8 +285,9 @@ const ResetPassword = ({ isAuthenticated }) =>
                                     onChange={onChange}
                                     className={`w-full  h-[49px] px-4 pr-12 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
-                                    focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
+                                    focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-transparent
                                     transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33]
+                                    placeholder:relative placeholder:top-[2px]
                                     ${formData.confirmPassword && formData.newPassword !== formData.confirmPassword
                                             ? 'border-red-300 focus:ring-red-500'
                                             : formData.confirmPassword && formData.newPassword === formData.confirmPassword

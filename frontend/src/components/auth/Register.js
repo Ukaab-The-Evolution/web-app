@@ -148,7 +148,8 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
                   ? 'border-green-300 focus:ring-green-500'
                   : 'border-[#578C7A] focus:ring-[#578C7A]  '
               } 
-  text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+  text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-1
+  ${isPasswordField ? 'placeholder:relative placeholder:top-[3px] leading-[1.8]' : ''} `}
 
             placeholder={field.placeholder}
           />
@@ -156,21 +157,24 @@ const Register = ({ register, isAuthenticated, supabaseUser }) => {
           {isPasswordField && (
             <>
               <span
-                className="absolute right-10 top-[12px] h-6 w-px bg-[var(--color-border-input)]"
+                className="absolute right-12 top-[8px] h-8 w-[1px] bg-[var(--color-border-input)]"
                 aria-hidden="true"
               />
+              
               <button
                 type="button"
                 onClick={() => setShowPassword(prev => !prev)}
-                className="absolute right-2 top-[9px] text-[var(--color-text-main)] focus:outline-none"
+                className="absolute right-0 top-0 w-[50px] h-[50px] rounded-tr-[6px] rounded-br-[6px] bg-transparent flex items-center justify-center text-[var(--color-text-main)] focus:outline-none"
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
+                <div className="w-[24px] h-[24px] text-[#3B6255]">
                 {showPassword ? (
-                  <AiOutlineEyeInvisible size={22} />
+                  <AiOutlineEyeInvisible size={20} />
                 ) : (
-                  <AiOutlineEye size={22} />
+                  <AiOutlineEye size={20} />
                 )}
+                </div>
               </button>
             </>
           )}
