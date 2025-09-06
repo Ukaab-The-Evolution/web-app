@@ -25,10 +25,13 @@ export const signup = async (req, res, next) => {
       return next(new AppError('Please provide either email or phone number', 400));
     }
 
+    // Remove company-related fields from signup
+    const { company_name, company_address, fleet_size, owns_company, ...userData } = req.body;
+
     // Create base user
     const newUser = await User.create({
-      ...req.body, 
-      cnic: req.body.cnic
+      ...userData,
+      cnic: userData.cnic
     });
 
     // Generate and send OTP using the new service
@@ -36,7 +39,6 @@ export const signup = async (req, res, next) => {
 
     if (req.body.email) {
     //   await sendOtpEmail(req.body.email, otp, 'registration');
-    
     
     // Create auth user but don't activate yet
       try {
@@ -61,51 +63,7 @@ export const signup = async (req, res, next) => {
       }
     }
 
-    // For trucking companies, create company record
-    if (req.body.user_type === 'trucking_company') {
-      const { company_name, company_address, fleet_size } = req.body;
-      const { error: companyError } = await supabase
-        .from('trucking_companies')
-        .update({
-          company_name,
-          company_address,
-          fleet_size: fleet_size || 0,
-          verification_status: 'pending'
-        })
-        .eq('user_id', newUser.user_id);
-
-      if (companyError) throw companyError;
-    }
-
-    // For drivers who also own a company
-    if (req.body.user_type === 'driver' && req.body.owns_company) {
-      const { company_name, company_address, fleet_size } = req.body;
-      const { error: companyError } = await supabase
-        .from('trucking_companies')
-        .insert([{
-          user_id: newUser.user_id,
-          company_name: company_name || `${newUser.full_name}'s Company`,
-          company_address: company_address || 'Address to be provided',
-          fleet_size: fleet_size || 1,
-          verification_status: 'pending'
-        }])
-        .select();
-
-      if (companyError) throw companyError;
-    }
-
     const token = signToken(newUser.user_id, newUser.auth_user_id);
-    
-    // Get complete user data with company info if applicable
-    let responseData = await User.findById(newUser.user_id);
-    if (req.body.user_type === 'trucking_company') {
-      const { data: companyData } = await supabase
-        .from('trucking_companies')
-        .select('*')
-        .eq('user_id', newUser.user_id)
-        .single();
-      responseData.company = companyData;
-    }
     
     res.status(201).json({
       status: 'success',
