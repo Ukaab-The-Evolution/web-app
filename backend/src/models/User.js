@@ -10,21 +10,21 @@ class User {
     password, 
     user_type, 
     full_name,
-    company_name,
-    company_address,
-    fleet_size ,
+    owns_company, // New field to determine if user owns company or is individual driver
     cnic
   }) {
     // Validate inputs
     if (email && !validator.isEmail(email)) {
       throw new Error('Invalid email format');
     }
-    if (phone && !validator.isMobilePhone(phone)) {
-      throw new Error('Invalid phone number');
+    
+    if (phone) {
+      const cleanedPhone = phone.replace(/[\s\(\)\-]/g, '');
+      if (!/^\+?\d{10,15}$/.test(cleanedPhone)) {
+        throw new Error('Phone number must be 10-15 digits');
+      }
     }
-    if (cnic && !validator.matches(cnic, /^[0-9]{5}-[0-9]{7}-[0-9]{1}$/)) {
-      throw new Error('Invalid CNIC format (XXXXX-XXXXXXX-X)');
-    }
+    
     if (!validator.isStrongPassword(password, { 
       minLength: 8, 
       minLowercase: 1, 
@@ -39,15 +39,6 @@ class User {
     if (!validUserTypes.includes(user_type)) {
       throw new Error('Invalid user type');
     }
-
-    // Additional validation for trucking companies
-    // if (user_type === 'trucking_company') {
-    //   if (!company_address) throw new Error('Company address is required');
-    //   if (fleet_size && !Number.isInteger(Number(fleet_size))) {
-    //     throw new Error('Fleet size must be a number');
-    //   }
-    //   // Company name is now optional since it will be set by trigger
-    // }
 
     // Hash password
     const salt = await bcrypt.genSalt(12);
@@ -67,8 +58,52 @@ class User {
       .select('*');
 
     if (error) throw error;
-    return data[0];
+    
+    const newUser = data[0];
+    
+    // Handle company/driver relationship for trucking_company registrations
+    if (user_type === 'trucking_company') {
+      if (owns_company) {
+        // User owns the company - create trucking company with default values
+        const { error: companyError } = await supabase
+          .from('trucking_companies')
+          .insert([{
+            user_id: newUser.user_id,
+            company_name: `${full_name}'s Company`, // Default name
+            company_address: 'Address to be provided', // Default address
+            fleet_size: 1, // Default fleet size
+            verification_status: 'pending'
+          }]);
+        
+        if (companyError) throw companyError;
+      } else {
+        // User is an individual driver - create driver instance
+        const { error: driverError } = await supabase
+          .from('drivers')
+          .insert([{
+            user_id: newUser.user_id,
+            // CNIC will be added later during verification
+            company_id: null // Will be set when they join a company
+          }]);
+        
+        if (driverError) throw driverError;
+        
+        // Also update user type to driver since they're registering as individual
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ user_type: 'driver' })
+          .eq('user_id', newUser.user_id);
+        
+        if (updateError) throw updateError;
+        
+        newUser.user_type = 'driver';
+      }
+    }
+
+    return newUser;
   }
+
+  // ... rest of the User class methods remain the same
   static async getAuthUserId(email) {
     if (!email) return null;
     

@@ -1,4 +1,3 @@
-// controllers/profileController.js
 import crypto from 'crypto';
 import supabase from '../config/supabase.js';
 import AppError from '../utils/appError.js';
@@ -16,6 +15,7 @@ const getUserWithCompany = async (user_id) => {
   if (userError) throw userError;
 
   let companyData = null;
+  let driverData = null;
   
   if (user.user_type === 'trucking_company') {
     const { data: company, error: companyError } = await supabase
@@ -26,6 +26,27 @@ const getUserWithCompany = async (user_id) => {
     
     if (companyError && companyError.code !== 'PGRST116') throw companyError;
     companyData = company;
+  } else if (user.user_type === 'driver') {
+    // Get driver details including CNIC
+    const { data: driver, error: driverError } = await supabase
+      .from('drivers')
+      .select('*, trucking_companies(*)')
+      .eq('user_id', user_id)
+      .single();
+    
+    if (driverError && driverError.code !== 'PGRST116') throw driverError;
+    driverData = driver;
+    
+    if (driver && driver.company_id) {
+      const { data: company, error: companyError } = await supabase
+        .from('trucking_companies')
+        .select('*')
+        .eq('company_id', driver.company_id)
+        .single();
+      
+      if (companyError && companyError.code !== 'PGRST116') throw companyError;
+      companyData = company;
+    }
   } else if (user.user_type === 'shipper') {
     const { data: shipper, error: shipperError } = await supabase
       .from('shippers')
@@ -45,28 +66,9 @@ const getUserWithCompany = async (user_id) => {
       if (companyError && companyError.code !== 'PGRST116') throw companyError;
       companyData = company;
     }
-  } else if (user.user_type === 'driver') {
-    const { data: driver, error: driverError } = await supabase
-      .from('drivers')
-      .select('company_id')
-      .eq('user_id', user_id)
-      .single();
-    
-    if (driverError && driverError.code !== 'PGRST116') throw driverError;
-    
-    if (driver && driver.company_id) {
-      const { data: company, error: companyError } = await supabase
-        .from('trucking_companies')
-        .select('*')
-        .eq('company_id', driver.company_id)
-        .single();
-      
-      if (companyError && companyError.code !== 'PGRST116') throw companyError;
-      companyData = company;
-    }
   }
 
-  return { ...user, company: companyData };
+  return { ...user, company: companyData, driver: driverData };
 };
 
 // Get user profile
@@ -90,7 +92,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
     company_address, 
     fleet_size,
     owns_company,
-    cnic  // Keep cnic here for driver handling
+    cnic  // CNIC for drivers
   } = req.body;
   
   const user_id = req.user.user_id;
@@ -102,14 +104,8 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   
   if (phone) {
     const cleanedPhone = phone.replace(/[\s\(\)\-]/g, '');
-    if (cleanedPhone.startsWith('+')) {
-      if (!validator.isMobilePhone(cleanedPhone, 'any', { strictMode: false })) {
-        return next(new AppError('Invalid international phone number format', 400));
-      }
-    } else {
-      if (!/^\d{10,15}$/.test(cleanedPhone)) {
-        return next(new AppError('Phone number must be 10-15 digits', 400));
-      }
+    if (!/^\+?\d{10,15}$/.test(cleanedPhone)) {
+      return next(new AppError('Phone number must be 10-15 digits', 400));
     }
     req.body.phone = cleanedPhone;
   }
@@ -123,37 +119,21 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   
   if (userError) throw userError;
   
-  // Handle CNIC separately for drivers only (in drivers table)
-  if (currentUser.user_type === 'driver') {
-    if (cnic) {
-      // Validate CNIC format
-      const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
-      if (!cnicRegex.test(cnic)) {
-        return next(new AppError('CNIC must be in format 12345-1234567-1', 400));
-      }
-      
-      // Update CNIC in drivers table
-      const { error: driverError } = await supabase
-        .from('drivers')
-        .update({ cnic })
-        .eq('user_id', user_id);
-      
-      if (driverError) throw driverError;
-    } else {
-      // Check if CNIC is already set for driver
-      const { data: driver, error: driverCheckError } = await supabase
-        .from('drivers')
-        .select('cnic')
-        .eq('user_id', user_id)
-        .single();
-      
-      if (driverCheckError && driverCheckError.code !== 'PGRST116') throw driverCheckError;
-      
-      // If driver record doesn't exist or CNIC is not set
-      if (!driver || !driver.cnic) {
-        return next(new AppError('CNIC is required for driver accounts', 400));
-      }
+  // Handle CNIC for drivers
+  if (currentUser.user_type === 'driver' && cnic) {
+    // Validate CNIC format
+    const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
+    if (!cnicRegex.test(cnic)) {
+      return next(new AppError('CNIC must be in format 12345-1234567-1', 400));
     }
+    
+    // Update CNIC in drivers table
+    const { error: driverError } = await supabase
+      .from('drivers')
+      .update({ cnic })
+      .eq('user_id', user_id);
+    
+    if (driverError) throw driverError;
   }
   
   // Check if email/phone already exists (excluding current user)
@@ -185,7 +165,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
     }
   }
   
-  // Update user basic info (NO CNIC HERE - it's handled separately for drivers)
+  // Update user basic info
   const updateData = {};
   if (full_name) updateData.full_name = full_name;
   if (email) updateData.email = email;
@@ -200,7 +180,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
     if (updateError) throw updateError;
   }
   
-  // Handle company updates based on user type
+  // Handle company updates for trucking company owners
   if (currentUser.user_type === 'trucking_company') {
     if (company_name || company_address || fleet_size !== undefined) {
       const companyUpdateData = {};
@@ -208,120 +188,12 @@ export const updateProfile = catchAsync(async (req, res, next) => {
       if (company_address) companyUpdateData.company_address = company_address;
       if (fleet_size !== undefined) companyUpdateData.fleet_size = fleet_size;
       
-      // Check if company record exists
-      const { data: existingCompany, error: checkError } = await supabase
-        .from('trucking_companies')
-        .select('company_id')
-        .eq('user_id', user_id)
-        .maybeSingle();
-      
-      if (checkError) throw checkError;
-      
-      if (existingCompany) {
-        // Update existing company
-        const { error: companyError } = await supabase
-          .from('trucking_companies')
-          .update(companyUpdateData)
-          .eq('user_id', user_id);
-        
-        if (companyError) throw companyError;
-      } else {
-        // Create new company
-        const { error: companyError } = await supabase
-          .from('trucking_companies')
-          .insert([{
-            user_id,
-            company_name: company_name || `${full_name || currentUser.full_name}'s Company`,
-            company_address: company_address || 'Address to be provided',
-            fleet_size: fleet_size || 0,
-            verification_status: 'pending'
-          }]);
-        
-        if (companyError) throw companyError;
-      }
-    }
-  } else if (currentUser.user_type === 'driver' && owns_company) {
-    // For drivers who own a company
-    if (company_name || company_address || fleet_size !== undefined) {
-      const companyUpdateData = {};
-      if (company_name) companyUpdateData.company_name = company_name;
-      if (company_address) companyUpdateData.company_address = company_address;
-      if (fleet_size !== undefined) companyUpdateData.fleet_size = fleet_size;
-      
-      // Check if company record exists
-      const { data: existingCompany, error: checkError } = await supabase
-        .from('trucking_companies')
-        .select('company_id')
-        .eq('user_id', user_id)
-        .maybeSingle();
-      
-      if (checkError) throw checkError;
-      
-      if (existingCompany) {
-        // Update existing company
-        const { error: companyError } = await supabase
-          .from('trucking_companies')
-          .update(companyUpdateData)
-          .eq('user_id', user_id);
-        
-        if (companyError) throw companyError;
-      } else {
-        // Create new company
-        const { error: companyError } = await supabase
-          .from('trucking_companies')
-          .insert([{
-            user_id,
-            company_name: company_name || `${full_name || currentUser.full_name}'s Company`,
-            company_address: company_address || 'Address to be provided',
-            fleet_size: fleet_size || 1,
-            verification_status: 'pending'
-          }]);
-        
-        if (companyError) throw companyError;
-      }
-    }
-  } else if (currentUser.user_type === 'shipper' && company_name) {
-    // Check if shipper is associated with a company
-    const { data: shipper, error: shipperError } = await supabase
-      .from('shippers')
-      .select('company_id')
-      .eq('user_id', user_id)
-      .single();
-    
-    if (shipperError && shipperError.code !== 'PGRST116') throw shipperError;
-    
-    if (shipper && shipper.company_id) {
-      // Update existing company
       const { error: companyError } = await supabase
-        .from('shipper_companies')
-        .update({ 
-          company_name,
-          ...(company_address && { company_address })
-        })
-        .eq('company_id', shipper.company_id);
-      
-      if (companyError) throw companyError;
-    } else {
-      // Create new company for shipper
-      const { data: newCompany, error: companyError } = await supabase
-        .from('shipper_companies')
-        .insert([{
-          user_id,
-          company_name,
-          company_address: company_address || 'Address to be provided'
-        }])
-        .select()
-        .single();
-      
-      if (companyError) throw companyError;
-      
-      // Associate shipper with the company
-      const { error: shipperUpdateError } = await supabase
-        .from('shippers')
-        .update({ company_id: newCompany.company_id })
+        .from('trucking_companies')
+        .update(companyUpdateData)
         .eq('user_id', user_id);
       
-      if (shipperUpdateError) throw shipperUpdateError;
+      if (companyError) throw companyError;
     }
   }
   
@@ -336,250 +208,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-// // Update user profile
-// export const updateProfile = catchAsync(async (req, res, next) => {
-//   const { 
-//     full_name, 
-//     email, 
-//     phone, 
-//     company_name, 
-//     company_address, 
-//     fleet_size,
-//     owns_company,
-//     cnic 
-//   } = req.body;
-  
-//   const user_id = req.user.user_id;
-  
-//   // Validate inputs
-//   if (email && !validator.isEmail(email)) {
-//     return next(new AppError('Invalid email format', 400));
-//   }
-  
-//   if (phone) {
-//     const cleanedPhone = phone.replace(/[\s\(\)\-]/g, '');
-//     if (cleanedPhone.startsWith('+')) {
-//       if (!validator.isMobilePhone(cleanedPhone, 'any', { strictMode: false })) {
-//         return next(new AppError('Invalid international phone number format', 400));
-//       }
-//     } else {
-//       if (!/^\d{10,15}$/.test(cleanedPhone)) {
-//         return next(new AppError('Phone number must be 10-15 digits', 400));
-//       }
-//     }
-//     req.body.phone = cleanedPhone;
-//   }
-  
-//   // Get current user details
-//   const { data: currentUser, error: userError } = await supabase
-//     .from('users')
-//     .select('user_type, email, phone, cnic')
-//     .eq('user_id', user_id)
-//     .single();
-  
-//   if (userError) throw userError;
-  
-//   // Validate CNIC - required only for drivers
-//   if (currentUser.user_type === 'driver') {
-//     if (cnic) {
-//       const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
-//       if (!cnicRegex.test(cnic)) {
-//         return next(new AppError('CNIC must be in format 12345-1234567-1', 400));
-//       }
-//     } else if (!currentUser.cnic) {
-//       // Only require CNIC if it's not already set
-//       return next(new AppError('CNIC is required for driver accounts', 400));
-//     }
-//   } else if (cnic) {
-//     // Optional CNIC validation for non-drivers if provided
-//     const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
-//     if (!cnicRegex.test(cnic)) {
-//       return next(new AppError('CNIC must be in format 12345-1234567-1', 400));
-//     }
-//   }
-  
-//   // Check if email/phone already exists (excluding current user)
-//   if (email && email !== currentUser.email) {
-//     const { data: emailExists, error: emailError } = await supabase
-//       .from('users')
-//       .select('user_id')
-//       .eq('email', email)
-//       .neq('user_id', user_id)
-//       .maybeSingle();
-    
-//     if (emailError) throw emailError;
-//     if (emailExists) {
-//       return next(new AppError('Email already in use', 400));
-//     }
-//   }
-  
-//   if (phone && phone !== currentUser.phone) {
-//     const { data: phoneExists, error: phoneError } = await supabase
-//       .from('users')
-//       .select('user_id')
-//       .eq('phone', phone)
-//       .neq('user_id', user_id)
-//       .maybeSingle();
-    
-//     if (phoneError) throw phoneError;
-//     if (phoneExists) {
-//       return next(new AppError('Phone number already in use', 400));
-//     }
-//   }
-  
-//   // Update user basic info
-//   const updateData = {};
-//   if (full_name) updateData.full_name = full_name;
-//   if (email) updateData.email = email;
-//   if (phone) updateData.phone = phone;
-//   if (cnic) updateData.cnic = cnic;
-  
-//   if (Object.keys(updateData).length > 0) {
-//     const { error: updateError } = await supabase
-//       .from('users')
-//       .update(updateData)
-//       .eq('user_id', user_id);
-    
-//     if (updateError) throw updateError;
-//   }
-  
-//   // Handle company updates based on user type
-//   if (currentUser.user_type === 'trucking_company') {
-//     if (company_name || company_address || fleet_size !== undefined) {
-//       const companyUpdateData = {};
-//       if (company_name) companyUpdateData.company_name = company_name;
-//       if (company_address) companyUpdateData.company_address = company_address;
-//       if (fleet_size !== undefined) companyUpdateData.fleet_size = fleet_size;
-      
-//       // Check if company record exists
-//       const { data: existingCompany, error: checkError } = await supabase
-//         .from('trucking_companies')
-//         .select('company_id')
-//         .eq('user_id', user_id)
-//         .maybeSingle();
-      
-//       if (checkError) throw checkError;
-      
-//       if (existingCompany) {
-//         // Update existing company
-//         const { error: companyError } = await supabase
-//           .from('trucking_companies')
-//           .update(companyUpdateData)
-//           .eq('user_id', user_id);
-        
-//         if (companyError) throw companyError;
-//       } else {
-//         // Create new company
-//         const { error: companyError } = await supabase
-//           .from('trucking_companies')
-//           .insert([{
-//             user_id,
-//             company_name: company_name || `${full_name || currentUser.full_name}'s Company`,
-//             company_address: company_address || 'Address to be provided',
-//             fleet_size: fleet_size || 0,
-//             verification_status: 'pending'
-//           }]);
-        
-//         if (companyError) throw companyError;
-//       }
-//     }
-//   } else if (currentUser.user_type === 'driver' && owns_company) {
-//     // For drivers who own a company
-//     if (company_name || company_address || fleet_size !== undefined) {
-//       const companyUpdateData = {};
-//       if (company_name) companyUpdateData.company_name = company_name;
-//       if (company_address) companyUpdateData.company_address = company_address;
-//       if (fleet_size !== undefined) companyUpdateData.fleet_size = fleet_size;
-      
-//       // Check if company record exists
-//       const { data: existingCompany, error: checkError } = await supabase
-//         .from('trucking_companies')
-//         .select('company_id')
-//         .eq('user_id', user_id)
-//         .maybeSingle();
-      
-//       if (checkError) throw checkError;
-      
-//       if (existingCompany) {
-//         // Update existing company
-//         const { error: companyError } = await supabase
-//           .from('trucking_companies')
-//           .update(companyUpdateData)
-//           .eq('user_id', user_id);
-        
-//         if (companyError) throw companyError;
-//       } else {
-//         // Create new company
-//         const { error: companyError } = await supabase
-//           .from('trucking_companies')
-//           .insert([{
-//             user_id,
-//             company_name: company_name || `${full_name || currentUser.full_name}'s Company`,
-//             company_address: company_address || 'Address to be provided',
-//             fleet_size: fleet_size || 1,
-//             verification_status: 'pending'
-//           }]);
-        
-//         if (companyError) throw companyError;
-//       }
-//     }
-//   } else if (currentUser.user_type === 'shipper' && company_name) {
-//     // Check if shipper is associated with a company
-//     const { data: shipper, error: shipperError } = await supabase
-//       .from('shippers')
-//       .select('company_id')
-//       .eq('user_id', user_id)
-//       .single();
-    
-//     if (shipperError && shipperError.code !== 'PGRST116') throw shipperError;
-    
-//     if (shipper && shipper.company_id) {
-//       // Update existing company
-//       const { error: companyError } = await supabase
-//         .from('shipper_companies')
-//         .update({ 
-//           company_name,
-//           ...(company_address && { company_address })
-//         })
-//         .eq('company_id', shipper.company_id);
-      
-//       if (companyError) throw companyError;
-//     } else {
-//       // Create new company for shipper
-//       const { data: newCompany, error: companyError } = await supabase
-//         .from('shipper_companies')
-//         .insert([{
-//           user_id,
-//           company_name,
-//           company_address: company_address || 'Address to be provided'
-//         }])
-//         .select()
-//         .single();
-      
-//       if (companyError) throw companyError;
-      
-//       // Associate shipper with the company
-//       const { error: shipperUpdateError } = await supabase
-//         .from('shippers')
-//         .update({ company_id: newCompany.company_id })
-//         .eq('user_id', user_id);
-      
-//       if (shipperUpdateError) throw shipperUpdateError;
-//     }
-//   }
-  
-//   // Return updated profile
-//   const updatedUser = await getUserWithCompany(user_id);
-  
-//   res.status(200).json({
-//     status: 'success',
-//     data: {
-//       user: updatedUser
-//     }
-//   });
-// });
-
-// Join company using invite code (for drivers) - SINGLE USE VERSION
+// Join company using invite code (for drivers)
 export const joinCompany = catchAsync(async (req, res, next) => {
   const { invite_code } = req.body;
   const user_id = req.user.user_id;

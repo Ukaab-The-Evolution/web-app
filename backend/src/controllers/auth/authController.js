@@ -6,11 +6,7 @@ import validator from 'validator';
 import { supabaseAdmin } from '../../config/supabase.js';
 import catchAsync from '../../utils/catchAsync.js';
 import { sendPasswordResetEmail } from '../../services/emailService.js';
-import { sendOtpEmail } from '../../services/emailService.js'; // Update import
-// import { OTPService } from '../../services/otpService.js';
 
-
-// Move the signToken function outside of exports to avoid redeclaration
 export const signToken = (user_id, auth_user_id) => {
   return jwt.sign(
     { id: user_id, auth_user_id },
@@ -25,22 +21,23 @@ export const signup = async (req, res, next) => {
       return next(new AppError('Please provide either email or phone number', 400));
     }
 
-    // Remove company-related fields from signup
-    const { company_name, company_address, fleet_size, owns_company, ...userData } = req.body;
+    // For trucking_company type, validate owns_company field
+    if (req.body.user_type === 'trucking_company') {
+      if (typeof req.body.owns_company !== 'boolean') {
+        return next(new AppError('Please specify if you own the company or are an individual driver', 400));
+      }
+    }
 
-    // Create base user
+    // Remove company-related fields that shouldn't be in users table
+    const { company_name, company_address, fleet_size, ...userData } = req.body;
+
+    // Create user with the enhanced User.create method
     const newUser = await User.create({
-      ...userData,
-      cnic: userData.cnic
+      ...userData
     });
 
-    // Generate and send OTP using the new service
-    // const otp = OTPService.generateOTP(newUser.user_id, 'registration');
-
+    // Create auth user but don't activate yet (only for email users)
     if (req.body.email) {
-    //   await sendOtpEmail(req.body.email, otp, 'registration');
-    
-    // Create auth user but don't activate yet
       try {
         const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
           email: req.body.email,
@@ -65,11 +62,19 @@ export const signup = async (req, res, next) => {
 
     const token = signToken(newUser.user_id, newUser.auth_user_id);
     
+    let message = 'User created. You can request OTP now.';
+    
+    // Special message for individual drivers in trucking company
+    if (req.body.user_type === 'trucking_company' && !req.body.owns_company) {
+      message = 'Driver account created. Please complete your profile with CNIC and join a company.';
+    }
+    
     res.status(201).json({
       status: 'success',
-      message: 'User created. You can request OTP now.',
+      message,
       data: { 
         user_id: newUser.user_id,
+        user_type: newUser.user_type,
         needs_verification: true
       }
     });
@@ -78,97 +83,7 @@ export const signup = async (req, res, next) => {
   }
 };
 
-// // verifyOtp function - updated to use OTPService
-// export const verifyOtp = async (req, res, next) => {
-//   try {
-//     const { user_id, otp_code } = req.body;
-
-//     if (!user_id || !otp_code) {
-//       return next(new AppError('User ID and OTP code are required', 400));
-//     }
-
-//     const result = OTPService.verifyOTP(user_id, otp_code, 'registration');
-    
-//     if (!result.valid) {
-//       let message = 'Invalid OTP';
-//       if (result.reason === 'OTP_EXPIRED') message = 'OTP has expired';
-//       if (result.reason === 'TOO_MANY_ATTEMPTS') message = 'Too many failed attempts';
-//       if (result.reason === 'OTP_NOT_FOUND') message = 'No OTP found for this user';
-      
-//       return next(new AppError(message, 400));
-//     }
-
-//     // Mark user as verified
-//     await supabase
-//       .from('users')
-//       .update({ is_verified: true })
-//       .eq('user_id', user_id);
-
-//     // If user has email, confirm their auth account
-//     const { data: user } = await supabase
-//       .from('users')
-//       .select('email, auth_user_id')
-//       .eq('user_id', user_id)
-//       .single();
-
-//     if (user.email && user.auth_user_id) {
-//       await supabaseAdmin.auth.admin.updateUserById(
-//         user.auth_user_id,
-//         { email_confirm: true }
-//       );
-//     }
-
-//     const token = signToken(user_id, user.auth_user_id);
-    
-//     res.status(200).json({
-//       status: 'success',
-//       token,
-//       message: 'Account verified successfully'
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// // resendOtp function - updated to use OTPService
-// export const resendOtp = async (req, res, next) => {
-//   try {
-//     const { user_id } = req.body;
-
-//     if (!user_id) {
-//       return next(new AppError('User ID is required', 400));
-//     }
-
-//     const { data: user } = await supabase
-//       .from('users')
-//       .select('email, is_verified')
-//       .eq('user_id', user_id)
-//       .single();
-
-//     if (!user) {
-//       return next(new AppError('User not found', 404));
-//     }
-
-//     if (user.is_verified) {
-//       return next(new AppError('User is already verified', 400));
-//     }
-
-//     // Generate new OTP using the service
-//     const otp = OTPService.resendOTP(user_id, 'registration');
-    
-//     if (user.email) {
-//       await sendOtpEmail(user.email, otp, 'registration');
-//     }
-
-//     res.status(200).json({
-//       status: 'success',
-//       message: 'New OTP sent successfully'
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
+// ... rest of the authController functions remain the same
 export const login = async (req, res, next) => {
   try {
     const { email, phone, password } = req.body;
@@ -248,15 +163,25 @@ export const protect = async (req, res, next) => {
     } else if (currentUser.user_type === 'driver') {
       const { data: driver } = await supabase
         .from('drivers')
-        .select('driver_id')
+        .select('driver_id, company_id')
         .eq('user_id', currentUser.user_id)
         .single();
       
       if (driver) {
         req.user.driver_id = driver.driver_id;
+        req.user.company_id = driver.company_id;
+      }
+    } else if (currentUser.user_type === 'trucking_company') {
+      const { data: company } = await supabase
+        .from('trucking_companies')
+        .select('company_id')
+        .eq('user_id', currentUser.user_id)
+        .single();
+      
+      if (company) {
+        req.user.company_id = company.company_id;
       }
     }
-
 
     next();
   } catch (err) {
