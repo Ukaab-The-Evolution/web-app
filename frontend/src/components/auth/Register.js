@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { sendOTP } from '../../actions/auth'; // <-- Use sendOTP, not register
+import { sendOTP, register } from '../../actions/auth'; // <-- Use sendOTP, not register
 import { useState, useEffect } from 'react';
 
 import { MdOutlineSupportAgent } from 'react-icons/md';
@@ -28,6 +28,9 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     hasNumberOrSymbol: false
   });
 
+  // Track field errors
+  const [fieldErrors, setFieldErrors] = useState({});
+
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
@@ -35,6 +38,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     if (roleParam && isValidRole(roleParam)) {
       setRole(roleParam);
       setFormData(getInitialFormData(roleParam));
+      setFieldErrors({});
     } else {
       setRole(null);
     }
@@ -60,29 +64,63 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
 
   const onChange = (e) => {
     const { name, value } = e.target;
+    let valid = validateFieldInput(name, value);
 
-    if (!validateFieldInput(name, value)) {
+    setFieldErrors(prev => ({
+      ...prev,
+      [name]: !valid
+    }));
+
+    if (!valid) {
+      setFormData(prev => ({ ...prev, [name]: value })); // Still update so user can see what they typed
       return;
     }
 
-    const updatedFormData = { ...formData, [name]: value };
-    setFormData(updatedFormData);
+    setFormData({ ...formData, [name]: value });
 
     if (name === 'password') {
       validatePassword(value);
     }
   };
 
+  const fields = getFieldsForRole(role);
+  const passwordField = fields.find(field => field.name === 'password');
+  const otherFields = fields.filter(field => field.name !== 'password');
+
+  const isPasswordComplete = passwordValidation.hasUppercase &&
+    passwordValidation.hasMinLength &&
+    passwordValidation.hasNumberOrSymbol;
+
+  // Check all fields for validity before submit
+  const isFormValid = () => {
+    let valid = true;
+    let errors = {};
+    for (const field of fields) {
+      const value = formData[field.name] || '';
+      if (!validateFieldInput(field.name, value)) {
+        errors[field.name] = true;
+        valid = false;
+      }
+    }
+    setFieldErrors(errors);
+    return valid;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isFormValid()) {
+      return;
+    }
+
     const isPasswordValid = validatePassword(formData.password || '');
     if (!isPasswordValid) {
+      setFieldErrors(prev => ({ ...prev, password: true }));
       return;
     }
 
     try {
-      await register({ ...formData, user_type: role }); // Send all registration data
+      await register({ ...formData, user_type: role });
       navigate('/otp-verification', { state: { registrationData: formData } });
     } catch (error) {
       console.error('OTP send error:', error);
@@ -93,17 +131,10 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     return <Navigate to='/dashboard' />;
   }
 
-  const fields = getFieldsForRole(role);
-  const passwordField = fields.find(field => field.name === 'password');
-  const otherFields = fields.filter(field => field.name !== 'password');
-
-  const isPasswordComplete = passwordValidation.hasUppercase &&
-    passwordValidation.hasMinLength &&
-    passwordValidation.hasNumberOrSymbol;
-
   const renderField = (field) => {
     const isPasswordField = field.type === 'password';
     const inputType = isPasswordField && showPassword ? 'text' : field.type;
+    const error = fieldErrors[field.name];
 
     return (
       <div key={field.name} className={field.fullWidth ? 'md:col-span-2' : ''}>
@@ -126,16 +157,22 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
             inputMode={field.inputMode}
             className={`w-full px-4 py-2 ${isPasswordField ? 'pr-12' : ''}
   rounded-[10px] bg-[var(--color-bg-input)] border focus:border-transparent
-  ${isPasswordField && formData.password && !isPasswordComplete
+  ${error
                 ? 'border-red-300 focus:ring-red-500'
                 : isPasswordField && formData.password && isPasswordComplete
                   ? 'border-green-300 focus:ring-green-500'
-                  : 'border-[#578C7A] focus:ring-[#578C7A]  '
+                  : 'border-[#578C7A] focus:ring-[#578C7A]'
               } 
   text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
 
             placeholder={field.placeholder}
           />
+
+          {error && (
+            <span className="text-[10px] text-red-500">
+              Invalid {field.label}
+            </span>
+          )}
 
           {isPasswordField && (
             <>
@@ -164,7 +201,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col  lg:flex-row relative font-poppins bg-[#f8fafc]">
+    <div className="min-h-screen flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
       {/* Logo */}
       <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-40 md:top-4 md:left-16 md:transform-none">
         <img
