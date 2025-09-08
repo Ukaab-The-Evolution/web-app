@@ -7,14 +7,14 @@ import Toast from "../../ui/Toast";
 const DriverProfile = ({ user }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || 'Abc',
-    email: user?.email || 'abc@gmail.com',
-    phoneNumber: user?.user_metadata?.phone || '0300 1234567',
-    experienceYears: user?.user_metadata?.experience_years || '8',
-    currentCompany: user?.user_metadata?.current_company || 'ABC Logistics',
-    emergencyContact: user?.user_metadata?.emergency_contact || '0300 9876543',
-    emergencyContactName: user?.user_metadata?.emergency_contactName || 'Xyz',
-    address: user?.user_metadata?.address || '123 North Street, Lahore',
+    fullName: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+    phoneNumber: user?.user_metadata?.phone || '',
+    experienceYears: user?.user_metadata?.experience_years || '',
+    currentCompany: user?.user_metadata?.current_company || '',
+    emergencyContact: user?.user_metadata?.emergency_contact || '',
+    emergencyContactName: user?.user_metadata?.emergency_contactName || '',
+    address: user?.user_metadata?.address || '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -640,6 +640,7 @@ const DriverProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='Abc'
               />
             </div>
 
@@ -656,6 +657,7 @@ const DriverProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='example@gmail.com'
                 />
               </div>
               <div>
@@ -669,6 +671,7 @@ const DriverProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='0300 1234567'
                 />
               </div>
             </div>
@@ -686,6 +689,7 @@ const DriverProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='Xyz'
                 />
               </div>
               <div>
@@ -699,6 +703,7 @@ const DriverProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='0333 9876543'
                 />
               </div>
             </div>
@@ -715,6 +720,7 @@ const DriverProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='123 A, North Street, Lahore'
               />
             </div>
 
@@ -730,6 +736,7 @@ const DriverProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='8'
               />
             </div>
 

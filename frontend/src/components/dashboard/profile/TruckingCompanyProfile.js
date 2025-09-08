@@ -7,12 +7,12 @@ import Toast from "../../ui/Toast";
 const TruckingCompanyProfile = ({ user }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    companyName: user?.user_metadata?.company_name || 'ABC logistics',
-    contactPerson: user?.user_metadata?.contact_person || 'Ahmad',
-    email: user?.email || 'contact@abclogistics.com',
-    phoneNumber: user?.user_metadata?.phone || '0300 1234567',
-    address: user?.user_metadata?.address || '123 Business Street, Lahore',
-    fleetSize: user?.user_metadata?.fleet_size || '25',
+    companyName: user?.user_metadata?.company_name || '',
+    contactPerson: user?.user_metadata?.contact_person || '',
+    email: user?.email || '',
+    phoneNumber: user?.user_metadata?.phone || '',
+    address: user?.user_metadata?.address || '',
+    fleetSize: user?.user_metadata?.fleet_size || '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -583,6 +583,7 @@ const TruckingCompanyProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='ABC Logistics'
               />
             </div>
 
@@ -598,6 +599,7 @@ const TruckingCompanyProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='Xyz'
               />
             </div>
 
@@ -614,6 +616,7 @@ const TruckingCompanyProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='contact@abclogistics.com'
                 />
               </div>
               <div>
@@ -627,6 +630,7 @@ const TruckingCompanyProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='0300 1234567'
                 />
               </div>
             </div>
@@ -643,6 +647,7 @@ const TruckingCompanyProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='123 Business Street, Lahore'
               />
             </div>
 
@@ -658,6 +663,7 @@ const TruckingCompanyProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='25'
               />
             </div>
 

@@ -18,9 +18,7 @@ const RoleSelection = ({ isAuthenticated }) => {
     { name: "Truck Driver", value: "truckDriver" },
   ];
 
-
   const [selectedRole, setSelectedRole] = useState({ name: "", value: "" });
-
 
   const handleRoleSelection = () => {
     if (!selectedRole?.value) {
@@ -59,8 +57,6 @@ const RoleSelection = ({ isAuthenticated }) => {
           </span>
         </div>
 
-
-
         {/* Left Section */}
         <div className="flex justify-center z-30 items-center p-8 sm:p-8 md:p-10 lg:px-20 pt-28 sm:pt-36 md:pt-40 lg:pt-36 lg:w-1/2 bg-white">
           <div className="w-full max-w-lg ">
@@ -84,7 +80,7 @@ const RoleSelection = ({ isAuthenticated }) => {
 
               <Menu as="div" className="relative w-full">
                 <MenuButton
-                  className="w-full flex items-center justify-between rounded-[10px] bg-[var(--color-bg-input)] py-2 px-4 text-left text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)]"
+                  className="w-full flex items-center justify-between rounded-[10px] bg-[var(--color-bg-input)] py-2 px-4 text-left text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-1 focus:ring-[var(--color-green-main)]"
                   style={{
                     border: "1.5px solid #578C7A",
                   }}
@@ -113,15 +109,14 @@ const RoleSelection = ({ isAuthenticated }) => {
               </Menu>
             </div>
 
-
             <button
               onClick={handleRoleSelection}
               type="submit" className="w-full h-[45px] px-[25px] rounded-full 
-             bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-             shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
-             text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
-             hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ">
-              Next
+              bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+              shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+              text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
+              hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ">
+                Next
               <FaAngleDoubleRight className="text-sm" />
             </button>
           </div>
@@ -129,8 +124,7 @@ const RoleSelection = ({ isAuthenticated }) => {
 
         {/* Right Section */}
         <div
-          className="flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
+          className="flex w-full lg:w-1/2 relative lg:items-center justify-center flex-1 bg-cover bg-center md:overflow-hidden"
           style={{
             backgroundImage: "url('/images/bg_1.jpg')",
           }}
@@ -146,11 +140,11 @@ const RoleSelection = ({ isAuthenticated }) => {
 
           {/* Decorative Circle (desktop only) */}
           <div
-            className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
-               bg-gradient-to-b from-white/30 to-transparent 
-               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
-               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
-               pointer-events-none"
+            className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px]
+            overflow-hidden bg-gradient-to-b from-white/30 to-transparent 
+            md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+            lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+            pointer-events-none"
           />
 
           {/* Text Content */}
@@ -164,8 +158,6 @@ const RoleSelection = ({ isAuthenticated }) => {
             </p>
           </div>
         </div>
-
-
       </div>
     </>
   );

@@ -1,4 +1,3 @@
-import { FiSearch } from "react-icons/fi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { IoIosNotifications } from "react-icons/io";
@@ -7,24 +6,15 @@ const ProfileHeader = ({
     title = "Profile",
     subtitle = "Your profile, your control - edit and save with ease",
     userName,
-    showSearch = true,
-    searchPlaceholder = "Search your query",
-    onSearch,
     userAvatar,
     className = ""
     }) => {
 
     const navigate = useNavigate();
 
-    const handleSearchChange = (e) => {
-        if (onSearch) {
-            onSearch(e.target.value);
-        }
-    };
     const handleProfileClick = () => {
         navigate('/dashboard/profile');
     };
-
 
     return (
         <div className={`pt-11 py-4 px-8 text-[#3B6255] ${className}`}>
@@ -37,22 +27,9 @@ const ProfileHeader = ({
                     <p className="mt-2">{subtitle}</p>
                 </div>
 
-                {/* Right Side (Search + Notifications + Avatar + Dropdown) */}
+                {/* Right Side (Notifications + Avatar + Dropdown) */}
                 <div className="flex items-center space-x-4">
-                    {showSearch && (
-                        <div className="relative w-80">
-                            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <input
-                                type="text"
-                                placeholder={searchPlaceholder || "Search..."}
-                                onChange={handleSearchChange}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-[10px] focus:outline-none focus:ring-2 focus:border-none focus:ring-[#578C7A] bg-[#e9eded]
-                                 text[(--color-text-input)] text-base "
-                            />
-                        </div>
-
-                    )}
-
+                    
                     {/* Notification Bell */}
                     <div className="relative cursor-pointer">
                         <IoIosNotifications className="w-6 h-6 text-gray-600" />

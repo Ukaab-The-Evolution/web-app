@@ -7,10 +7,10 @@ import Toast from "../../ui/Toast";
 const ShipperProfile = ({ user }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || 'abc',
-    email: user?.email || 'example@gmail.com',
-    phoneNumber: user?.user_metadata?.phone || '0332 8899210',
-    company: user?.user_metadata?.company || 'XYZ',
+    fullName: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+    phoneNumber: user?.user_metadata?.phone || '',
+    company: user?.user_metadata?.company || '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -551,6 +551,7 @@ const ShipperProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='Abc'
               />
             </div>
 
@@ -567,6 +568,7 @@ const ShipperProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='example@gmail.com'
                 />
               </div>
               <div>
@@ -580,6 +582,7 @@ const ShipperProfile = ({ user }) => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='0300 1234567'
                 />
               </div>
             </div>
@@ -596,6 +599,7 @@ const ShipperProfile = ({ user }) => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='ABC Company'
               />
             </div>
 
