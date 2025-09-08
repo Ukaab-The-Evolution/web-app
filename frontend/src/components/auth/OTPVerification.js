@@ -1,20 +1,47 @@
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import Toast from "../ui/Toast";
-import { verifyOTP } from "../../actions/auth";
+import { verifyOTP, sendOTP } from "../../actions/auth";
 
-const OTPVerification = ({verifyOTP, isAuthenticated }) => {
+const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [toast, setToast] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [resendTimer, setResendTimer] = useState(59);
     const navigate = useNavigate();
-    const location = useLocation();
+    const [searchParams] = useSearchParams();
 
-    // Registration data passed from Register page
-    const registrationData = location.state?.registrationData;
-    const email = registrationData?.email;
+    const email = searchParams.get('email');
+
+    // Resend OTP timer logic
+    useEffect(() => {
+        let timer;
+        if (resendTimer > 0) {
+            timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [resendTimer]);
+
+    const handleResendOTP = async () => {
+        if (resendTimer === 0 && email) {
+            try {
+                await sendOTP(email);
+                setToast({
+                    type: "success",
+                    message: "OTP resent successfully.",
+                });
+                setResendTimer(59);
+            } catch (err) {
+                setToast({
+                    type: "error",
+                    message: err.response?.data?.message || "Failed to resend OTP.",
+                });
+            }
+        }
+    };
 
     const handleChange = (value, index) => {
         if (/^[0-9]?$/.test(value)) {
@@ -50,10 +77,8 @@ const OTPVerification = ({verifyOTP, isAuthenticated }) => {
             return;
         }
 
-        setLoading(true);
-
         try {
-            await verifyOTP(enteredOtp, registrationData);
+            await verifyOTP(enteredOtp, email);
         } catch (err) {
             setToast({
                 type: "error",
@@ -121,6 +146,23 @@ const OTPVerification = ({verifyOTP, isAuthenticated }) => {
                             </div>
                         </div>
 
+                        {/* Resend OTP Option */}
+                        <div className="flex justify-end mt-4">
+                            {resendTimer > 0 ? (
+                                <span className="text-sm text-gray-500">
+                                    Resend OTP in {resendTimer}s
+                                </span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="text-sm text-[#578C7A] font-semibold hover:underline focus:outline-none"
+                                    onClick={handleResendOTP}
+                                >
+                                    Resend OTP
+                                </button>
+                            )}
+                        </div>
+
                         {/* Submit Button */}
                         <button
                             type="submit"
@@ -129,8 +171,9 @@ const OTPVerification = ({verifyOTP, isAuthenticated }) => {
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[30px] cursor-pointer transition-all duration-300 ease-in 
                        hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3"
+                            disabled={loading}
                         >
-                            Submit
+                            {loading ? "Verifying..." : "Submit"}
                         </button>
                     </form>
                 </div>
@@ -177,14 +220,14 @@ const OTPVerification = ({verifyOTP, isAuthenticated }) => {
     );
 }
 
-
 const mapStateToProps = (state) => ({
     isAuthenticated: state.auth.isAuthenticated,
 });
 
 OTPVerification.propTypes = {
     verifyOTP: PropTypes.func.isRequired,
+    sendOTP: PropTypes.func.isRequired,
     isAuthenticated: PropTypes.bool,
 };
 
-export default connect(mapStateToProps, { verifyOTP })(OTPVerification);
+export default connect(mapStateToProps, { verifyOTP, sendOTP })(OTPVerification);

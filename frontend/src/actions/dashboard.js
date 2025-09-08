@@ -19,13 +19,12 @@ import {
   DASHBOARD_SEARCH_SUCCESS,
   DASHBOARD_SEARCH_FAIL,
 } from './types';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { setAlert } from './alert';
+
 
 // Helper to get auth header
 const getAuthConfig = () => {
-  const {session} = useSupabaseAuth();
-  const token = session?.access_token || localStorage.getItem('token');
-  console.log('Auth Token:', token);
+  const token = localStorage.getItem('token');
   return {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -65,11 +64,13 @@ export const getDashboardPieChart = () => async (dispatch) => {
       type: DASHBOARD_PIECHART_SUCCESS,
       payload: res.data.data,
     });
+    
   } catch (error) {
     dispatch({
       type: DASHBOARD_PIECHART_FAIL,
       payload: error.response?.data?.message || 'Failed to load pie chart data',
     });
+    dispatch(setAlert(error.response?.data?.message || 'Failed to load pie chart data', 'danger'));
   }
 };
 
@@ -105,6 +106,7 @@ export const getShipperShipments = (filters = {}) => async (dispatch) => {
         params: filters,
       }
     );
+    console.log('Fetched shipments:', res.data.data);
     dispatch({
       type: DASHBOARD_SHIPMENTS_SUCCESS,
       payload: res.data.data,

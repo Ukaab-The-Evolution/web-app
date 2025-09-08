@@ -110,6 +110,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     e.preventDefault();
 
     if (!isFormValid()) {
+      console.log('Form validation failed');
       return;
     }
 
@@ -120,8 +121,9 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     }
 
     try {
-      await register({ ...formData, user_type: role });
-      navigate('/otp-verification', { state: { registrationData: formData } });
+      await register({ ...formData }, role);
+      console.log();
+      navigate(`/otp-verification?email=${encodeURIComponent(formData.email)}&from=register`);
     } catch (error) {
       console.error('OTP send error:', error);
     }
@@ -278,7 +280,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
 
             <button
               type="submit"
-              disabled={loading || (formData.password && !isPasswordComplete)}
+              disabled={(formData.password && !isPasswordComplete)}
               className={`w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 

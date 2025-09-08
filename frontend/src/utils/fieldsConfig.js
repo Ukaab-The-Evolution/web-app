@@ -194,8 +194,8 @@ export const validateFieldInput = (fieldName, value) => {
   }
   // --- Pakistani phone number validation ---
   if (fieldName === 'phone' || fieldName === 'phoneNumber' || fieldName === 'emergencyContact') {
-    // Accepts 10 or 11 digits, must start with 3 (e.g., 3001234567 or 300 1234567)
-    return /^3\d{2}\s?\d{7}$/.test(value.replace(/\s/g, ''));
+    // Accepts 10 or 11 digits, must start with 0 (e.g., 03001234567 or 0300 1234567)
+    return /^0\d{3}\s?\d{7}$/.test(value.replace(/\s/g, ''));
   }
   if (fieldName === 'experienceYears') {
     const experience = parseInt(value, 10);

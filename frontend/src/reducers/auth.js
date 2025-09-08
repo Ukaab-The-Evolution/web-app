@@ -12,8 +12,6 @@ import {
   OTP_VERIFY_FAIL,
   RESET_PASSWORD_SUCCESS,
   RESET_PASSWORD_FAIL,
-  OTP_RESEND_SUCCESS,
-  OTP_RESEND_FAIL,
   GOOGLE_AUTH_START,
   GOOGLE_AUTH_SUCCESS,
   GOOGLE_AUTH_FAIL,
@@ -62,7 +60,8 @@ export default function (state = initialState, action) {
 
     // OTP verification: user is now verified and authenticated
     case OTP_VERIFY_SUCCESS:
-            localStorage.setItem('token', payload.token);
+      localStorage.setItem('token', payload.token);
+      localStorage.setItem('userRole', payload.user.role);
       return {
         ...state,
         ...payload,
@@ -79,6 +78,8 @@ export default function (state = initialState, action) {
     case GOOGLE_AUTH_SUCCESS:
     case SUPABASE_SESSION_LOADED:
       localStorage.setItem('token', payload.token);
+      localStorage.setItem('userRole', payload.data.user.user_type);
+
       return {
         ...state,
         ...payload,
@@ -123,7 +124,6 @@ export default function (state = initialState, action) {
     case LOGIN_FAIL:
     case REGISTER_FAIL:
     case GOOGLE_AUTH_FAIL:
-      localStorage.removeItem('token');
       return {
         ...state,
         token: null,
@@ -138,6 +138,7 @@ export default function (state = initialState, action) {
     case SUPABASE_SIGNOUT:
     case LOGOUT:
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
       return {
         ...state,
         token: null,

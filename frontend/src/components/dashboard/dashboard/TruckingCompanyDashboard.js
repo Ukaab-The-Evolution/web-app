@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
 import { connect } from 'react-redux';
 import { truckingCompanyFields } from '../../../selectors/truckingCompanyFields';
-import { getDashboardOverview, getDashboardPieChart, getShipperShipments } from '../../../actions/dashboard';
+import { getDashboardOverview, getDashboardPieChart } from '../../../actions/dashboard';
 
 const TruckingCompanyDashboard = ({
   totalLoadsThisMonth,
@@ -10,10 +10,8 @@ const TruckingCompanyDashboard = ({
   averagePerformance,
   weeklyShipments,
   deliveries,
-  incomingRequests,
   getDashboardOverview,
-  getDashboardPieChart,
-  getShipperShipments
+  getDashboardPieChart
 }) => {
   const { user } = useSupabaseAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,8 +19,7 @@ const TruckingCompanyDashboard = ({
   useEffect(() => {
     getDashboardOverview();
     getDashboardPieChart();
-    getShipperShipments();
-  }, [getDashboardOverview, getDashboardPieChart, getShipperShipments]);
+  }, [getDashboardOverview, getDashboardPieChart]);
 
   return (
     <>
@@ -92,7 +89,7 @@ const TruckingCompanyDashboard = ({
           </div>
         </div>
 
-        {/* Charts and Incoming Requests */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Weekly Shipments Chart */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
@@ -207,5 +204,5 @@ const mapStateToProps = (state) => truckingCompanyFields(state);
 export default connect(mapStateToProps, {
   getDashboardOverview,
   getDashboardPieChart,
-  getShipperShipments
+  
 })(TruckingCompanyDashboard);

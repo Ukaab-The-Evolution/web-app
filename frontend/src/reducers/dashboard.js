@@ -46,12 +46,25 @@ export default function dashboardReducer(state = initialState, action) {
       return { ...state, pieChart: null, error: action.payload };
 
     case DASHBOARD_LOADS_SUCCESS:
-      return { ...state, availableLoads: action.payload, error: null };
+      return {
+        ...state,
+        availableLoads: Array.isArray(action.payload) ? action.payload : [],
+        error: null,
+      };
     case DASHBOARD_LOADS_FAIL:
       return { ...state, availableLoads: [], error: action.payload };
 
     case DASHBOARD_SHIPMENTS_SUCCESS:
-      return { ...state, shipments: action.payload, error: null };
+      return {
+        ...state,
+        shipments: Array.isArray(action.payload)
+          ? action.payload
+          : Array.isArray(action.payload.shipments)
+            ? action.payload.shipments
+            : [],
+        loading: false,
+        error: null,
+      };
     case DASHBOARD_SHIPMENTS_FAIL:
       return { ...state, shipments: [], error: action.payload };
 
@@ -76,7 +89,11 @@ export default function dashboardReducer(state = initialState, action) {
       return { ...state, acceptLoadResult: null, error: action.payload };
 
     case DASHBOARD_SEARCH_SUCCESS:
-      return { ...state, searchResults: action.payload, error: null };
+      return {
+        ...state,
+        searchResults: Array.isArray(action.payload) ? action.payload : [],
+        error: null,
+      };
     case DASHBOARD_SEARCH_FAIL:
       return { ...state, searchResults: [], error: action.payload };
 

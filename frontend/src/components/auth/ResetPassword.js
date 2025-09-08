@@ -1,16 +1,15 @@
 import PropTypes from 'prop-types';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { connect, useDispatch } from 'react-redux';
 import { useState } from 'react';
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import axios from 'axios';
-import Toast from '../ui/Toast';
+import { resetPassword } from '../../actions/auth';
+import {setAlert} from '../../actions/alert';
 
-const ResetPassword = ({ isAuthenticated }) =>
-    {
-    const location = useLocation();
+const ResetPassword = ({ isAuthenticated, resetPassword }) => {
     const navigate = useNavigate();
+    const { token } = useParams();
     const [formData, setFormData] = useState({
         newPassword: '',
         confirmPassword: ''
@@ -18,7 +17,6 @@ const ResetPassword = ({ isAuthenticated }) =>
     const [isLoading, setIsLoading] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [toast, setToast] = useState(null);
 
     // Password validation state
     const [passwordValidation, setPasswordValidation] = useState({
@@ -27,18 +25,9 @@ const ResetPassword = ({ isAuthenticated }) =>
         hasNumberOrSymbol: false
     });
 
-    // Get email from location state (passed from OTP verification)
-    const email = location.state?.email;
-
     if (isAuthenticated) {
         return <Navigate to='/dashboard' />;
     }
-
-    // Uncomment the following condition after connecting the page to the backend 
-
-    //if (!email || !location.state?.otpVerified) {
-    //  return <Navigate to='/forgot-password' />;
-    //}
 
     // Password validation function
     const validatePassword = (password) => {
@@ -68,87 +57,37 @@ const ResetPassword = ({ isAuthenticated }) =>
     const onSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate passwords
         if (!formData.newPassword || !formData.confirmPassword) {
-            setToast({
-                type: "error",
-                message: "Please fill in all fields.",
-            });
+            useDispatch(setAlert('Please fill in all fields', 'danger'));
             return;
         }
 
         if (formData.newPassword !== formData.confirmPassword) {
-            setToast({
-                type: "error",
-                message: "Passwords do not match.",
-            });
+            useDispatch(setAlert('Passwords do not match', 'danger'));
             return;
         }
 
-        // Final password validation before submission
         const isPasswordValid = validatePassword(formData.newPassword);
 
         if (!isPasswordValid) {
-            setToast({
-                type: "error",
-                message: "Password does not meet requirements.",
-            });
+            useDispatch(setAlert('Password does not meet the requirements', 'danger'));
             return;
         }
 
-        setIsLoading(true);
+        
 
         try {
-
-            // Insert backend api call here with {email, newPassword}
-
-            const res = await axios.post('/api/reset-password', {
-                email: email,
-                newPassword: formData.newPassword
-            });
-
-            if (res.data.success) {
-                setToast({
-                    type: "success",
-                    message: "Password has been reset successfully.",
-                });
-
-                // Redirect to login after successful reset
-                setTimeout(() => {
-                    navigate('/login');
-                }, 2000);
-            }
-            else {
-                setToast({
-                    type: "error",
-                    message: res.data.message || "Failed to reset password.",
-                });
-            }
+            await resetPassword(token, formData.newPassword, navigate);
         } catch (error) {
-            console.error("Reset password error:", error);
-            setToast({
-                type: "error",
-                message: error.response?.data?.message || "An error occurred. Please try again later.",
-            });
-        } finally {
-            setIsLoading(false);
+            console.error('Reset password error:', error);
+            useDispatch(setAlert('Failed to reset password. Please try again.', 'danger'));
         }
     };
 
-    // Check if all password requirements are met
     const isPasswordComplete = passwordValidation.hasUppercase && passwordValidation.hasMinLength && passwordValidation.hasNumberOrSymbol;
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden bg-[#f8fafc]">
-
-            {/* Toast */}
-            {toast && (
-                <Toast
-                    type={toast.type}
-                    message={toast.message}
-                    onClose={() => setToast(null)}
-                />
-            )}
 
             {/* Logo */}
             <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-20 md:top-4 md:left-16 md:transform-none">
@@ -161,7 +100,6 @@ const ResetPassword = ({ isAuthenticated }) =>
                     Ukaab
                 </span>
             </div>
-
 
             {/* Left Section */}
             <div className="flex justify-center items-start w-full lg:w-1/2 
@@ -378,10 +316,11 @@ const ResetPassword = ({ isAuthenticated }) =>
 
 ResetPassword.propTypes = {
     isAuthenticated: PropTypes.bool,
+    resetPassword: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
     isAuthenticated: state.auth.isAuthenticated,
 });
 
-export default connect(mapStateToProps)(ResetPassword);
+export default connect(mapStateToProps, { resetPassword })(ResetPassword);
