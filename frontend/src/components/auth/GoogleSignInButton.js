@@ -24,7 +24,6 @@ const GoogleSignInButton = ({
     companyCode: '',
     companyName: '',
     phone: '',
-    password: ''
   }); 
 
   // Extract role from URL params and initialize form
@@ -40,28 +39,6 @@ const GoogleSignInButton = ({
     }
   }, [location.search]);
 
-  // Password validation state
-  const [passwordValidation, setPasswordValidation] = useState({
-    hasUppercase: false,
-    hasMinLength: false,
-    hasNumberOrSymbol: false
-  });
-
-  // Password validation function
-  const validatePassword = (password) => {
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasMinLength = password.length >= 8;
-    const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-
-    setPasswordValidation({
-      hasUppercase,
-      hasMinLength,
-      hasNumberOrSymbol
-    });
-
-    return hasUppercase && hasMinLength && hasNumberOrSymbol;
-  };
-
   const validatePhone = (phone) => {
     // phone number format validation
     const phoneRegex = /^(\+92|0)?[0-9]{10,11}$/;
@@ -74,11 +51,6 @@ const GoogleSignInButton = ({
       ...prev,
       [name]: value
     }));
-
-    // Validate password in real-time
-    if (name === 'password') {
-      validatePassword(value);
-    }
   };
 
   const handleGoogleSignIn = () => {
@@ -92,12 +64,6 @@ const GoogleSignInButton = ({
       companyCode: '',
       companyName: '',
       phone: '',
-      password: ''
-    });
-    setPasswordValidation({
-      hasUppercase: false,
-      hasMinLength: false,
-      hasNumberOrSymbol: false
     });
   };
 
@@ -120,7 +86,7 @@ const GoogleSignInButton = ({
       }
     }
 
-    if (!formData.phone.trim()) {
+    if (userRole === 'truckDriver' && !formData.phone.trim()) {
       setToast({
         type: "error",
         message: "Phone number is required.",
@@ -128,21 +94,10 @@ const GoogleSignInButton = ({
       return;
     }
 
-    if (!validatePhone(formData.phone)) {
+    if (userRole === 'truckDriver' && !validatePhone(formData.phone)) {
       setToast({
         type: "error",
         message: "Please enter a valid phone number (e.g., 0300 1234567).",
-      });
-      return;
-    }
-
-    // Final password validation before submission
-    const isPasswordValid = validatePassword(formData.password || '');
-
-    if (!isPasswordValid) {
-      setToast({
-        type: "error",
-        message: "Password does not meet requirements."
       });
       return;
     }
@@ -169,66 +124,17 @@ const GoogleSignInButton = ({
     resetForm();
   };
 
-  // Check if all password requirements are met
-  const isPasswordComplete = passwordValidation.hasUppercase && passwordValidation.hasMinLength && passwordValidation.hasNumberOrSymbol;
-
-  const renderPasswordField = () => (
-    <div className="mb-6">
-      <div className="flex items-center space-x-4">
-        <label className="block text-sm font-medium text-[#171717] min-w-[100px]">
-          Password
-        </label>
-        <div className="relative w-full">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            placeholder="********"
-            className={`w-full px-4 py-3 bg-[#B2D7CA3B] border rounded-[10px] text-[#3B6255]
-            font-poppins font-normal text-[14px] placeholder-[#5F5F5F]
-            focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-[#578C7A]
-            transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33]
-            placeholder:relative placeholder:top-[2px]
-            ${formData.password && !isPasswordComplete
-              ? 'border-red-300 focus:ring-red-500'
-              : formData.password && isPasswordComplete
-              ? 'border-green-300 focus:ring-green-500'
-              : 'border-[#578C7A]'
-            }`}
-          />
-
-          {/* Vertical Divider */}
-          <span 
-            className="absolute right-10 top-[8px] h-8 w-[1px] bg-[var(--color-border-input)]"
-            aria-hidden="true"
-          />
-              
-          <button
-            type="button"
-            onClick={() => setShowPassword(prev => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3B6255] focus:outline-none"
-            tabIndex={-1}
-          >
-            {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Password requirements */}
-      <ul className="mt-4 text-[12px] space-y-1">
-        <li className={`flex items-center gap-2 ${passwordValidation.hasUppercase ? 'text-green-700' : 'text-[#525252]'}`}>
-          {passwordValidation.hasUppercase ? '✓' : '○'} Contains at least one capital character
-        </li>
-        <li className={`flex items-center gap-2 ${passwordValidation.hasMinLength ? 'text-green-700' : 'text-[#525252]'}`}>
-          {passwordValidation.hasMinLength ? '✓' : '○'} At least 8 characters
-        </li>
-        <li className={`flex items-center gap-2 ${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-[#525252]'}`}>
-          {passwordValidation.hasNumberOrSymbol ? '✓' : '○'} Contains a number or symbol
-        </li>
-      </ul>
-    </div>
-  );
+  const getPopupDescription = () => {
+    switch (userRole) {
+      case 'truckDriver':
+        return 'Enter the following details:';
+      case 'truckingCompany':
+        return 'Enter your company name:';
+      case 'shipper':
+      default:
+        return 'Enter your company name:';
+    }
+  };
 
   const renderFormFields = () => {
 
@@ -280,9 +186,6 @@ const GoogleSignInButton = ({
               />
             </div>
           </div>
-
-          {renderPasswordField()}
-
         </>
       );
     } else {
@@ -292,8 +195,8 @@ const GoogleSignInButton = ({
           {/* Company Name */}
           <div className="mb-6">
             <div className="flex items-center space-x-4">
-              <label className="block text-sm font-medium text-[#171717] min-w-[55px] max-w-[100px]">
-                Company Name
+              <label className="block text-sm font-medium text-[#171717] min-w-[65px] max-w-[100px]">
+                Name
               </label>
               <input
                 type="text"
@@ -307,32 +210,6 @@ const GoogleSignInButton = ({
               />
             </div>
           </div>
-
-          {/* Phone */}
-          <div className="mb-6">
-            <div className="flex items-center space-x-4">
-              <label className="block text-sm font-medium text-[#171717] min-w-[100px]">
-                Phone
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  if (/^\+?\d*$/.test(e.target.value)) {
-                    handleInputChange(e);
-                  }
-                }}
-                placeholder="0300 1234567"
-                className="flex-1 px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A]
-                rounded-[10px] text-[#3B6255] font-poppins font-normal text-[14px]
-                focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-[#578C7A]"
-              />
-            </div>
-          </div>
-
-          {renderPasswordField()}
-
         </>
       );
     }
@@ -366,7 +243,7 @@ const GoogleSignInButton = ({
       {/* Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 relative">
+          <div className="bg-white rounded-lg p-8 max-w-md w-[400px] mx-4 relative">
             
             {/* Close Button */}
             <button
@@ -377,11 +254,11 @@ const GoogleSignInButton = ({
             </button>
             
             {/* Modal Header */}
-            <h2 className="text-xl font-semibold text-[#3B6255] mb-10">Signing up with Google</h2>
-            <p className="text-[#171717] font-regular mb-6">Enter the following details:</p>
+            <h2 className="text-xl font-semibold text-[#3B6255] mb-12">Signing up with Google</h2>
+            <p className="text-[#171717] font-regular mb-6">{getPopupDescription()}</p>
             
             {/* Dynamic Form Fields */}
-            <div className="mb-6">              
+            <div className="mb-12">              
               {renderFormFields()}
             </div>
 

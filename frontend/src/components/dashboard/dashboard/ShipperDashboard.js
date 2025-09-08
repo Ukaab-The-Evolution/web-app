@@ -12,7 +12,6 @@ import { RiWechatLine } from "react-icons/ri";
 
 const ShipperDashboard = () => {
     const { user } = useSupabaseAuth();
-    const [searchQuery, setSearchQuery] = useState('')
     const [dashboardData, setDashboardData] = useState({
         totalActiveShipments: 35,
         pendingRequests: 3,
@@ -25,20 +24,12 @@ const ShipperDashboard = () => {
         ]
     });
 
-    const handleSearch = (query) => {
-        setSearchQuery(query);
-        // Implement search logic here
-        console.log('Searching for:', query);
-    };
-
     return (
         <>
             {/* Header */}
             <DashboardHeader
                 userName={user?.first_name || "Ahmed"}
                 subtitle="Here is your main dashboard"
-                onSearch={handleSearch}
-                searchPlaceholder="Search shipments, requests..."
                 userAvatar={user?.avatar_url}
             />
 
