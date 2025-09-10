@@ -1,0 +1,9 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ukaab",
+    "sha256_cert_fingerprints":
+    ["31:37:28:1A:93:1B:94:09:27:60:B8:C1:A1:BE:F4:89:5B:6E:15:1B:C8:1E:BC:58:31:1C:3B:16:C5:BE:D5:1C"]
+  }
+}]
