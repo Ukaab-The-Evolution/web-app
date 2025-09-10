@@ -83,13 +83,11 @@ const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
             setToast({
                 type: "error",
                 message: err.response?.data?.message || "An error occurred. Please try again later.",
-                message: err.response?.data?.message || "An error occurred. Please try again later.",
             });
         }
     };
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden bg-[#f8fafc]">
         <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden bg-[#f8fafc]">
 
             {/* Toast */}
@@ -101,17 +99,13 @@ const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
                 />
             )}
 
-
             {/* Logo */}
-            <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-20 md:top-4 md:left-16 md:transform-none">
             <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-20 md:top-4 md:left-16 md:transform-none">
                 <img
                     src="/images/IconGreenTransparent.png"
                     alt="Ukaab Logo"
                     className="w-[85px] mr-[-9px]"
-                    className="w-[85px] mr-[-9px]"
                 />
-                <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
                 <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
                     Ukaab
                 </span>
@@ -119,19 +113,13 @@ const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
 
             {/* Left Section */}
             <div className="flex justify-center items-start w-full lg:w-1/2 
-                p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32 ">
-                <div className="w-full max-w-lg">
-
-            <div className="flex justify-center items-start w-full lg:w-1/2 
-                p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32 ">
+                p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32">
                 <div className="w-full max-w-lg">
 
                     {/* OTP Header */}
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-6">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-6">
                         OTP Verification
                     </h1>
-
 
                     {/* Description */}
                     <p className="w-full sm:w-[500px] h-[48px] font-sans font-medium text-base leading-6 text-[#5F5F5F] opacity-100 mb-8 text-left sm:text-left">
@@ -195,24 +183,14 @@ const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
             <div
                 className="flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
              bg-cover bg-center md:overflow-hidden"
-            <div
-                className="flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
                 style={{
                     backgroundImage: "url('/images/bg_1.jpg')",
-                }}
-            >
                 }}
             >
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
 
-                <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-green-gradient-start)] to-[var(--color-bg-green-gradient-end)] opacity-80 z-0"></div>
-
                 {/* Support Icon */}
-                <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline hover:decoration-white">
-                    <MdOutlineSupportAgent className="text-white text-lg" />
-                    <span className="text-white text-lg">Support</span>
                 <div className="absolute top-6 sm:top-8 flex items-center gap-2 z-10 cursor-pointer hover:underline hover:decoration-white">
                     <MdOutlineSupportAgent className="text-white text-lg" />
                     <span className="text-white text-lg">Support</span>
@@ -226,24 +204,8 @@ const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
                lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
                pointer-events-none"
                 />
-                {/* Decorative Circle (desktop only) */}
-                <div
-                    className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
-               bg-gradient-to-b from-white/30 to-transparent 
-               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
-               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
-               pointer-events-none"
-                />
 
                 {/* Text Content */}
-                <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5  md:right-5 font-poppins">
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
-                        Welcome to Ukaab!
-                    </h2>
-                    <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
-                        Get started in seconds – connect with shippers, fleets, and drivers instantly to post
-                        requests, assign loads, and track in real time across one unified platform.
-                    </p>
                 <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5  md:right-5 font-poppins">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
                         Welcome to Ukaab!

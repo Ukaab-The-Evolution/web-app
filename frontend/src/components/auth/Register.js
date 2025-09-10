@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { sendOTP, register } from '../../actions/auth'; // <-- Use sendOTP, not register
+import { sendOTP, register } from '../../actions/auth';
 import { useState, useEffect } from 'react';
 
 import { MdOutlineSupportAgent } from 'react-icons/md';
@@ -45,7 +45,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     }
   }, [location.search]);
 
-  if (role === null) {
   if (role === null) {
     return <Navigate to='/role-selection' />;
   }
@@ -145,7 +144,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
         <label
           htmlFor={field.name}
           className="block text-sm text-[#7B7F8D] mb-1"
-          className="block text-sm text-[#7B7F8D] mb-1"
         >
           {field.label}
         </label>
@@ -213,20 +211,14 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           src="/images/IconGreenTransparent.png"
           alt="Ukaab Logo"
           className="w-[85px] mr-[-9px]"
-          className="w-[85px] mr-[-9px]"
         />
-        <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
         <span className="text-[25px] font-radley font-normal text-[#3B6255] leading-none">
           Ukaab
         </span>
       </div>
 
       {/* Left Section - Register Form */}
-      <div className="flex items-center justify-center p-4 sm:p-6 pt-20 sm:pt-20 md:pt-28 md:p-8 lg:px-16 px-4  w-full lg:w-1/2 h-full">
-
-        <div className="w-full max-w-lg px-6 md:px-0 ">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-2">
-      <div className="flex items-center justify-center p-4 sm:p-6 pt-20 sm:pt-20 md:pt-28 md:p-8 lg:px-16 px-4  w-full lg:w-1/2 h-full">
+      <div className="flex items-center justify-center p-4 sm:p-6 pt-20 sm:pt-20 md:pt-28 md:p-8 lg:px-16 px-4 w-full lg:w-1/2 h-full">
 
         <div className="w-full max-w-lg px-6 md:px-0 ">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-2">
@@ -234,22 +226,17 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           </h1>
 
           <p className="text-[#7b7f8d] mb-4 lg:mb-6">
-          <p className="text-[#7b7f8d] mb-4 lg:mb-6">
             Already have an account?{' '}
             <Link
               to='/login'
               className="text-[var(--color-green-main)] underline font-semibold font-poppins"
-              className="text-[var(--color-green-main)] underline font-semibold font-poppins"
             >
-              Login
               Login
             </Link>
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
             {/* Dynamic form fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
-            >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
             >
               {otherFields.map(renderField)}
@@ -261,16 +248,11 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
 
             {/* Password requirements with dynamic validation */}
             <ul className="text-[12px] lg:text-[14px] space-y-1">
-            <ul className="text-[12px] lg:text-[14px] space-y-1">
               <li className="flex items-center gap-2">
-                <span className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
                 <span className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'
                   } transition-colors duration-200`}>
                   {passwordValidation.hasUppercase ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
                 <span className={`${passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'
                   } transition-colors duration-200`}>
                   Contains at least one capital character
@@ -279,12 +261,8 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
               <li className="flex items-center gap-2">
                 <span className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'
                   } transition-colors duration-200`}>
-                <span className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
                   {passwordValidation.hasMinLength ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
                 <span className={`${passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'
                   } transition-colors duration-200`}>
                   At least 8 characters
@@ -293,12 +271,8 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
               <li className="flex items-center gap-2">
                 <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'
                   } transition-colors duration-200`}>
-                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
                   {passwordValidation.hasNumberOrSymbol ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
                 <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'
                   } transition-colors duration-200`}>
                   Contains a number or symbol
@@ -317,7 +291,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
                   ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                   : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
                 }`}
-                }`}
             >
               Sign Up
             </button>
@@ -326,22 +299,16 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           <div className='flex items-center my-3' aria-label='or-divider'>
             <hr className='flex-grow border-[var(--color-green-main)]' />
             <span className='mx-2 text-[#737373] text-base font-poppins'>
-          <div className='flex items-center my-3' aria-label='or-divider'>
-            <hr className='flex-grow border-[var(--color-green-main)]' />
-            <span className='mx-2 text-[#737373] text-base font-poppins'>
               OR
             </span>
             <hr className='flex-grow border-[var(--color-green-main)]' />
-            <hr className='flex-grow border-[var(--color-green-main)]' />
           </div>
 
-          <section className="space-y-2 pb-2">
           <section className="space-y-2 pb-2">
             <GoogleSignInButton />
           </section>
 
           {role && (
-            <div className="text-center">
             <div className="text-center">
               <Link
                 to="/role-selection"
@@ -355,10 +322,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
       </div>
 
       {/* Right Section */}
-      {/* Right Section */}
       <div
-        className="hidden lg:flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
         className="hidden lg:flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
              bg-cover bg-center md:overflow-hidden"
         style={{
@@ -381,9 +345,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
             Welcome to Ukaab!
           </h2>
-          <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
-            Get started in seconds – connect with shippers, fleets, and drivers instantly to post
-            requests, assign loads, and track in real time across one unified platform.
           <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
             Get started in seconds – connect with shippers, fleets, and drivers instantly to post
             requests, assign loads, and track in real time across one unified platform.
