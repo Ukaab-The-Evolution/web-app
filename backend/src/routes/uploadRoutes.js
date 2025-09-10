@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { protect, restrictTo } from '../controllers/authController.js';
+import { protect, restrictTo } from '../controllers/auth/authController.js';
 import { 
   uploadDocument, 
   getPendingDocuments, 

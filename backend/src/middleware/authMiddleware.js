@@ -34,6 +34,11 @@ export const protect = async (req, res, next) => {
       return next(new AppError('User not found', 401));
     }
 
+    // ADD VERIFICATION CHECK
+    if (!currentUser.is_verified) {
+      return next(new AppError('Please verify your account to access this resource', 401));
+    }
+
     // 4. Ensure we have a valid Supabase auth user
     if (!currentUser.auth_user_id) {
       // Create auth user if doesn't exist

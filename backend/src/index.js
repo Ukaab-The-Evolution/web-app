@@ -4,6 +4,9 @@ import globalErrorHandler from './controllers/errorController.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import cors from 'cors';
+import path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
@@ -11,11 +14,16 @@ const PORT = process.env.PORT || 3000; // Use environment variable or default to
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+app.use(cors());
+
+// Asset File
+app.use('/.well-known', express.static(path.join(process.cwd(), '.well-known')));
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/profile', profileRoutes);
 
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {
