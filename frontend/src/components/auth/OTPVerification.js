@@ -1,18 +1,47 @@
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
+import { connect } from "react-redux";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import Toast from "../ui/Toast";
+import { verifyOTP, sendOTP } from "../../actions/auth";
 
-function OTPVerification({ email }) {
+const OTPVerification = ({ sendOTP, verifyOTP, isAuthenticated }) => {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [toast, setToast] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [resendTimer, setResendTimer] = useState(59);
     const navigate = useNavigate();
-    const location = useLocation();
+    const [searchParams] = useSearchParams();
 
-    const isPasswordReset = location.state?.isPasswordReset ||
-        location.pathname.includes('reset') ||
-        new URLSearchParams(location.search).get('type') === 'reset';
+    const email = searchParams.get('email');
+
+    // Resend OTP timer logic
+    useEffect(() => {
+        let timer;
+        if (resendTimer > 0) {
+            timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [resendTimer]);
+
+    const handleResendOTP = async () => {
+        if (resendTimer === 0 && email) {
+            try {
+                await sendOTP(email);
+                setToast({
+                    type: "success",
+                    message: "OTP resent successfully.",
+                });
+                setResendTimer(59);
+            } catch (err) {
+                setToast({
+                    type: "error",
+                    message: err.response?.data?.message || "Failed to resend OTP.",
+                });
+            }
+        }
+    };
 
     const handleChange = (value, index) => {
         if (/^[0-9]?$/.test(value)) {
@@ -26,12 +55,13 @@ function OTPVerification({ email }) {
         }
     };
 
+    if (isAuthenticated) {
+        navigate('/dashboard');
+    }
+
     const handleKeyDown = (e, index) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            const prevInput = document.getElementById(`otp-input-${index - 1}`);
-            if (prevInput) {
-                prevInput.focus();
-            }
+            document.getElementById(`otp-input-${index - 1}`)?.focus();
         }
     };
 
@@ -48,34 +78,8 @@ function OTPVerification({ email }) {
         }
 
         try {
-            const apiEndpoint = isPasswordReset ? "/api/verify-reset-otp" : "/api/verify-signup-otp";
-
-            // insert backend api call here
-
-            const res = await axios.post(apiEndpoint, {
-                email: email || location.state?.email,
-                otp: enteredOtp,
-            });
-
-            if (res.data.success) {
-                if (isPasswordReset) {
-                    navigate("/reset-password", {
-                        state: {
-                            email: email || location.state?.email,
-                            otpVerified: true
-                        }
-                    });
-                } else {
-                    navigate("/login");
-                }
-            } else {
-                setToast({
-                    type: "error",
-                    message: res.data.message || "Invalid OTP. Please try again.",
-                });
-            }
+            await verifyOTP(enteredOtp, email);
         } catch (err) {
-            console.error("OTP verification error:", err);
             setToast({
                 type: "error",
                 message: err.response?.data?.message || "An error occurred. Please try again later.",
@@ -109,7 +113,7 @@ function OTPVerification({ email }) {
 
             {/* Left Section */}
             <div className="flex justify-center items-start w-full lg:w-1/2 
-                p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32 ">
+                p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32">
                 <div className="w-full max-w-lg">
 
                     {/* OTP Header */}
@@ -142,6 +146,23 @@ function OTPVerification({ email }) {
                             </div>
                         </div>
 
+                        {/* Resend OTP Option */}
+                        <div className="flex justify-end mt-4">
+                            {resendTimer > 0 ? (
+                                <span className="text-sm text-gray-500">
+                                    Resend OTP in {resendTimer}s
+                                </span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="text-sm text-[#578C7A] font-semibold hover:underline focus:outline-none"
+                                    onClick={handleResendOTP}
+                                >
+                                    Resend OTP
+                                </button>
+                            )}
+                        </div>
+
                         {/* Submit Button */}
                         <button
                             type="submit"
@@ -150,8 +171,9 @@ function OTPVerification({ email }) {
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[30px] cursor-pointer transition-all duration-300 ease-in 
                        hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3"
+                            disabled={loading}
                         >
-                            Submit
+                            {loading ? "Verifying..." : "Submit"}
                         </button>
                     </form>
                 </div>
@@ -198,4 +220,14 @@ function OTPVerification({ email }) {
     );
 }
 
-export default OTPVerification;
+const mapStateToProps = (state) => ({
+    isAuthenticated: state.auth.isAuthenticated,
+});
+
+OTPVerification.propTypes = {
+    verifyOTP: PropTypes.func.isRequired,
+    sendOTP: PropTypes.func.isRequired,
+    isAuthenticated: PropTypes.bool,
+};
+
+export default connect(mapStateToProps, { verifyOTP, sendOTP })(OTPVerification);

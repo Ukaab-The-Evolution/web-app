@@ -1,16 +1,15 @@
 import PropTypes from 'prop-types';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { connect } from 'react-redux';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { connect, useDispatch } from 'react-redux';
 import { useState } from 'react';
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import axios from 'axios';
-import Toast from '../ui/Toast';
+import { resetPassword } from '../../actions/auth';
+import { setAlert } from '../../actions/alert';
 
-const ResetPassword = ({ isAuthenticated }) =>
-    {
-    const location = useLocation();
+const ResetPassword = ({ isAuthenticated, resetPassword }) => {
     const navigate = useNavigate();
+    const { token } = useParams();
     const [formData, setFormData] = useState({
         newPassword: '',
         confirmPassword: ''
@@ -18,7 +17,6 @@ const ResetPassword = ({ isAuthenticated }) =>
     const [isLoading, setIsLoading] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [toast, setToast] = useState(null);
 
     // Password validation state
     const [passwordValidation, setPasswordValidation] = useState({
@@ -27,18 +25,9 @@ const ResetPassword = ({ isAuthenticated }) =>
         hasNumberOrSymbol: false
     });
 
-    // Get email from location state (passed from OTP verification)
-    const email = location.state?.email;
-
     if (isAuthenticated) {
         return <Navigate to='/dashboard' />;
     }
-
-    // Uncomment the following condition after connecting the page to the backend 
-
-    //if (!email || !location.state?.otpVerified) {
-    //  return <Navigate to='/forgot-password' />;
-    //}
 
     // Password validation function
     const validatePassword = (password) => {
@@ -68,87 +57,35 @@ const ResetPassword = ({ isAuthenticated }) =>
     const onSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate passwords
         if (!formData.newPassword || !formData.confirmPassword) {
-            setToast({
-                type: "error",
-                message: "Please fill in all fields.",
-            });
+            useDispatch(setAlert('Please fill in all fields', 'danger'));
             return;
         }
 
         if (formData.newPassword !== formData.confirmPassword) {
-            setToast({
-                type: "error",
-                message: "Passwords do not match.",
-            });
+            useDispatch(setAlert('Passwords do not match', 'danger'));
             return;
         }
 
-        // Final password validation before submission
         const isPasswordValid = validatePassword(formData.newPassword);
 
         if (!isPasswordValid) {
-            setToast({
-                type: "error",
-                message: "Password does not meet requirements.",
-            });
+            useDispatch(setAlert('Password does not meet the requirements', 'danger'));
             return;
         }
 
-        setIsLoading(true);
-
         try {
-
-            // Insert backend api call here with {email, newPassword}
-
-            const res = await axios.post('/api/reset-password', {
-                email: email,
-                newPassword: formData.newPassword
-            });
-
-            if (res.data.success) {
-                setToast({
-                    type: "success",
-                    message: "Password has been reset successfully.",
-                });
-
-                // Redirect to login after successful reset
-                setTimeout(() => {
-                    navigate('/login');
-                }, 2000);
-            }
-            else {
-                setToast({
-                    type: "error",
-                    message: res.data.message || "Failed to reset password.",
-                });
-            }
+            await resetPassword(token, formData.newPassword, navigate);
         } catch (error) {
-            console.error("Reset password error:", error);
-            setToast({
-                type: "error",
-                message: error.response?.data?.message || "An error occurred. Please try again later.",
-            });
-        } finally {
-            setIsLoading(false);
+            console.error('Reset password error:', error);
+            useDispatch(setAlert('Failed to reset password. Please try again.', 'danger'));
         }
     };
 
-    // Check if all password requirements are met
     const isPasswordComplete = passwordValidation.hasUppercase && passwordValidation.hasMinLength && passwordValidation.hasNumberOrSymbol;
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row font-poppins overflow-hidden bg-[#f8fafc]">
-
-            {/* Toast */}
-            {toast && (
-                <Toast
-                    type={toast.type}
-                    message={toast.message}
-                    onClose={() => setToast(null)}
-                />
-            )}
 
             {/* Logo */}
             <div className="absolute top-0 left-1/2 pr-6 transform -translate-x-1/2 flex items-center z-20 md:top-4 md:left-16 md:transform-none">
@@ -162,13 +99,10 @@ const ResetPassword = ({ isAuthenticated }) =>
                 </span>
             </div>
 
-
             {/* Left Section */}
             <div className="flex justify-center items-start w-full lg:w-1/2 
                 p-4 sm:p-6 md:p-8 px-8 lg:px-16 pb-8 pt-24 md:pt-32">
                 <div className="w-full max-w-lg">
-
-
 
                     {/* Header */}
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-4">
@@ -184,7 +118,7 @@ const ResetPassword = ({ isAuthenticated }) =>
 
                         {/* New Password Field */}
                         <div>
-                            <label htmlFor="newPassword" className="block  h-[21px] font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]">
+                            <label htmlFor="newPassword" className="block h-[21px] font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]">
                                 New Password
                             </label>
 
@@ -211,6 +145,7 @@ const ResetPassword = ({ isAuthenticated }) =>
 
                                 {/* Vertical Divider */}
                                 <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
+
 
                                 {/* Eye Icon Container */}
                                 <button
@@ -270,7 +205,7 @@ const ResetPassword = ({ isAuthenticated }) =>
                         <div>
                             <label
                                 htmlFor="confirmPassword"
-                                className="block  h-[21px] font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]"
+                                className="block h-[21px] font-poppins font-normal text-[14px] leading-[100%] text-[#7B7F8D]"
                             >
                                 Confirm New Password
                             </label>
@@ -282,7 +217,7 @@ const ResetPassword = ({ isAuthenticated }) =>
                                     required
                                     value={formData.confirmPassword}
                                     onChange={onChange}
-                                    className={`w-full  h-[49px] px-4 pr-12 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
+                                    className={`w-full h-[49px] px-4 pr-12 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
                                     focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
                                     transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33]
@@ -294,6 +229,8 @@ const ResetPassword = ({ isAuthenticated }) =>
                                         }`}
                                     placeholder="********"
                                 />
+
+                                {/* Vertical Divider */}
 
                                 {/* Vertical Divider */}
                                 <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
@@ -322,7 +259,7 @@ const ResetPassword = ({ isAuthenticated }) =>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className={`w-full  h-[45px] px-[25px] rounded-full 
+                            className={`w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
                        text-white mt-[25px] cursor-pointer transition-all duration-300 ease-in 
@@ -336,9 +273,10 @@ const ResetPassword = ({ isAuthenticated }) =>
                 </div>
             </div>
 
+
             {/* Right Section */}
             <div
-                className="flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
+                className="flex w-full lg:w-1/2 relative lg:items-center justify-center flex-1
              bg-cover bg-center md:overflow-hidden"
                 style={{
                     backgroundImage: "url('/images/bg_1.jpg')",
@@ -362,6 +300,7 @@ const ResetPassword = ({ isAuthenticated }) =>
                pointer-events-none"
                 />
 
+
                 {/* Text Content */}
                 <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:bottom-5  md:right-8 font-poppins">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
@@ -376,12 +315,14 @@ const ResetPassword = ({ isAuthenticated }) =>
     );
 };
 
+
 ResetPassword.propTypes = {
     isAuthenticated: PropTypes.bool,
+    resetPassword: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
     isAuthenticated: state.auth.isAuthenticated,
 });
 
-export default connect(mapStateToProps)(ResetPassword);
+export default connect(mapStateToProps, { resetPassword })(ResetPassword);

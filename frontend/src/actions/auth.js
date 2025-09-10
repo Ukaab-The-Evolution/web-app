@@ -16,18 +16,38 @@ import {
   GOOGLE_AUTH_FAIL,
   SUPABASE_SESSION_LOADED,
   SUPABASE_SIGNOUT,
+  OTP_SEND_SUCCESS,
+  OTP_SEND_FAIL,
+  OTP_VERIFY_SUCCESS,
+  OTP_VERIFY_FAIL,
+  RESET_PASSWORD_SUCCESS,
+  RESET_PASSWORD_FAIL,
 } from './types';
 import { setAlert } from './alert';
 
 const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/auth`;
+const getAuthConfig = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
 
 export const loadUser = () => async (dispatch) => {
+  
   if (localStorage.token) {
-    axios.defaults.headers.common['Authorization'] = localStorage.token;
+    // Apply to every request
+    axios.defaults.headers.common['x-auth-token'] = localStorage.token;
+  } else {
+    // Delete auth header
+    delete axios.defaults.headers.common['x-auth-token'];
   }
 
   try {
-    const res = await axios.get(API_URL);
+    const res = await axios.get(`${API_URL}/me`, getAuthConfig());
+    console.log(res.data);
     dispatch({
       type: USER_LOADED,
       payload: res.data,
@@ -36,6 +56,7 @@ export const loadUser = () => async (dispatch) => {
     dispatch({
       type: AUTH_ERROR,
     });
+    dispatch(setAlert('Authentication error. Please log in again.', 'danger'));
   }
 };
 
@@ -50,17 +71,23 @@ export const register =
     const body = JSON.stringify({ 
       email: formData.email, 
       phone: formData.phone, 
-      password: formData.password, 
-      role, 
-      full_name: formData.full_name 
+      password: formData.password,  
+      full_name: formData.name,
+      user_type: role
     });
     try {
+      console.log(body)
       const res = await axios.post(`${API_URL}/signup`, body, config);
+
+      console.log(res.data);
       dispatch({
         type: REGISTER_SUCCESS,
         payload: res.data,
       });
-      dispatch(loadUser()); // Load user after successful registration
+      dispatch(sendOTP(formData.email));
+      dispatch(setAlert('Registration successful! Please verify the OTP sent to your email.', 'success'));
+
+      // Load user after successful registration
     } catch (err) {
       const errors = err.response.data.errors;
       if (errors) {
@@ -69,6 +96,7 @@ export const register =
       dispatch({
         type: REGISTER_FAIL,
       });
+      dispatch(setAlert('Registration failed. Please check your network or try again.', 'danger'));
     }
   };
 
@@ -82,13 +110,15 @@ export const login = (email, password) => async (dispatch) => {
   const body = JSON.stringify({ email, password });
   try {
     const res = await axios.post(`${API_URL}/login`, body, config);
+    console.log(res.data);
     dispatch({
       type: LOGIN_SUCCESS,
       payload: res.data,
     });
-    dispatch(loadUser()); // Load user after successful login
+    //dispatch(loadUser()); // Load user after successful login
+    dispatch(setAlert('Login successful!', 'success'));
   } catch (err) {
-    const errors = err.response.data.errors;
+    const errors = err.response?.data.errors;
     if (errors) {
       errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
     }
@@ -109,6 +139,7 @@ export const forgotPassword = (email) => async (dispatch) => {
   try {
     const res = await axios.post(
       `${API_URL}/forgotPassword`,
+      `${API_URL}/forgotPassword`,
       body,
       config
     );
@@ -118,6 +149,37 @@ export const forgotPassword = (email) => async (dispatch) => {
     if (errors) {
       errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
     }
+    dispatch(setAlert('Failed to send reset link', 'danger'));
+  }
+};
+
+// Reset Password Action
+export const resetPassword = (token, newPassword, navigate) => async (dispatch) => {
+  try {
+    const res = await axios.patch(
+      `${API_URL}/resetPassword/${token}`,
+      { newPassword }
+    );
+
+    if (res.data && res.data.token) {
+      dispatch({
+        type: RESET_PASSWORD_SUCCESS,
+        payload: res.data,
+      });
+      dispatch(setAlert(res.data.message || "Password updated successfully", "success"));
+      dispatch(loadUser());
+      if (navigate) navigate("/dashboard");
+    } else {
+      dispatch(setAlert("Password updated, but no token received.", "warning"));
+    }
+  } catch (err) {
+    const message =
+      err.response?.data?.message ||
+      "Failed to reset password. Please try again.";
+    dispatch(setAlert(message, "danger"));
+    dispatch({
+      type: RESET_PASSWORD_FAIL,
+    });
   }
 };
 
@@ -237,7 +299,91 @@ export const signOutUser = () => async (dispatch) => {
     dispatch({ type: SUPABASE_SIGNOUT });
     dispatch(setAlert('Successfully signed out', 'success'));
   } catch (error) {
-    console.error('Sign out error:', error);
     dispatch(setAlert('Error signing out', 'danger'));
   }
 };
+
+// Send OTP for registration
+export const sendOTP = (email) => async (dispatch) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const body = JSON.stringify({
+    toEmail: email,
+  });
+
+  try {
+
+    const res = await axios.post(`${API_URL}/send-otp`, body, config);
+    dispatch({
+      type: OTP_SEND_SUCCESS,
+      payload: res.data,
+    });
+    
+    dispatch(setAlert('OTP sent to your email', 'success'));
+
+  } catch (err) {
+    const errors = err.response?.data?.errors;
+    if (errors) {
+      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
+    } else {
+      dispatch(setAlert(err.response?.data?.message || 'Failed to send OTP', 'danger'));
+    }
+
+    dispatch({
+      type: OTP_SEND_FAIL,
+      payload: err.response?.data?.message || 'Failed to send OTP',
+    });
+
+  }
+};
+
+// Verify OTP and complete registration
+export const verifyOTP = (enteredOtp, email) => async (dispatch) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const body = JSON.stringify({ otp: enteredOtp, toEmail: email });
+
+  try {
+
+    const res = await axios.post(`${API_URL}/verify-otp`, body, config);
+
+    dispatch({
+      type: OTP_VERIFY_SUCCESS,
+      payload: res.data,
+    });
+
+    dispatch({
+      type: REGISTER_SUCCESS,
+      payload: res.data,
+    });
+
+    dispatch(setAlert('Registration completed successfully!', 'success'));
+    dispatch(loadUser());
+
+
+  } catch (err) {
+    const errors = err.response?.data?.errors;
+    if (errors) {
+      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
+    } else {
+      dispatch(setAlert(err.response?.data?.message || 'Invalid or expired OTP', 'danger'));
+    }
+
+    dispatch({
+      type: OTP_VERIFY_FAIL,
+      payload: err.response?.data?.message || 'OTP verification failed',
+    });
+
+  }
+};
+
+
+
