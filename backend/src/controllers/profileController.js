@@ -7,7 +7,7 @@ import validator from 'validator';
 // Helper function to get user details with company info
 const getUserWithCompany = async (user_id) => {
   const { data: user, error: userError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('*')
     .eq('user_id', user_id)
     .single();
@@ -112,7 +112,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   
   // Get current user details
   const { data: currentUser, error: userError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('user_type, email, phone')
     .eq('user_id', user_id)
     .single();
@@ -139,7 +139,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   // Check if email/phone already exists (excluding current user)
   if (email && email !== currentUser.email) {
     const { data: emailExists, error: emailError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('user_id')
       .eq('email', email)
       .neq('user_id', user_id)
@@ -153,7 +153,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   
   if (phone && phone !== currentUser.phone) {
     const { data: phoneExists, error: phoneError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('user_id')
       .eq('phone', phone)
       .neq('user_id', user_id)
@@ -173,7 +173,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   
   if (Object.keys(updateData).length > 0) {
     const { error: updateError } = await supabase
-      .from('users')
+      .from('profiles')
       .update(updateData)
       .eq('user_id', user_id);
     
@@ -219,7 +219,7 @@ export const joinCompany = catchAsync(async (req, res, next) => {
   
   // Get user type
   const { data: user, error: userError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('user_type')
     .eq('user_id', user_id)
     .single();
@@ -285,7 +285,7 @@ export const generateInviteCode = catchAsync(async (req, res, next) => {
   
   // Check if user is a trucking company owner or admin
   const { data: user, error: userError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('user_type')
     .eq('user_id', user_id)
     .single();

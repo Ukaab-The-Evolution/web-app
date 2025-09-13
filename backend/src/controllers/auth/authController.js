@@ -1,72 +1,75 @@
 import supabase from '../../config/supabase.js';
 import User from '../../models/User.js';
-import jwt from 'jsonwebtoken';
 import AppError from '../../utils/appError.js';
 import validator from 'validator';
 import { supabaseAdmin } from '../../config/supabase.js';
 import catchAsync from '../../utils/catchAsync.js';
-import { sendPasswordResetEmail } from '../../services/emailService.js';
-
-export const signToken = (user_id, auth_user_id) => {
-  return jwt.sign(
-    { id: user_id, auth_user_id },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
-  );
-};
 
 export const signup = async (req, res, next) => {
   try {
-    if (!req.body.email && !req.body.phone) {
+    const { email, password, user_type, full_name, phone, owns_company, cnic } = req.body;
+
+    if (!email && !phone) {
       return next(new AppError('Please provide either email or phone number', 400));
     }
 
     // For trucking_company type, validate owns_company field
-    if (req.body.user_type === 'trucking_company') {
-      if (typeof req.body.owns_company !== 'boolean') {
+    if (user_type === 'trucking_company') {
+      if (typeof owns_company !== 'boolean') {
         return next(new AppError('Please specify if you own the company or are an individual driver', 400));
       }
     }
 
-    // Remove company-related fields that shouldn't be in users table
-    const { company_name, company_address, fleet_size, ...userData } = req.body;
-
-    // Create user with the enhanced User.create method
-    const newUser = await User.create({
-      ...userData
-    });
-
-    // Create auth user but don't activate yet (only for email users)
-    if (req.body.email) {
-      try {
-        const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
-          email: req.body.email,
-          user_metadata: { 
-            app_user_id: newUser.user_id,
-            user_type: newUser.user_type
-          },
-          email_confirm: false
-        });
-
-        if (!error && authUser) {
-          await supabase
-            .from('users')
-            .update({ auth_user_id: authUser.id })
-            .eq('user_id', newUser.user_id);
-          newUser.auth_user_id = authUser.id;
-        }
-      } catch (authError) {
-        console.error('Auth user creation failed:', authError);
-      }
+    // Validate password strength
+    if (!validator.isStrongPassword(password, { 
+      minLength: 8, 
+      minLowercase: 1, 
+      minUppercase: 1, 
+      minNumbers: 1, 
+      minSymbols: 1 
+    })) {
+      return next(new AppError('Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 symbol', 400));
     }
 
-    const token = signToken(newUser.user_id, newUser.auth_user_id);
-    
-    let message = 'User created. You can request OTP now.';
+    // Use Supabase Auth for signup
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          user_type: user_type,
+          full_name: full_name,
+          phone: phone,
+          owns_company: owns_company,
+          cnic: cnic
+        }
+      }
+    });
+
+    if (authError) {
+      return next(new AppError(authError.message, 400));
+    }
+
+    if (!authData.user) {
+      return next(new AppError('Failed to create user', 500));
+    }
+
+    // Create user profile in our database
+    const newUser = await User.create({
+      email: email,
+      phone: phone,
+      user_type: user_type,
+      full_name: full_name,
+      owns_company: owns_company,
+      cnic: cnic,
+      auth_user_id: authData.user.id
+    });
+
+    let message = 'User created successfully. Please check your email to verify your account.';
     
     // Special message for individual drivers in trucking company
-    if (req.body.user_type === 'trucking_company' && !req.body.owns_company) {
-      message = 'Driver account created. Please complete your profile with CNIC and join a company.';
+    if (user_type === 'trucking_company' && !owns_company) {
+      message = 'Driver account created. Please check your email to verify your account and complete your profile with CNIC.';
     }
     
     res.status(201).json({
@@ -75,7 +78,8 @@ export const signup = async (req, res, next) => {
       data: { 
         user_id: newUser.user_id,
         user_type: newUser.user_type,
-        needs_verification: true
+        needs_verification: true,
+        session: authData.session
       }
     });
   } catch (err) {
@@ -83,33 +87,39 @@ export const signup = async (req, res, next) => {
   }
 };
 
-// ... rest of the authController functions remain the same
 export const login = async (req, res, next) => {
   try {
-    const { email, phone, password } = req.body;
+    const { email, password } = req.body;
 
-    if ((!email && !phone) || !password) {
-      return next(new AppError('Please provide email/phone and password!', 400));
+    if (!email || !password) {
+      return next(new AppError('Please provide email and password!', 400));
     }
 
-    const identifier = email || phone;
-    const user = await User.findByEmailOrPhone(identifier);
+    // Use Supabase Auth for login
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (authError) {
+      return next(new AppError(authError.message, 401));
+    }
+
+    if (!authData.user) {
+      return next(new AppError('Login failed', 401));
+    }
+
+    // Get user from our database
+    const user = await User.findByEmailOrPhone(email);
     
-    if (!user || !(await User.comparePassword(password, user.password_hash))) {
-      return next(new AppError('Incorrect credentials', 401));
+    if (!user) {
+      return next(new AppError('User not found in database', 401));
     }
-
-    // Check if user is verified
-    if (!user.is_verified) {
-      return next(new AppError('Please verify your account before logging in', 401));
-    }
-
-    const token = signToken(user.user_id, user.auth_user_id);
     
     res.status(200).json({
       status: 'success',
-      token,
-      data: { user }
+      token: authData.session.access_token,
+      data: user
     });
   } catch (err) {
     next(err);
@@ -125,21 +135,17 @@ export const protect = async (req, res, next) => {
 
     if (!token) return next(new AppError('Not logged in!', 401));
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const currentUser = await User.findById(decoded.id);
+    // Verify token with Supabase
+    const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
     
-    if (!currentUser) return next(new AppError('User no longer exists!', 401));
-
-    if (currentUser.email && !currentUser.auth_user_id) {
-      const authUserId = await User.getAuthUserId(currentUser.email);
-      if (authUserId) {
-        await supabase
-          .from('users')
-          .update({ auth_user_id: authUserId })
-          .eq('user_id', currentUser.user_id);
-        currentUser.auth_user_id = authUserId;
-      }
+    if (error || !authUser) {
+      return next(new AppError('Invalid or expired token', 401));
     }
+
+    // Get user from our database
+    const currentUser = await User.findByEmailOrPhone(authUser.email);
+    
+    if (!currentUser) return next(new AppError('User not found in database!', 401));
 
     req.user = {
       _id: currentUser.user_id,
@@ -200,17 +206,28 @@ export const restrictTo = (...roles) => {
 
 export const updatePassword = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.user_id);
-    if (!(await User.comparePassword(req.body.currentPassword, user.password_hash))) {
-      return next(new AppError('Current password is incorrect', 401));
+    const { currentPassword, newPassword } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return next(new AppError('Authentication required', 401));
     }
 
-    await User.updatePassword(user.user_id, req.body.newPassword);
-    const token = signToken(user.user_id, user.auth_user_id);
+    // Use Supabase Auth to update password
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      return next(new AppError(error.message, 400));
+    }
+
+    // Update password in our database as well
+    await User.updatePassword(req.user.user_id, newPassword);
     
     res.status(200).json({
       status: 'success',
-      token
+      message: 'Password updated successfully'
     });
   } catch (err) {
     next(err);
@@ -259,21 +276,14 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
       return next(new AppError('Email is required', 400));
     }
 
-    const user = await User.findByEmailOrPhone(email);
-    
-    if (!user) {
-      // Return success to prevent email enumeration
-      return res.status(200).json({ 
-        status: 'success',
-        message: 'If the email exists, a reset link will be sent'
-      });
-    }
+    // Use Supabase Auth for password reset
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.FRONTEND_URL}/reset-password`
+    });
 
-    const resetToken = await User.createPasswordResetToken(user.user_id);
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    
-    // Send email and handle potential failures
-    await sendPasswordResetEmail(user.email, resetUrl);
+    if (error) {
+      return next(new AppError(error.message, 400));
+    }
     
     res.status(200).json({
       status: 'success',
@@ -281,39 +291,36 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     });
   } catch (err) {
     console.error('Password reset error:', err);
-    
-    // Don't reveal specific errors to client for security
-    if (err.message.includes('email') || err.message.includes('send')) {
-      return next(new AppError('Failed to send reset email. Please try again later.', 500));
-    }
-    
     next(err);
   }
 });
 
 export const resetPassword = async (req, res, next) => {
   try {
-    const { token } = req.params;
     const { newPassword } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
     
     if (!token || !newPassword) {
       return next(new AppError('Token and new password are required', 400));
     }
 
-    const tokenDoc = await User.verifyPasswordResetToken(token);
-    if (!tokenDoc) {
-      return next(new AppError('Token is invalid or has expired', 400));
+    // Use Supabase Auth to update password
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      return next(new AppError(error.message, 400));
     }
 
-    await User.updatePassword(tokenDoc.user_id, newPassword);
-    await User.invalidateResetToken(tokenDoc.token_id);
-
-    const user = await User.findById(tokenDoc.user_id);
-    const authToken = signToken(user.user_id, user.auth_user_id);
+    // Update password in our database as well
+    const user = await User.findByEmailOrPhone(data.user.email);
+    if (user) {
+      await User.updatePassword(user.user_id, newPassword);
+    }
     
     res.status(200).json({
       status: 'success',
-      token: authToken,
       message: 'Password updated successfully'
     });
   } catch (err) {
@@ -327,50 +334,116 @@ export const createAdmin = catchAsync(async (req, res, next) => {
     return next(new AppError('Unauthorized', 403));
   }
 
-  const { email, phone, password, full_name } = req.body;
+  const { email, password, full_name } = req.body;
 
   // Validate inputs
-  if (!email && !phone) {
-    return next(new AppError('Please provide either email or phone number', 400));
+  if (!email) {
+    return next(new AppError('Email is required for admin users', 400));
   }
 
-  // Create admin user
-  const newUser = await User.create({ 
-    email, 
-    phone, 
-    password, 
-    user_type: 'admin', 
-    full_name 
+  // Use Supabase Auth for admin creation
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email: email,
+    password: password,
+    user_metadata: { 
+      user_type: 'admin',
+      full_name: full_name
+    },
+    email_confirm: true // Auto-confirm admin emails
   });
 
-  // Create auth user if email exists
-  if (email) {
-    try {
-      const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        user_metadata: { 
-          app_user_id: newUser.user_id,
-          user_type: 'admin'
-        }
-      });
-
-      if (!error && authUser) {
-        await supabase
-          .from('users')
-          .update({ auth_user_id: authUser.id })
-          .eq('user_id', newUser.user_id);
-        newUser.auth_user_id = authUser.id;
-      }
-    } catch (authError) {
-      console.error('Auth user creation failed:', authError);
-    }
+  if (authError) {
+    return next(new AppError(authError.message, 400));
   }
 
-  const token = signToken(newUser.user_id, newUser.auth_user_id);
+  // Create admin user profile in our database
+  const newUser = await User.create({ 
+    email, 
+    user_type: 'admin', 
+    full_name,
+    auth_user_id: authData.user.id
+  });
   
   res.status(201).json({
     status: 'success',
-    token,
     data: { user: newUser }
   });
 });
+
+// // New function to handle email verification
+// export const verifyEmail = async (req, res, next) => {
+//   try {
+//     const { token_hash, type } = req.query;
+
+//     if (!token_hash || !type) {
+//       return next(new AppError('Token and type are required', 400));
+//     }
+
+//     // Use Supabase Auth to verify email
+//     const { data, error } = await supabase.auth.verifyOtp({
+//       token_hash,
+//       type
+//     });
+
+//     if (error) {
+//       return next(new AppError(error.message, 400));
+//     }
+
+//     // User verification is now handled by Supabase Auth
+//     // No need to update verification status in our database
+
+//     res.status(200).json({
+//       status: 'success',
+//       message: 'Email verified successfully',
+//       session: data.session
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// // New function to resend verification email
+// export const resendVerification = async (req, res, next) => {
+//   try {
+//     const { email } = req.body;
+
+//     if (!email) {
+//       return next(new AppError('Email is required', 400));
+//     }
+
+//     // Use Supabase Auth to resend verification
+//     const { error } = await supabase.auth.resend({
+//       type: 'signup',
+//       email: email
+//     });
+
+//     if (error) {
+//       return next(new AppError(error.message, 400));
+//     }
+
+//     res.status(200).json({
+//     status: 'success',
+//       message: 'Verification email sent'
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// New function to logout
+export const logout = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (token) {
+      await supabase.auth.signOut();
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Logged out successfully'
+    });
+  } catch (err) {
+    next(err);
+  }
+};

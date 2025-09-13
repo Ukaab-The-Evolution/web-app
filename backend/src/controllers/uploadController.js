@@ -137,13 +137,8 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
         .remove([document.storage_path]);
     }
 
-    // 4. If approved, update user verification status
-    if (action === 'approve') {
-      await supabaseAdmin
-        .from('users')
-        .update({ is_verified: true })
-        .eq('user_id', document.user_id);
-    }
+    // 4. User verification is now handled by Supabase Auth
+    // No need to update verification status in our database
 
     res.status(200).json({
       status: 'success',
