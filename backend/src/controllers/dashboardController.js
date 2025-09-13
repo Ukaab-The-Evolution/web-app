@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync.js';
 // Helper function to get user type details
 const getUserTypeDetails = async (user_id) => {
   const { data: user, error: userError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('user_type')
     .eq('user_id', user_id)
     .single();
