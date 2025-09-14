@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../config/supabase.js';
 
 const createFirstAdmin = async () => {
   const { data: existingAdmins, error } = await supabase
-    .from('users')
+    .from('profiles')
     .select('*')
     .eq('user_type', 'admin')
     .limit(1);

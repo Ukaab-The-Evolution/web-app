@@ -40,6 +40,7 @@ import Shipments from './components/dashboard/shipments/Shipments';
 import LoadRequest from './components/dashboard/loadRequest/LoadRequest';
 import ProfileLayout from './components/layout/ProfileLayout';
 import Settings from './components/dashboard/settings/Settings';
+import Toast from './components/ui/Toast';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -47,6 +48,7 @@ root.render(
     <Provider store={store}>
       <SupabaseAuthProvider>
       <Router>
+        <Toast />
         <Routes>
           <Route exact path='/' element={<Landing />} />
           <Route exact path='/login' element={<Login />} />

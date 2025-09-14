@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
 import DashboardHeader from '../../ui/DashboardHeader';
 import DashboardStatsCard from '../../ui/DashboardStatsCard';
@@ -9,8 +9,18 @@ import WeeklyShipmentsChart from '../../ui/WeeklyShipmentsChart';
 import DeliveriesDonutChart from '../../ui/DeliveriesDonutChart';
 import ShipmentsList from '../../ui/ShipmentsList';
 import { RiWechatLine } from "react-icons/ri";
+import { connect } from 'react-redux';
+import PropTypes from 'prop-types';
+import { getDashboardOverview, getDashboardPieChart, getShipperShipments } from '../../../actions/dashboard';
 
-const ShipperDashboard = () => {
+const ShipperDashboard = ({
+    getDashboardOverview,
+    getDashboardPieChart,
+    getShipperShipments,
+    overview,
+    pieChart,
+    shipments
+}) => {
     const { user } = useSupabaseAuth();
     const [dashboardData, setDashboardData] = useState({
         totalActiveShipments: 35,
@@ -23,6 +33,12 @@ const ShipperDashboard = () => {
             { id: 'SHP-1004', description: 'Truck #C45 - Container', status: 'in transit' }
         ]
     });
+
+    useEffect(() => {
+        getDashboardOverview();
+        getDashboardPieChart();
+        getShipperShipments();
+    }, [getDashboardOverview, getDashboardPieChart, getShipperShipments]);
 
     return (
         <>
@@ -41,19 +57,19 @@ const ShipperDashboard = () => {
                     <DashboardStatsCard
                         icon={<FaTruckFast />}
                         title="Total Active Shipments"
-                        value={dashboardData.totalActiveShipments}
+                        value={overview?.total_shipments || 0}
                     />
 
                     <DashboardStatsCard
                         icon={<FaRegHourglass />}
                         title="Pending Requests"
-                        value={dashboardData.pendingRequests}
+                        value={overview?.active_shipments || 0}
                     />
 
                     <DashboardStatsCard
                         icon={<GiPieChart />}
                         title="Delivered This Month"
-                        value={dashboardData.deliveredThisMonth}
+                        value={overview?.completed_shipments || 0}
                     />
                 </div>
 
@@ -62,18 +78,22 @@ const ShipperDashboard = () => {
                     {/* Weekly Shipments Chart */}
                     <WeeklyShipmentsChart
                         title="Shipments Overview"
-                        thisWeekData={[10, 20, 15, 30, 25, 18, 22]}
-                        prevWeekData={[8, 14, 12, 28, 20, 15, 18]}
+                        thisWeekData={overview?.weeklyShipments || []}
+                        prevWeekData={[6,12,21,14,17,20,4]} // Optionally add previous week data
                     />
 
                     {/* Deliveries Donut Chart */}
                     <DeliveriesDonutChart
-                        data={{ ontime: 68, inProgress: 20, delayed: 12 }}
+                        data={{
+                            active: pieChart?.active || 0,
+                            completed: pieChart?.completed || 0,
+                            cancelled: pieChart?.cancelled || 0
+                        }}
                     />
                 </div>
 
                 {/* Your Shipments */}
-                <ShipmentsList />
+                <ShipmentsList shipments={shipments || []} />
             </div>
 
             {/* Floating Chat Icon */}
@@ -93,4 +113,23 @@ const ShipperDashboard = () => {
     );
 };
 
-export default ShipperDashboard;
+ShipperDashboard.propTypes = {
+    getDashboardOverview: PropTypes.func.isRequired,
+    getDashboardPieChart: PropTypes.func.isRequired,
+    getShipperShipments: PropTypes.func.isRequired,
+    overview: PropTypes.object,
+    pieChart: PropTypes.object,
+    shipments: PropTypes.array
+};
+
+const mapStateToProps = (state) => ({
+    overview: state.dashboard.overview,
+    pieChart: state.dashboard.pieChart,
+    shipments: state.dashboard.shipments
+});
+
+export default connect(mapStateToProps, {
+    getDashboardOverview,
+    getDashboardPieChart,
+    getShipperShipments
+})(ShipperDashboard);

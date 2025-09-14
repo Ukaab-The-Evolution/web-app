@@ -1,25 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
+import { connect } from 'react-redux';
+import { truckDriverFields } from '../../../selectors/truckDriverFields';
+import { getDashboardOverview, getDashboardPieChart, getAvailableLoads } from '../../../actions/dashboard';
 
-const TruckDriverDashboard = () => {
+const TruckDriverDashboard = ({
+  totalActiveOrders,
+  deliveredThisMonth,
+  upcomingOrders,
+  currentLoad,
+  donutOntime,
+  donutInProgress,
+  donutDelayed,
+  upcomingOrdersList,
+  getDashboardOverview,
+  getDashboardPieChart,
+  getAvailableLoads
+}) => {
   const { user } = useSupabaseAuth();
-  const [dashboardData, setDashboardData] = useState({
-    totalActiveOrders: 35,
-    upcomingOrders: 3,
-    deliveredThisMonth: 26,
-    currentLoad: {
-      shipmentId: 'SHP-1001',
-      origin: 'Islamabad',
-      destination: 'Karachi',
-      currentLocation: 'Islamabad',
-      status: 'in transit'
-    },
-    upcomingOrders: [
-      { id: 'SHP-1004', origin: 'Karachi', destination: 'Gilgit', status: 'in transit' },
-      { id: 'SHP-1003', origin: 'Lahore', destination: 'Peshawar', status: 'pending' },
-      { id: 'SHP-1002', origin: 'Gilgit', destination: 'Lahore', status: 'pending' }
-    ]
-  });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    getDashboardOverview();
+    getDashboardPieChart();
+    getAvailableLoads();
+  }, [getDashboardOverview, getDashboardPieChart, getAvailableLoads]);
 
   return (
     <>
@@ -27,7 +32,7 @@ const TruckDriverDashboard = () => {
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome Ahmed!</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Welcome {user?.first_name || "Driver"}!</h1>
             <p className="text-gray-600 mt-1">Here is your main dashboard</p>
           </div>
           <div className="flex items-center space-x-4">
@@ -48,7 +53,7 @@ const TruckDriverDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Total Active Orders</p>
-                <p className="text-3xl font-bold">{dashboardData.totalActiveOrders}</p>
+                <p className="text-3xl font-bold">{totalActiveOrders}</p>
               </div>
             </div>
           </div>
@@ -62,7 +67,7 @@ const TruckDriverDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Upcoming Orders</p>
-                <p className="text-3xl font-bold">{dashboardData.upcomingOrders}</p>
+                <p className="text-3xl font-bold">{upcomingOrders}</p>
               </div>
             </div>
           </div>
@@ -76,7 +81,7 @@ const TruckDriverDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Delivered This Month</p>
-                <p className="text-3xl font-bold">{dashboardData.deliveredThisMonth}</p>
+                <p className="text-3xl font-bold">{deliveredThisMonth}</p>
               </div>
             </div>
           </div>
@@ -88,26 +93,35 @@ const TruckDriverDashboard = () => {
           <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Current Active Load</h3>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">in transit</span>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                {currentLoad?.status || 'in transit'}
+              </span>
             </div>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Shipment ID:</span>
-                <span className="font-medium">{dashboardData.currentLoad.shipmentId}</span>
+            {currentLoad ? (
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Shipment ID:</span>
+                  <span className="font-medium">{currentLoad.load_id || currentLoad.shipmentId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Origin:</span>
+                  <span className="font-medium">{currentLoad.origin}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Destination:</span>
+                  <span className="font-medium">{currentLoad.destination}</span>
+                </div>
+                {/* If you have currentLocation, show it */}
+                {currentLoad.currentLocation && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Current Location:</span>
+                    <span className="font-medium">{currentLoad.currentLocation}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Origin:</span>
-                <span className="font-medium">{dashboardData.currentLoad.origin}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Destination:</span>
-                <span className="font-medium">{dashboardData.currentLoad.destination}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Current Location:</span>
-                <span className="font-medium">{dashboardData.currentLoad.currentLocation}</span>
-              </div>
-            </div>
+            ) : (
+              <div className="text-gray-500">No active loads</div>
+            )}
             <button className="w-full mt-6 bg-[#578C7A] text-white py-2 rounded-lg hover:bg-[#4a7a69] transition-colors">
               View More
             </button>
@@ -119,7 +133,12 @@ const TruckDriverDashboard = () => {
             <div className="flex items-center justify-center mb-6">
               <div className="relative w-32 h-32">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">78%</span>
+                  <span className="text-2xl font-bold text-gray-800">
+                    {donutOntime + donutInProgress + donutDelayed > 0
+                      ? Math.round((donutOntime / (donutOntime + donutInProgress + donutDelayed)) * 100)
+                      : 0
+                    }%
+                  </span>
                 </div>
               </div>
             </div>
@@ -129,21 +148,21 @@ const TruckDriverDashboard = () => {
                   <div className="w-3 h-3 bg-[#578C7A] rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">Ontime</span>
                 </div>
-                <span className="text-sm font-medium">68%</span>
+                <span className="text-sm font-medium">{donutOntime}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">In Progress</span>
                 </div>
-                <span className="text-sm font-medium">20%</span>
+                <span className="text-sm font-medium">{donutInProgress}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">Delayed</span>
                 </div>
-                <span className="text-sm font-medium">12%</span>
+                <span className="text-sm font-medium">{donutDelayed}%</span>
               </div>
             </div>
           </div>
@@ -156,10 +175,10 @@ const TruckDriverDashboard = () => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {dashboardData.upcomingOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+              {upcomingOrdersList.map((order) => (
+                <div key={order.load_id || order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800">{order.id}</p>
+                    <p className="font-medium text-gray-800">{order.load_id || order.id}</p>
                     <p className="text-sm text-gray-600">{order.origin} → {order.destination}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -179,4 +198,10 @@ const TruckDriverDashboard = () => {
   );
 };
 
-export default TruckDriverDashboard;
+const mapStateToProps = (state) => truckDriverFields(state);
+
+export default connect(mapStateToProps, {
+  getDashboardOverview,
+  getDashboardPieChart,
+  getAvailableLoads
+})(TruckDriverDashboard);

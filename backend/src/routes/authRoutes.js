@@ -9,26 +9,24 @@ import {
   resetPassword,
   restrictTo,
   createAdmin,
-  // verifyOtp,
-  // resendOtp
+  // verifyEmail,
+  // resendVerification,
+  logout
 } from '../controllers/auth/authController.js';
-import { sendOtp } from '../controllers/auth/sendOtp.js';
-import { verifyOtp } from '../controllers/auth/verifyOtp.js';
 
 const router = express.Router();
 
 // Public routes
 router.post('/signup', signup);
 router.post('/login', login);
-router.post('/forgotPassword', forgotPassword);
-router.patch('/resetPassword/:token', resetPassword);
-router.post('/createAdmin', protect, restrictTo('admin'), createAdmin);
-// router.post('/verify-otp', verifyOtp);
-// router.post('/resend-otp', resendOtp);
+router.post('/logout', logout);
+// router.get('/verify-email', verifyEmail);
+// router.post('/resend-verification', resendVerification);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
-// (New) OTP Using Brevo
-router.post('/send-otp', sendOtp);
-router.post('/verify-otp', verifyOtp);
+// Admin routes
+router.post('/createAdmin', protect, restrictTo('admin'), createAdmin);
 
 // Protected routes
 router.use(protect);

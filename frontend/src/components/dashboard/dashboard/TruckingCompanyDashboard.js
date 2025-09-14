@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
+import { connect } from 'react-redux';
+import { truckingCompanyFields } from '../../../selectors/truckingCompanyFields';
+import { getDashboardOverview, getDashboardPieChart } from '../../../actions/dashboard';
 
-const TruckingCompanyDashboard = () => {
+const TruckingCompanyDashboard = ({
+  totalLoadsThisMonth,
+  pendingRequests,
+  averagePerformance,
+  weeklyShipments,
+  deliveries,
+  getDashboardOverview,
+  getDashboardPieChart
+}) => {
   const { user } = useSupabaseAuth();
-  const [dashboardData, setDashboardData] = useState({
-    totalLoadsThisMonth: 35,
-    pendingRequests: 3,
-    averagePerformance: 91,
-    weeklyShipments: [15, 18, 22, 19, 25, 20, 16],
-    deliveries: { ontime: 68, inProgress: 20, delayed: 12 },
-    incomingRequests: [
-      { id: 'SHP-1004', origin: 'Karachi', destination: 'Gilgit', trucks: 20 }
-    ]
-  });
+
+  useEffect(() => {
+    getDashboardOverview();
+    getDashboardPieChart();
+  }, [getDashboardOverview, getDashboardPieChart]);
 
   return (
     <>
@@ -20,7 +26,7 @@ const TruckingCompanyDashboard = () => {
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome Ahmed!</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Welcome {user?.first_name || "Company"}!</h1>
             <p className="text-gray-600 mt-1">Here is your main dashboard</p>
           </div>
           <div className="flex items-center space-x-4">
@@ -41,7 +47,7 @@ const TruckingCompanyDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Total Loads This Month</p>
-                <p className="text-3xl font-bold">{dashboardData.totalLoadsThisMonth}</p>
+                <p className="text-3xl font-bold">{totalLoadsThisMonth}</p>
               </div>
             </div>
           </div>
@@ -55,7 +61,7 @@ const TruckingCompanyDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Pending Requests</p>
-                <p className="text-3xl font-bold">{dashboardData.pendingRequests}</p>
+                <p className="text-3xl font-bold">{pendingRequests}</p>
               </div>
             </div>
           </div>
@@ -69,13 +75,13 @@ const TruckingCompanyDashboard = () => {
               </div>
               <div>
                 <p className="text-sm opacity-90">Average Performance</p>
-                <p className="text-3xl font-bold">{dashboardData.averagePerformance}%</p>
+                <p className="text-3xl font-bold">{averagePerformance}%</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Charts and Incoming Requests */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Weekly Shipments Chart */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
@@ -90,7 +96,7 @@ const TruckingCompanyDashboard = () => {
                 <div key={day} className="flex flex-col items-center">
                   <div 
                     className="bg-[#578C7A] rounded-t-lg w-8 mb-2"
-                    style={{ height: `${(dashboardData.weeklyShipments[index] / 30) * 200}px` }}
+                    style={{ height: `${(weeklyShipments[index] / 30) * 200}px` }}
                   ></div>
                   <span className="text-xs text-gray-600">{day}</span>
                 </div>
@@ -104,7 +110,7 @@ const TruckingCompanyDashboard = () => {
             <div className="flex items-center justify-center mb-6">
               <div className="relative w-32 h-32">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">78%</span>
+                  <span className="text-2xl font-bold text-gray-800">{averagePerformance}%</span>
                 </div>
               </div>
             </div>
@@ -114,21 +120,21 @@ const TruckingCompanyDashboard = () => {
                   <div className="w-3 h-3 bg-[#578C7A] rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">Ontime</span>
                 </div>
-                <span className="text-sm font-medium">68%</span>
+                <span className="text-sm font-medium">{deliveries.ontime}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">In Progress</span>
                 </div>
-                <span className="text-sm font-medium">20%</span>
+                <span className="text-sm font-medium">{deliveries.inProgress}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                   <span className="text-sm text-gray-600">Delayed</span>
                 </div>
-                <span className="text-sm font-medium">12%</span>
+                <span className="text-sm font-medium">{deliveries.delayed}%</span>
               </div>
             </div>
             <button className="w-full mt-6 bg-[#578C7A] text-white py-2 rounded-lg hover:bg-[#4a7a69] transition-colors">
@@ -155,18 +161,26 @@ const TruckingCompanyDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b">
-                    <td className="py-4">SHP-1004</td>
-                    <td className="py-4">Karachi</td>
-                    <td className="py-4">Gilgit</td>
-                    <td className="py-4">20</td>
-                    <td className="py-4">
-                      <div className="flex space-x-2">
-                        <button className="bg-[#578C7A] text-white px-3 py-1 rounded text-sm">Accept</button>
-                        <button className="bg-red-500 text-white px-3 py-1 rounded text-sm">Decline</button>
-                      </div>
-                    </td>
-                  </tr>
+                  {incomingRequests.length > 0 ? (
+                    incomingRequests.map((req) => (
+                      <tr className="border-b" key={req.id}>
+                        <td className="py-4">{req.id}</td>
+                        <td className="py-4">{req.origin}</td>
+                        <td className="py-4">{req.destination}</td>
+                        <td className="py-4">{req.trucks}</td>
+                        <td className="py-4">
+                          <div className="flex space-x-2">
+                            <button className="bg-[#578C7A] text-white px-3 py-1 rounded text-sm">Accept</button>
+                            <button className="bg-red-500 text-white px-3 py-1 rounded text-sm">Decline</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="py-4 text-gray-500" colSpan={5}>No incoming requests</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -177,4 +191,10 @@ const TruckingCompanyDashboard = () => {
   );
 };
 
-export default TruckingCompanyDashboard;
+const mapStateToProps = (state) => truckingCompanyFields(state);
+
+export default connect(mapStateToProps, {
+  getDashboardOverview,
+  getDashboardPieChart,
+  
+})(TruckingCompanyDashboard);

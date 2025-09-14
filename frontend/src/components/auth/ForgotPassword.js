@@ -18,10 +18,6 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
     e.preventDefault();
 
     if (!email.trim()) {
-      setToast({
-        type: "error",
-        message: "Please enter your email address.",
-      });
       return;
     }
 
@@ -34,37 +30,23 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
       return;
     }
 
-    setLoading(true);
 
     try {
 
       // insert backend api call here
       
-      await forgotPassword({ email });
+      await forgotPassword(email);
 
       // On success
-      navigate('/otp-verification', {
+      navigate('/reset-password', {
         state: {
           email: email,
           isPasswordReset: true
         }
       });
-
-      setToast({
-        type: "success",
-        message: "Password reset code has been sent to your email.",
-      })
-    } 
-    catch (error) {
+    } catch (error) {
       console.error("Forgot password error:", error);
-      setToast({
-        type: "error",
-        message: error.response?.data?.message || "An error occurred. Please try again later.",
-      });
     } 
-    finally {
-      setLoading(false);
-    }
   };
 
   // Redirect if already authenticated

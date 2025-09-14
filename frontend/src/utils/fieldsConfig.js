@@ -178,9 +178,34 @@ export const isValidRole = (role) => {
  * @returns {boolean} Whether the input is valid
  */
 export const validateFieldInput = (fieldName, value) => {
+  // Empty field check (all fields)
+  if (!value || value.trim() === '') {
+    return false;
+  }
+
   if (fieldName === 'companycode') {
-    // Only allow numeric characters
-    return /^\d*$/.test(value);
+    return /^\d+$/.test(value);
+  }
+  if (fieldName === 'name' || fieldName === 'fullName' || fieldName === 'emergencyContactName') {
+    return /^[a-zA-Z\s]{2,}$/.test(value.trim());
+  }
+  if (fieldName === 'email') {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+  // --- Pakistani phone number validation ---
+  if (fieldName === 'phone' || fieldName === 'phoneNumber' || fieldName === 'emergencyContact') {
+    // Accepts 10 or 11 digits, must start with 0 (e.g., 03001234567 or 0300 1234567)
+    return /^0\d{3}\s?\d{7}$/.test(value.replace(/\s/g, ''));
+  }
+  if (fieldName === 'experienceYears') {
+    const experience = parseInt(value, 10);
+    return !isNaN(experience) && experience >= 1 && Number.isInteger(experience) && value.toString() === experience.toString();
+  }
+  if (fieldName === 'address') {
+    return value.trim().length >= 5;
+  }
+  if (fieldName === 'cnic' || fieldName === 'license') {
+    return /^[0-9]{5}-[0-9]{7}-[0-9]$/.test(value.trim());
   }
 
   if (fieldName === 'phone') {

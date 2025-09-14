@@ -9,11 +9,10 @@ import TruckingCompanyDashboard from '../dashboard/dashboard/TruckingCompanyDash
 import TruckDriverDashboard from '../dashboard/dashboard/TruckDriverDashboard';
 import ShipperDashboard from '../dashboard/dashboard/ShipperDashboard';
 
-
 const DashboardLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState('shipper');
+  const [userRole, setUserRole] = useState(); 
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,28 +34,17 @@ const DashboardLayout = () => {
   const activeSection = getActiveSection();
 
   useEffect(() => {
-    // Get user role from user metadata, backend, or local storage
     const getUserRole = () => {
-      // This could come from:
-      // - user?.user_metadata?.role
-      // - localStorage.getItem('userRole')
-      // - API call to get user profile
-      // - URL parameter during role selection
-      
-      // For now, let's simulate different roles based on email or set manually
-      const role = user?.user_metadata?.role || 'shipper';
-      console.log(user)
+      const role = localStorage.getItem('userRole');
       setUserRole(role);
     };
 
-    if (user) {
-      getUserRole();
-    }
-    
+    getUserRole();
+
     setTimeout(() => {
       setLoading(false);
-    }, 1000);
-  }, [user]);
+    }, 2000);
+  }, [user]); // Remove setUserRole from dependencies
 
   const handleSignOut = async () => {
     try {
@@ -112,7 +100,7 @@ const DashboardLayout = () => {
     switch (userRole) {
       case 'truckingCompany':
         return <TruckingCompanyDashboard />;
-      case 'truckDriver':
+      case 'driver':
         return <TruckDriverDashboard />;
       case 'shipper':
       default:
