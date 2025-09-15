@@ -3,34 +3,58 @@ import { FaCamera, FaChevronDown, FaTimes, FaCloudUploadAlt, FaCheckCircle, FaTr
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+import { getProfile, updateProfile } from '../../../actions/profile';
+import { isAuthenticated } from '../../../actions/auth';
 
-const TruckingCompanyProfile = ({ user }) => {
+const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    companyName: user?.user_metadata?.company_name || 'ABC logistics',
-    contactPerson: user?.user_metadata?.contact_person || 'Ahmad',
-    email: user?.email || 'contact@abclogistics.com',
-    phoneNumber: user?.user_metadata?.phone || '0300 1234567',
-    address: user?.user_metadata?.address || '123 Business Street, Lahore',
-    fleetSize: user?.user_metadata?.fleet_size || '25',
+    companyName: '',
+    contactPerson: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    fleetSize: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(user?.user_metadata?.is_verified || false);
+  const [isVerified, setIsVerified] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [profileImage, setProfileImage] = useState(user?.avatar_url || null);
+  const [profileImage, setProfileImage] = useState(null);
   const [verificationData, setVerificationData] = useState({
     ntn: '',
     registrationDocument: null
   });
   const [verificationLoading, setVerificationLoading] = useState(false);
-  
+
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
+
+  // Fetch profile on mount
+  useEffect(() => {
+    getProfile();
+  }, [getProfile]);
+
+  // Sync local state with Redux user
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        companyName: user.company_name || '',
+        contactPerson: user.contact_person || '',
+        email: user.email || '',
+        phoneNumber: user.phone || '',
+        address: user.address || '',
+        fleetSize: user.fleet_size ? String(user.fleet_size) : '',
+      });
+      setProfileImage(user.avatar_url || null);
+      setIsVerified(user.is_verified || false);
+    }
+  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,7 +63,6 @@ const TruckingCompanyProfile = ({ user }) => {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -52,7 +75,6 @@ const TruckingCompanyProfile = ({ user }) => {
   };
 
   const validatePhoneNumber = (phone) => {
-    // Pakistani phone number format validation -> can be scaled up to international format
     const phoneRegex = /^(\+92|0)?[0-9]{10,11}$/;
     return phoneRegex.test(phone.replace(/\s+/g, ''));
   };
@@ -63,7 +85,6 @@ const TruckingCompanyProfile = ({ user }) => {
   };
 
   const validateNTN = (ntn) => {
-    // ntn format: XXXXX-XXXXXXX-X
     const ntnRegex = /^[0-9]{5}-[0-9]{7}-[0-9]$/;
     return ntnRegex.test(ntn);
   };
@@ -87,7 +108,6 @@ const TruckingCompanyProfile = ({ user }) => {
   const handleProfileImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB for profile image)
       if (file.size > 5 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -95,8 +115,6 @@ const TruckingCompanyProfile = ({ user }) => {
         });
         return;
       }
-    
-      // Check file type
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -105,11 +123,8 @@ const TruckingCompanyProfile = ({ user }) => {
         });
         return;
       }
-
-      // Create preview URL
       const imageUrl = URL.createObjectURL(file);
       setProfileImage(imageUrl);
-      
       setToast({
         type: "success",
         message: "Profile photo uploaded successfully!",
@@ -128,7 +143,6 @@ const TruckingCompanyProfile = ({ user }) => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 20MB)
       if (file.size > 20 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -136,8 +150,6 @@ const TruckingCompanyProfile = ({ user }) => {
         });
         return;
       }
-    
-      // Check file type
       const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -146,7 +158,6 @@ const TruckingCompanyProfile = ({ user }) => {
         });
         return;
       }
-
       setVerificationData(prev => ({
         ...prev,
         registrationDocument: file
@@ -155,7 +166,6 @@ const TruckingCompanyProfile = ({ user }) => {
   };
 
   const handleVerificationSubmit = async () => {
-    // Validation checks
     if (!verificationData.ntn.trim()) {
       setToast({
         type: "error",
@@ -163,7 +173,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validateNTN(verificationData.ntn)) {
       setToast({
         type: "error",
@@ -171,7 +180,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!verificationData.registrationDocument) {
       setToast({
         type: "error",
@@ -179,24 +187,16 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     try {
       setVerificationLoading(true);
-      
-      // make an API call here to submit verification documents
-      console.log('Submitting verification:', verificationData);
-            
+      // TODO: Implement backend API call for verification
       setShowVerificationModal(false);
       setShowSuccessModal(true);
-      
-      // Auto close success modal after 3 seconds
       setTimeout(() => {
         setShowSuccessModal(false);
         setIsVerified(true);
       }, 5000);
-      
     } catch (error) {
-      console.error('Error submitting verification:', error);
       setToast({
         type: "error",
         message: "Failed to submit verification. Please try again.",
@@ -222,9 +222,8 @@ const TruckingCompanyProfile = ({ user }) => {
   const closeSuccessModal = () => {
     setShowSuccessModal(false);
   };
-  
+
   const handleSaveChanges = async () => {
-    // Validation checks
     if (!formData.companyName.trim()) {
       setToast({
         type: "error",
@@ -232,7 +231,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.contactPerson.trim()) {
       setToast({
         type: "error",
@@ -240,7 +238,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.email.trim()) {
       setToast({
         type: "error",
@@ -248,7 +245,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validateEmail(formData.email)) {
       setToast({
         type: "error",
@@ -256,7 +252,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.phoneNumber.trim()) {
       setToast({
         type: "error",
@@ -264,7 +259,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validatePhoneNumber(formData.phoneNumber)) {
       setToast({
         type: "error",
@@ -272,7 +266,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.address.trim()) {
       setToast({
         type: "error",
@@ -280,7 +273,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.fleetSize.trim()) {
       setToast({
         type: "error",
@@ -288,7 +280,6 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validateFleetSize(formData.fleetSize)) {
       setToast({
         type: "error",
@@ -296,27 +287,26 @@ const TruckingCompanyProfile = ({ user }) => {
       });
       return;
     }
-
     try {
-      setLoading(true);
-      // API call here to update the user profile
-      console.log('Saving profile changes:', formData);
-      
+      await updateProfile({
+        company_name: formData.companyName,
+        contact_person: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        address: formData.address,
+        fleet_size: formData.fleetSize,
+        // avatar_url: profileImage, // handle upload if needed
+      });
       setIsEditing(false);
-      // save logic here
-
       setToast({
         type: "success",
         message: "Profile updated successfully!",
       });
     } catch (error) {
-      console.error('Error saving profile:', error);
       setToast({
         type: "error",
         message: "Failed to update profile. Please try again.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -325,14 +315,11 @@ const TruckingCompanyProfile = ({ user }) => {
   };
 
   const handleSearch = (query) => {
-    setSearchQuery(query);
-    // Implement search logic here
-    console.log('Searching for:', query);
+    // Implement search logic here if needed
   };
 
   return (
     <div className="min-h-screen bg-white">
-
       {/* Toast */}
       {toast && (
         <Toast
@@ -344,7 +331,7 @@ const TruckingCompanyProfile = ({ user }) => {
 
       {/* Header */}
       <ProfileHeader
-        userName={user?.first_name || "Ahmed"}
+        userName={user?.company_name || "Company"}
         subtitle="Your profile, your control - edit and save with ease."
         onSearch={handleSearch}
         searchPlaceholder="Search your query"
@@ -702,4 +689,27 @@ const TruckingCompanyProfile = ({ user }) => {
   );
 };
 
-export default TruckingCompanyProfile;
+TruckingCompanyProfile.propTypes = {
+  user: PropTypes.shape({
+    company_name: PropTypes.string,
+    contact_person: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    address: PropTypes.string,
+    fleet_size: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    avatar_url: PropTypes.string,
+    is_verified: PropTypes.bool,
+  }),
+ 
+  getProfile: PropTypes.func.isRequired,
+  updateProfile: PropTypes.func.isRequired,
+  isAuthenticated: PropTypes.bool,
+};
+
+const mapStateToProps = (state) => ({
+  user: state.profile.profile,
+  isAuthenticated: state.auth.isAuthenticated,
+  
+});
+
+export default connect(mapStateToProps, { getProfile, updateProfile })(TruckingCompanyProfile);

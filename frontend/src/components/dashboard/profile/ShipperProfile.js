@@ -3,19 +3,22 @@ import { FaCamera, FaChevronDown, FaTimes, FaCloudUploadAlt, FaCheckCircle, FaTr
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+import { getProfile, updateProfile } from '../../../actions/profile';
+import { isAuthenticated } from '../../../actions/auth';
 
-const ShipperProfile = ({ user }) => {
+const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || 'abc',
-    email: user?.email || 'example@gmail.com',
-    phoneNumber: user?.user_metadata?.phone || '0332 8899210',
-    company: user?.user_metadata?.company || 'XYZ',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    company: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(user?.user_metadata?.is_verified || false);
+  const [isVerified, setIsVerified] = useState(user?.is_verified || false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -25,10 +28,29 @@ const ShipperProfile = ({ user }) => {
     registrationDocument: null
   });
   const [verificationLoading, setVerificationLoading] = useState(false);
-  
+
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
+
+  // Fetch profile on mount
+  useEffect(() => {
+    getProfile();
+  }, [getProfile]);
+
+  // Sync local state with Redux user
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.full_name || '',
+        email: user.email || '',
+        phoneNumber: user.phone || '',
+        company: user.company?.company_name || '',
+      });
+      setProfileImage(user.avatar_url || null);
+      setIsVerified(user.is_verified || false);
+    }
+  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,13 +72,11 @@ const ShipperProfile = ({ user }) => {
   };
 
   const validatePhoneNumber = (phone) => {
-    // Pakistani phone number format validation -> can be scaled up to international format
     const phoneRegex = /^(\+92|0)?[0-9]{10,11}$/;
     return phoneRegex.test(phone.replace(/\s+/g, ''));
   };
 
   const validateCNIC = (cnic) => {
-    // CNIC format: XXXXX-XXXXXXX-X
     const cnicRegex = /^[0-9]{5}-[0-9]{7}-[0-9]$/;
     return cnicRegex.test(cnic);
   };
@@ -80,7 +100,6 @@ const ShipperProfile = ({ user }) => {
   const handleProfileImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB for profile image)
       if (file.size > 5 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -88,8 +107,6 @@ const ShipperProfile = ({ user }) => {
         });
         return;
       }
-    
-      // Check file type
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -98,11 +115,8 @@ const ShipperProfile = ({ user }) => {
         });
         return;
       }
-
-      // Create preview URL
       const imageUrl = URL.createObjectURL(file);
       setProfileImage(imageUrl);
-      
       setToast({
         type: "success",
         message: "Profile photo uploaded successfully!",
@@ -121,7 +135,6 @@ const ShipperProfile = ({ user }) => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 20MB)
       if (file.size > 20 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -129,8 +142,6 @@ const ShipperProfile = ({ user }) => {
         });
         return;
       }
-    
-      // Check file type
       const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -139,7 +150,6 @@ const ShipperProfile = ({ user }) => {
         });
         return;
       }
-
       setVerificationData(prev => ({
         ...prev,
         registrationDocument: file
@@ -148,7 +158,6 @@ const ShipperProfile = ({ user }) => {
   };
 
   const handleVerificationSubmit = async () => {
-    // Validation checks
     if (!verificationData.cnic.trim()) {
       setToast({
         type: "error",
@@ -156,7 +165,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validateCNIC(verificationData.cnic)) {
       setToast({
         type: "error",
@@ -164,7 +172,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!verificationData.registrationDocument) {
       setToast({
         type: "error",
@@ -175,21 +182,14 @@ const ShipperProfile = ({ user }) => {
 
     try {
       setVerificationLoading(true);
-      
-      // make an API call here to submit verification documents
-      console.log('Submitting verification:', verificationData);
-            
+      // TODO: Implement backend API call for verification
       setShowVerificationModal(false);
       setShowSuccessModal(true);
-      
-      // Auto close success modal after 3 seconds
       setTimeout(() => {
         setShowSuccessModal(false);
         setIsVerified(true);
       }, 5000);
-      
     } catch (error) {
-      console.error('Error submitting verification:', error);
       setToast({
         type: "error",
         message: "Failed to submit verification. Please try again.",
@@ -215,9 +215,8 @@ const ShipperProfile = ({ user }) => {
   const closeSuccessModal = () => {
     setShowSuccessModal(false);
   };
-  
+
   const handleSaveChanges = async () => {
-    // Validation checks
     if (!formData.fullName.trim()) {
       setToast({
         type: "error",
@@ -225,7 +224,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.email.trim()) {
       setToast({
         type: "error",
@@ -233,7 +231,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validateEmail(formData.email)) {
       setToast({
         type: "error",
@@ -241,7 +238,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.phoneNumber.trim()) {
       setToast({
         type: "error",
@@ -249,7 +245,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!validatePhoneNumber(formData.phoneNumber)) {
       setToast({
         type: "error",
@@ -257,7 +252,6 @@ const ShipperProfile = ({ user }) => {
       });
       return;
     }
-
     if (!formData.company.trim()) {
       setToast({
         type: "error",
@@ -267,25 +261,23 @@ const ShipperProfile = ({ user }) => {
     }
 
     try {
-      setLoading(true);
-      // API call here to update the user profile
-      console.log('Saving profile changes:', formData);
-      
+      await updateProfile({
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        company_name: formData.company,
+        // avatar_url: profileImage, // handle upload if needed
+      });
       setIsEditing(false);
-      // save logic here
-
       setToast({
         type: "success",
         message: "Profile updated successfully!",
       });
     } catch (error) {
-      console.error('Error saving profile:', error);
       setToast({
         type: "error",
         message: "Failed to update profile. Please try again.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -294,14 +286,11 @@ const ShipperProfile = ({ user }) => {
   };
 
   const handleSearch = (query) => {
-    setSearchQuery(query);
-    // Implement search logic here
-    console.log('Searching for:', query);
+    // Implement search logic here if needed
   };
 
   return (
     <div className="min-h-screen bg-white">
-
       {/* Toast */}
       {toast && (
         <Toast
@@ -313,7 +302,7 @@ const ShipperProfile = ({ user }) => {
 
       {/* Header */}
       <ProfileHeader
-        userName={user?.first_name || "Ahmed"}
+        userName={user?.full_name || "Ahmed"}
         subtitle="Your profile, your control - edit and save with ease."
         onSearch={handleSearch}
         searchPlaceholder="Search your query"
@@ -489,7 +478,6 @@ const ShipperProfile = ({ user }) => {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-8 py-0">
         <div className="bg-white rounded-xl p-8">
-
           {/* Profile Avatar Section */}
           <div className="flex justify-center mb-8">
             <div className="relative">
@@ -640,4 +628,25 @@ const ShipperProfile = ({ user }) => {
   );
 };
 
-export default ShipperProfile;
+ShipperProfile.propTypes = {
+  user: PropTypes.shape({
+    full_name: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    company: PropTypes.shape({
+      company_name: PropTypes.string,
+    }),
+    avatar_url: PropTypes.string,
+    is_verified: PropTypes.bool,
+  }),
+  getProfile: PropTypes.func.isRequired,
+  updateProfile: PropTypes.func.isRequired,
+  isAthenticated: PropTypes.bool,
+};
+
+const mapStateToProps = (state) => ({
+  user: state.profile.profile,
+isAuthenticated: state.auth.isAuthenticated,
+});
+
+export default connect(mapStateToProps, { getProfile, updateProfile })(ShipperProfile);
