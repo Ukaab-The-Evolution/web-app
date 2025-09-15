@@ -26,8 +26,13 @@ import {
 import { setAlert } from './alert';
 
 const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/auth`;
-const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
+const getAuthConfig = async () => {
+  const { data } = await supabase.auth.getSession();
+  const user  = await supabase.auth.getUser();
+  console.log("Auth User:", user);
+  const token = data.session?.access_token || localStorage.getItem('token');
+  console.log("Auth Token:", data.session?.access_token);
+  console.log("Data Session:", data);
   return {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -36,21 +41,12 @@ const getAuthConfig = () => {
 };
 
 export const loadUser = () => async (dispatch) => {
-  
-  if (localStorage.token) {
-    // Apply to every request
-    axios.defaults.headers.common['x-auth-token'] = localStorage.token;
-  } else {
-    // Delete auth header
-    delete axios.defaults.headers.common['x-auth-token'];
-  }
-
   try {
     const res = await axios.get(`${API_URL}/me`, getAuthConfig());
-    console.log(res.data);
+  
     dispatch({
       type: USER_LOADED,
-      payload: res.data,
+      payload: res.data.data, 
     });
   } catch (err) {
     dispatch({
@@ -87,7 +83,6 @@ export const register =
       dispatch(sendOTP(formData.email));
       dispatch(setAlert('Registration successful! Please verify the OTP sent to your email.', 'success'));
 
-      // Load user after successful registration
     } catch (err) {
       const errors = err.response.data.errors;
       if (errors) {
@@ -110,13 +105,16 @@ export const login = (email, password) => async (dispatch) => {
   const body = JSON.stringify({ email, password });
   try {
     const res = await axios.post(`${API_URL}/login`, body, config);
-    console.log(res.data);
+    // res.data.data is the user object
     dispatch({
       type: LOGIN_SUCCESS,
-      payload: res.data,
+      payload: {
+        token: res.data.token,
+        user: res.data.data, // <-- this is the user object
+      },
     });
-    //dispatch(loadUser()); // Load user after successful login
     dispatch(setAlert('Login successful!', 'success'));
+    dispatch(loadUser());
   } catch (err) {
     const errors = err.response?.data.errors;
     if (errors) {
@@ -138,7 +136,6 @@ export const forgotPassword = (email) => async (dispatch) => {
   const body = JSON.stringify({ email });
   try {
     const res = await axios.post(
-      `${API_URL}/forgotPassword`,
       `${API_URL}/forgotPassword`,
       body,
       config

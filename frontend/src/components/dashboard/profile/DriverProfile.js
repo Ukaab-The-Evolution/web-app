@@ -3,33 +3,37 @@ import { FaCamera, FaChevronDown, FaTimes, FaCloudUploadAlt, FaCheckCircle, FaTr
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
+import { connect } from 'react-redux';
+import { getProfile, updateProfile } from '../../../actions/profile';
+import {isAuthenticated} from '../../../actions/auth';
+import PropTypes from 'prop-types';
 
-const DriverProfile = ({ user }) => {
+const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || 'Abc',
-    email: user?.email || 'abc@gmail.com',
-    phoneNumber: user?.user_metadata?.phone || '0300 1234567',
-    experienceYears: user?.user_metadata?.experience_years || '8',
-    currentCompany: user?.user_metadata?.current_company || 'ABC Logistics',
-    emergencyContact: user?.user_metadata?.emergency_contact || '0300 9876543',
-    emergencyContactName: user?.user_metadata?.emergency_contactName || 'Xyz',
-    address: user?.user_metadata?.address || '123 North Street, Lahore',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    experienceYears: '',
+    currentCompany: '',
+    emergencyContact: '',
+    emergencyContactName: '',
+    address: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(user?.user_metadata?.is_verified || false);
+  const [isVerified, setIsVerified] = useState(user?.is_verified || false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [profileImage, setProfileImage] = useState(user?.avatar_url || null);
   const [verificationData, setVerificationData] = useState({
     cnic: '',
+    license: '',
     registrationDocument: null
   });
   const [verificationLoading, setVerificationLoading] = useState(false);
-  
+
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
@@ -54,7 +58,6 @@ const DriverProfile = ({ user }) => {
   };
 
   const validatePhoneNumber = (phone) => {
-    // Pakistani phone number format validation -> can be scaled up to international format
     const phoneRegex = /^(\+92|0)?[0-9]{10,11}$/;
     return phoneRegex.test(phone.replace(/\s+/g, ''));
   };
@@ -65,13 +68,11 @@ const DriverProfile = ({ user }) => {
   };
 
   const validateCNIC = (cnic) => {
-    // CNIC format: XXXXX-XXXXXXX-X
     const cnicRegex = /^[0-9]{5}-[0-9]{7}-[0-9]$/;
     return cnicRegex.test(cnic);
   };
 
   const validateLicense = (license) => {
-    // license format: XXXXX-XXXXXXX-X
     const licenseRegex = /^[0-9]{5}-[0-9]{7}-[0-9]$/;
     return licenseRegex.test(license);
   };
@@ -239,6 +240,7 @@ const DriverProfile = ({ user }) => {
     setShowVerificationModal(false);
     setVerificationData({
       cnic: '',
+      license: '',
       registrationDocument: null
     });
   };
@@ -338,25 +340,21 @@ const DriverProfile = ({ user }) => {
     }
 
     try {
-      setLoading(true);
-      // API call here to update the user profile
-      console.log('Saving profile changes:', formData);
-      
+      await updateProfile({
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        experience_years: formData.experienceYears,
+        current_company: formData.currentCompany,
+        emergency_contact: formData.emergencyContact,
+        emergency_contactName: formData.emergencyContactName,
+        address: formData.address,
+        // avatar_url: profileImage, // handle upload if needed
+      });
       setIsEditing(false);
-      // save logic here
-
-      setToast({
-        type: "success",
-        message: "Profile updated successfully!",
-      });
+      setToast({ type: "success", message: "Profile updated successfully!" });
     } catch (error) {
-      console.error('Error saving profile:', error);
-      setToast({
-        type: "error",
-        message: "Failed to update profile. Please try again.",
-      });
-    } finally {
-      setLoading(false);
+      setToast({ type: "error", message: "Failed to update profile. Please try again." });
     }
   };
 
@@ -369,6 +367,27 @@ const DriverProfile = ({ user }) => {
     // Implement search logic here
     console.log('Searching for:', query);
   };
+
+  useEffect(() => {
+    getProfile();
+  }, [getProfile]);
+  
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.full_name || '',
+        email: user.email || '',
+        phoneNumber: user.phone || '',
+        experienceYears: user.experience_years || '',
+        currentCompany: user.current_company || '',
+        emergencyContact: user.emergency_contact || '',
+        emergencyContactName: user.emergency_contactName || '',
+        address: user.address || '',
+      });
+      setProfileImage(user.avatar_url || null);
+      setIsVerified(user.is_verified || false);
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -384,7 +403,7 @@ const DriverProfile = ({ user }) => {
 
       {/* Header */}
       <ProfileHeader
-        userName={user?.first_name || "Ahmed"}
+        userName={user?.full_name || "Ahmed"}
         subtitle="Your profile, your control - edit and save with ease."
         onSearch={handleSearch}
         searchPlaceholder="Search your query"
@@ -774,4 +793,27 @@ const DriverProfile = ({ user }) => {
   );
 };
 
-export default DriverProfile;
+DriverProfile.propTypes = {
+  user: PropTypes.shape({
+    full_name: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    experience_years: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    current_company: PropTypes.string,
+    emergency_contact: PropTypes.string,
+    emergency_contactName: PropTypes.string,
+    address: PropTypes.string,
+    avatar_url: PropTypes.string,
+    is_verified: PropTypes.bool,
+  }),
+  isAuthenticated: PropTypes.bool,
+  getProfile: PropTypes.func.isRequired,
+  updateProfile: PropTypes.func.isRequired,
+};
+
+const mapStateToProps = (state) => ({
+  user: state.profile.profile,
+  isAuthenticated: state.auth.isAuthenticated,
+});
+
+export default connect(mapStateToProps, { getProfile, updateProfile })(DriverProfile);
