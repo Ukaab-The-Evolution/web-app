@@ -37,6 +37,8 @@ const Login = ({ login, isAuthenticated }) => {
   if (isAuthenticated) {
     return <Navigate to='/dashboard' />;
   }
+  console.log(isAuthenticated);
+
   return (
     <div className="min-h-screen  flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
       {/* Top Left Logo */}

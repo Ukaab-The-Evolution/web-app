@@ -78,7 +78,7 @@ export default function (state = initialState, action) {
     case GOOGLE_AUTH_SUCCESS:
     case SUPABASE_SESSION_LOADED:
       localStorage.setItem('token', payload.token);
-      localStorage.setItem('userRole', payload.data.user.user_type);
+      localStorage.setItem('userRole', payload.user.user_type);
 
       return {
         ...state,
@@ -88,6 +88,7 @@ export default function (state = initialState, action) {
         isAuthenticated: true,
         loading: false,
         googleLoading: false,
+        user: payload.user, 
       };
 
     // Google Auth loading
