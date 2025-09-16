@@ -93,7 +93,10 @@ const ShipperDashboard = ({
                 </div>
 
                 {/* Your Shipments */}
-                <ShipmentsList shipments={shipments || []} />
+                <ShipmentsList 
+                    shipments={shipments || []}
+                    showTitle={true}
+                    limitCount={2} />
             </div>
 
             {/* Floating Chat Icon */}

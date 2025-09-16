@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { sendOTP, register } from '../../actions/auth';
+import { register } from '../../actions/auth';
 import { useState, useEffect } from 'react';
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
@@ -18,6 +18,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState('');
+  const [companyType, setCompanyType] = useState('');
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,10 +34,11 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
-
+    const companyTypeParam = urlParams.get('companyType');
 
     if (roleParam && isValidRole(roleParam)) {
       setRole(roleParam);
+      setCompanyType(companyTypeParam || '');
       setFormData(getInitialFormData(roleParam));
       setFieldErrors({});
     } else {
@@ -121,11 +123,16 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     }
 
     try {
-      await register({ ...formData }, role);
-      console.log();
-      navigate(`/otp-verification?email=${encodeURIComponent(formData.email)}&from=register`);
+      const registrationData = {
+        ...formData,
+        ...(companyType && { companyType })
+      };
+
+      await register(registrationData, role);
+      console.log('Registration successful.');
+      navigate(`/signup-confirmation?email=${encodeURIComponent(formData.email)}&role=${role}`);
     } catch (error) {
-      console.error('OTP send error:', error);
+      console.error('Registration error:', error);
     }
   };
 
@@ -286,7 +293,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
               shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
               text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
               hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 
-              ${isLoading || (formData.password && !isPasswordComplete)
+              ${(formData.password && !isPasswordComplete)
                 ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                 : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
               }`}

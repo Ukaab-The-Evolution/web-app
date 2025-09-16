@@ -30,6 +30,7 @@ import RoleSelection from './components/layout/RoleSelection';
 import OTPVerification from "./components/auth/OTPVerification";
 import AuthCallback from './components/auth/AuthCallback';
 import ResetPassword from "./components/auth/ResetPassword";
+import SignupConfirmation from './components/auth/SignupConfirmation';
 
 // Providers
 import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
@@ -53,6 +54,7 @@ root.render(
           <Route exact path='/' element={<Landing />} />
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
+          <Route exact path="/signup-confirmation" element={<SignupConfirmation />} />
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
           <Route exact path="/otp-verification" element={<OTPVerification />} />
           <Route exact path='/role-selection' element={<RoleSelection />} />
