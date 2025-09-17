@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { FaCamera, FaChevronDown, FaTimes, FaCloudUploadAlt, FaCheckCircle, FaTrash } from 'react-icons/fa';
+import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle, FaTrash } from 'react-icons/fa';
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
+import { IoClose } from "react-icons/io5";
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
 import PropTypes from 'prop-types';
@@ -285,10 +286,6 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
     setIsEditing(true);
   };
 
-  const handleSearch = (query) => {
-    // Implement search logic here if needed
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Toast */}
@@ -304,8 +301,6 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
       <ProfileHeader
         userName={user?.full_name || "Ahmed"}
         subtitle="Your profile, your control - edit and save with ease."
-        onSearch={handleSearch}
-        searchPlaceholder="Search your query"
         userAvatar={user?.avatar_url}
       />
 
@@ -354,11 +349,11 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
               onClick={closeVerificationModal}
               className="absolute top-4 right-4 text-[#171717] hover:text-gray-600"
             >
-              <FaTimes className="w-5 h-5" />
+              <IoClose className="w-5 h-5" />
             </button>
             
             <h2 className="text-xl font-semibold text-[#3B6255] mb-8">Profile Verification</h2>
-            <p className="text-[#171717] font-regular mb-4">Enter the following details</p>
+            <p className="text-[#171717] font-regular mb-4">Enter the following details:</p>
             
             {/* CNIC Field */}
             <div className="mb-6">
@@ -448,7 +443,7 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
               onClick={closeSuccessModal}
               className="absolute top-4 right-4 text-[#171717] hover:text-gray-600"
             >
-              <FaTimes className="w-5 h-5" />
+              <IoClose className="w-5 h-5" />
             </button>
             
             <h2 className="text-xl font-semibold text-[#3B6255] mb-16">Profile Verification</h2>
@@ -539,6 +534,7 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='Abc'
               />
             </div>
 
@@ -555,6 +551,7 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='example@gmail.com'
                 />
               </div>
               <div>
@@ -568,6 +565,7 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder='0300 1234567'
                 />
               </div>
             </div>
@@ -584,6 +582,7 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className="w-full px-4 py-3 bg-[#B2D7CA3B] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder='ABC Company'
               />
             </div>
 

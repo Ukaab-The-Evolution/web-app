@@ -2,13 +2,13 @@ import { IoMdArrowDropdown } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { IoIosNotifications } from "react-icons/io";
 
-const ProfileHeader = ({
-    title = "Profile",
-    subtitle = "Your profile, your control - edit and save with ease",
+const ShipmentsHeader = ({
+    title = "Shipments",
+    subtitle = "Manage all your shipments here",
     userName,
     userAvatar,
     className = ""
-    }) => {
+}) => {
 
     const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ const ProfileHeader = ({
 
                 {/* Right Side (Notifications + Avatar + Dropdown) */}
                 <div className="flex items-center space-x-4">
-                    
+
                     {/* Notification Bell */}
                     <div className="relative cursor-pointer">
                         <IoIosNotifications className="w-6 h-6 text-gray-600" />
@@ -62,4 +62,4 @@ const ProfileHeader = ({
     );
 };
 
-export default ProfileHeader;
+export default ShipmentsHeader;

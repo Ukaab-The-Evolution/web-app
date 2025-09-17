@@ -3,14 +3,17 @@ import { FaAngleDoubleRight } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Toast from "../ui/Toast";
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
+import { IoClose } from "react-icons/io5";
 
 const RoleSelection = ({ isAuthenticated }) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedCompanyType, setSelectedCompanyType] = useState("");
 
   const roles = [
     { name: "Shipper", value: "shipper" },
@@ -18,9 +21,14 @@ const RoleSelection = ({ isAuthenticated }) => {
     { name: "Truck Driver", value: "truckDriver" },
   ];
 
+  const companyTypes = [
+    { name: "Individual Owner-Operator", value: "owner_operator" },
+    { name: "Small Fleet (2-10 trucks)", value: "small_fleet" },
+    { name: "Medium Fleet (11-100 trucks)", value: "medium_fleet" },
+    { name: "Large Fleet (100+ trucks)", value: "large_fleet" }
+  ];
 
   const [selectedRole, setSelectedRole] = useState({ name: "", value: "" });
-
 
   const handleRoleSelection = () => {
     if (!selectedRole?.value) {
@@ -30,7 +38,34 @@ const RoleSelection = ({ isAuthenticated }) => {
       });
       return;
     }
+
+    // Show popup for trucking company
+    if (selectedRole.value === "truckingCompany") {
+      setShowPopup(true);
+      return;
+    }
+
+    // Navigate directly for other roles
     navigate(`/register?role=${selectedRole.value}`);
+  };
+
+  const handleCompanyTypeSelection = () => {
+    if (!selectedCompanyType) {
+      setToast({
+        type: "error",
+        message: "Please select a company type before continuing.",
+      });
+      return;
+    }
+    // Navigate with both role and company type
+    navigate(`/register?role=${selectedRole.value}&companyType=${selectedCompanyType}`);
+    setShowPopup(false);
+    setSelectedCompanyType("");
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setSelectedCompanyType("");
   };
 
   if (isAuthenticated) {
@@ -59,8 +94,6 @@ const RoleSelection = ({ isAuthenticated }) => {
           </span>
         </div>
 
-
-
         {/* Left Section */}
         <div className="flex justify-center z-30 items-center p-8 sm:p-8 md:p-10 lg:px-20 pt-28 sm:pt-36 md:pt-40 lg:pt-36 lg:w-1/2 bg-white">
           <div className="w-full max-w-lg ">
@@ -84,7 +117,7 @@ const RoleSelection = ({ isAuthenticated }) => {
 
               <Menu as="div" className="relative w-full">
                 <MenuButton
-                  className="w-full flex items-center justify-between rounded-[10px] bg-[var(--color-bg-input)] py-2 px-4 text-left text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2 focus:ring-[var(--color-green-main)]"
+                  className="w-full flex items-center justify-between rounded-[10px] bg-[var(--color-bg-input)] py-2 px-4 text-left text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-1 focus:ring-[var(--color-green-main)]"
                   style={{
                     border: "1.5px solid #578C7A",
                   }}
@@ -113,15 +146,14 @@ const RoleSelection = ({ isAuthenticated }) => {
               </Menu>
             </div>
 
-
             <button
               onClick={handleRoleSelection}
               type="submit" className="w-full h-[45px] px-[25px] rounded-full 
-             bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-             shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
-             text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
-             hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ">
-              Next
+              bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+              shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+              text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
+              hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ">
+                Next
               <FaAngleDoubleRight className="text-sm" />
             </button>
           </div>
@@ -129,8 +161,7 @@ const RoleSelection = ({ isAuthenticated }) => {
 
         {/* Right Section */}
         <div
-          className="flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
+          className="flex w-full lg:w-1/2 relative lg:items-center justify-center flex-1 bg-cover bg-center md:overflow-hidden"
           style={{
             backgroundImage: "url('/images/bg_1.jpg')",
           }}
@@ -146,11 +177,11 @@ const RoleSelection = ({ isAuthenticated }) => {
 
           {/* Decorative Circle (desktop only) */}
           <div
-            className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
-               bg-gradient-to-b from-white/30 to-transparent 
-               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
-               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
-               pointer-events-none"
+            className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px]
+            overflow-hidden bg-gradient-to-b from-white/30 to-transparent 
+            md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+            lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+            pointer-events-none"
           />
 
           {/* Text Content */}
@@ -165,7 +196,88 @@ const RoleSelection = ({ isAuthenticated }) => {
           </div>
         </div>
 
+        {/* Company Type Popup */}
+        {showPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-[400px] mx-4 relative">
+              
+              {/* Close Button */}
+              <button
+                onClick={handleClosePopup}
+                className="absolute top-4 right-4 text-[#171717] hover:text-gray-600"
+              >
+                <IoClose className="w-5 h-5" />
+              </button>
+              
+              {/* Modal Header */}
+              <h2 className="text-xl font-regular text-[#171717] mb-10 mt-16 pr-8">
+                Enter your company type:
+              </h2>
+              
+              {/* Company Type Selection */}
+              <div className="mb-24">
+                <div className="flex items-center space-x-4">
+                <label className="block text-sm font-medium text-[#171717] min-w-[55px] max-w-[100px]">
+                  Type
+                </label>
+                
+                <Menu as="div" className="relative w-full">
+                  <MenuButton
+                    className="w-full flex px-4 py-3 items-center justify-between
+                    rounded-[10px] bg-[var(--color-bg-input)] text-left text-[#3B6255] font-poppins font-normal text-[14px] 
+                    focus:outline-none focus:ring-1 focus:ring-[#578C7A] border border-[#578C7A]"
+                  >
+                    {companyTypes.find(type => type.value === selectedCompanyType)?.name || "Select Type"}
+                    <FiChevronDown className="w-4 h-4 text-[#3B6255]" />
+                  </MenuButton>
 
+                  <MenuItems className="absolute left-0 mt-2 w-full rounded-[10px] bg-[var(--color-bg-input)] border border-[var(--color-border-input)] shadow-lg text-sm z-50 max-h-60 overflow-y-auto">
+                    {companyTypes.map((type, index) => (
+                      <MenuItem key={index} as="div">
+                        {({ active }) => (
+                          <button
+                            onClick={() => setSelectedCompanyType(type.value)}
+                            className={`w-full text-left px-4 py-3 transition duration-150 ease-in-out rounded-[6px]
+                              ${active
+                              ? "bg-[var(--color-green-main)] text-white"
+                              : "text-[var(--color-text-main)]"
+                              }`}
+                          >
+                            {type.name}
+                          </button>
+                        )}
+                      </MenuItem>
+                    ))}
+                  </MenuItems>
+                </Menu>
+              </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleClosePopup}
+                  className="w-2/4 h-[45px] px-2 text-[#171717] font-poppins font-medium text-[16px]
+                  rounded-full bg-[#D4D4D4] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)] 
+                  hover:bg-gray-200 mt-[6px] transition-colors duration-300
+                  flex items-center justify-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCompanyTypeSelection}
+                  className="w-2/4 h-[45px] px-2 rounded-full 
+                  bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+                  shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-medium text-[16px]
+                  text-white mt-[6px] cursor-pointer transition-colors duration-300
+                  hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

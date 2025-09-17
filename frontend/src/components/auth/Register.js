@@ -1,9 +1,8 @@
 import PropTypes from 'prop-types';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { sendOTP, register } from '../../actions/auth';
+import { register } from '../../actions/auth';
 import { useState, useEffect } from 'react';
-
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import GoogleSignInButton from './GoogleSignInButton';
@@ -19,6 +18,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState('');
+  const [companyType, setCompanyType] = useState('');
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,10 +34,11 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
-
+    const companyTypeParam = urlParams.get('companyType');
 
     if (roleParam && isValidRole(roleParam)) {
       setRole(roleParam);
+      setCompanyType(companyTypeParam || '');
       setFormData(getInitialFormData(roleParam));
       setFieldErrors({});
     } else {
@@ -122,11 +123,16 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     }
 
     try {
-      await register({ ...formData }, role);
-      console.log();
-      navigate(`/otp-verification?email=${encodeURIComponent(formData.email)}&from=register`);
+      const registrationData = {
+        ...formData,
+        ...(companyType && { companyType })
+      };
+
+      await register(registrationData, role);
+      console.log('Registration successful.');
+      navigate(`/signup-confirmation?email=${encodeURIComponent(formData.email)}&role=${role}`);
     } catch (error) {
-      console.error('OTP send error:', error);
+      console.error('Registration error:', error);
     }
   };
 
@@ -159,14 +165,15 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
             pattern={field.pattern}
             inputMode={field.inputMode}
             className={`w-full px-4 py-2 ${isPasswordField ? 'pr-12' : ''}
-  rounded-[10px] bg-[var(--color-bg-input)] border focus:border-transparent
-  ${error
-                ? 'border-red-300 focus:ring-red-500'
-                : isPasswordField && formData.password && isPasswordComplete
-                  ? 'border-green-300 focus:ring-green-500'
-                  : 'border-[#578C7A] focus:ring-[#578C7A]'
-              } 
-  text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-2`}
+            rounded-[10px] bg-[#B2D7CA3B] border focus:border-transparent
+            ${isPasswordField && formData.password && !isPasswordComplete
+              ? 'border-red-300 focus:ring-red-500'
+              : isPasswordField && formData.password && isPasswordComplete
+              ? 'border-green-300 focus:ring-green-500'
+              : 'border-[#578C7A] focus:ring-[#578C7A]  '
+            } 
+            text-[var(--color-text-main)] font-[var(--font-poppins)] focus:outline-none focus:ring-1
+            ${isPasswordField ? 'placeholder:relative placeholder:top-[3px] leading-[1.8]' : ''} `}
 
             placeholder={field.placeholder}
           />
@@ -180,21 +187,26 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           {isPasswordField && (
             <>
               <span
-                className="absolute right-10 top-[12px] h-6 w-px bg-[var(--color-border-input)]"
+                className="absolute right-12 top-[8px] h-8 w-[1px] bg-[var(--color-border-input)]"
                 aria-hidden="true"
               />
+              
               <button
                 type="button"
                 onClick={() => setShowPassword(prev => !prev)}
-                className="absolute right-2 top-[9px] text-[var(--color-text-main)] focus:outline-none"
+                className="absolute right-0 top-0 w-[50px] h-[50px]
+                rounded-tr-[6px] rounded-br-[6px] bg-transparent
+                flex items-center justify-center text-[var(--color-text-main)] focus:outline-none"
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? (
-                  <AiOutlineEyeInvisible size={22} />
-                ) : (
-                  <AiOutlineEye size={22} />
-                )}
+                <div className="w-[24px] h-[24px] text-[#3B6255]">
+                  {showPassword ? (
+                    <AiOutlineEyeInvisible size={20} />
+                  ) : (
+                    <AiOutlineEye size={20} />
+                  )}
+                </div>
               </button>
             </>
           )}
@@ -237,8 +249,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
 
           <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
             {/* Dynamic form fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
               {otherFields.map(renderField)}
             </div>
 
@@ -249,32 +260,26 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
             {/* Password requirements with dynamic validation */}
             <ul className="text-[12px] lg:text-[14px] space-y-1">
               <li className="flex items-center gap-2">
-                <span className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-400'} transition-colors duration-200`}>
                   {passwordValidation.hasUppercase ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasUppercase ? 'text-green-700' : 'text-gray-700'} transition-colors duration-200`}>
                   Contains at least one capital character
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasMinLength ? 'text-green-600' : 'text-gray-400'} transition-colors duration-200`}>
                   {passwordValidation.hasMinLength ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasMinLength ? 'text-green-700' : 'text-gray-700'} transition-colors duration-200`}>
                   At least 8 characters
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-600' : 'text-gray-400'} transition-colors duration-200`}>
                   {passwordValidation.hasNumberOrSymbol ? '✓' : '○'}
                 </span>
-                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'
-                  } transition-colors duration-200`}>
+                <span className={`${passwordValidation.hasNumberOrSymbol ? 'text-green-700' : 'text-gray-700'} transition-colors duration-200`}>
                   Contains a number or symbol
                 </span>
               </li>
@@ -284,13 +289,14 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
               type="submit"
               disabled={(formData.password && !isPasswordComplete)}
               className={`w-full h-[45px] px-[25px] rounded-full 
-                       bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
-                       text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
-                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 ${loading || (formData.password && !isPasswordComplete)
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
-                }`}
+              bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+              shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+              text-white mt-[20px] cursor-pointer transition-all duration-300 ease-in 
+              hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3 
+              ${(formData.password && !isPasswordComplete)
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : 'bg-[var(--color-green-main)] text-[var(--color-text-button)] hover:bg-[var(--color-bg-green-dark)]'
+              }`}
             >
               Sign Up
             </button>
@@ -323,8 +329,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
 
       {/* Right Section */}
       <div
-        className="hidden lg:flex w-full lg:w-1/2 relative  lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
+        className="hidden lg:flex w-full lg:w-1/2 relative lg:items-center justify-center flex-1 bg-cover bg-center md:overflow-hidden"
         style={{
           backgroundImage: "url('/images/bg_1.jpg')",
         }}
@@ -335,11 +340,11 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           <span className="text-white text-lg">Support</span>
         </div>
         <div
-          className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
-               bg-gradient-to-b from-white/30 to-transparent 
-               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
-               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
-               pointer-events-none"
+          className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px]
+          overflow-hidden bg-gradient-to-b from-white/30 to-transparent 
+          md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+          lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+          pointer-events-none"
         />
         <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:-bottom-5  md:right-5 font-poppins">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-bold text-white mb-5">
@@ -351,7 +356,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           </p>
         </div>
       </div>
-
     </div>
   );
 };

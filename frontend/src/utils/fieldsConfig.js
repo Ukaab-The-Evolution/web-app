@@ -37,7 +37,9 @@ const baseFields = [
     placeholder: 'Phone',
     autoComplete: 'tel',
     required: true,
-    gridCol: 2
+    gridCol: 2,
+    pattern: '^\\+?\\d*$',
+    inputMode: 'numeric'
   },
   {
     name: 'password',
@@ -54,15 +56,13 @@ const baseFields = [
 const roleSpecificFields = {
   [ROLES.SHIPPER]: [
     {
-      name: 'companycode',
+      name: 'companyname',
       type: 'text',
-      label: 'Company Code',
-      placeholder: '98765',
+      label: 'Company Name',
+      placeholder: 'Company Name',
       autoComplete: 'organization',
       required: true,
-      gridCol: 2,
-      pattern: '[0-9]*',
-      inputMode: 'numeric'
+      gridCol: 2
     }
   ],
   [ROLES.TRUCK_DRIVER]: [
@@ -207,5 +207,11 @@ export const validateFieldInput = (fieldName, value) => {
   if (fieldName === 'cnic' || fieldName === 'license') {
     return /^[0-9]{5}-[0-9]{7}-[0-9]$/.test(value.trim());
   }
+
+  if (fieldName === 'phone') {
+    // Only allow numeric characters or "+" at start
+    return /^\+?\d*$/.test(value);
+  }
+  
   return true;
 };

@@ -5,13 +5,13 @@ import DashboardSkeleton from './DashboardSkeleton';
 
 // Import role-based profile components
 import TruckingCompanyProfile from '../dashboard/profile/TruckingCompanyProfile';
-import DriverProfile from '../dashboard/profile/DriverProfile';
+import TruckDriverProfile from '../dashboard/profile/DriverProfile';
 import ShipperProfile from '../dashboard/profile/ShipperProfile';
 
 const ProfileLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState('driver');
+  const [userRole, setUserRole] = useState('shipper');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -42,7 +42,7 @@ const ProfileLayout = () => {
       // - URL parameter during role selection
       
       // For now, let's simulate different roles based on email or set manually
-      const role = user?.user_metadata?.role || 'driver';
+      const role = user?.user_metadata?.role || 'shipper';
       console.log(user)
       setUserRole(role);
     };
@@ -110,8 +110,8 @@ const ProfileLayout = () => {
     switch (userRole) {
       case 'truckingCompany':
         return <TruckingCompanyProfile user={user} />;
-      case 'driver':
-        return <DriverProfile user={user} />;
+      case 'truckDriver':
+        return <TruckDriverProfile user={user} />;
       case 'shipper':
       default:
         return <ShipperProfile user={user} />;

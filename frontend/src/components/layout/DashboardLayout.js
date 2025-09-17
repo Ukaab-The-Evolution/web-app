@@ -9,7 +9,6 @@ import TruckingCompanyDashboard from '../dashboard/dashboard/TruckingCompanyDash
 import TruckDriverDashboard from '../dashboard/dashboard/TruckDriverDashboard';
 import ShipperDashboard from '../dashboard/dashboard/ShipperDashboard';
 
-
 const DashboardLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);

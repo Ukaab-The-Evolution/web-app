@@ -132,8 +132,9 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                                     onChange={onChange}
                                     className={`w-full h-[49px] px-4 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
-                                    focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
+                                    focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-transparent
                                     transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33] pr-[70px]
+                                    placeholder:relative placeholder:top-[2px]
                                     ${formData.newPassword && !isPasswordComplete
                                             ? 'border-red-300 focus:ring-red-500'
                                             : formData.newPassword && isPasswordComplete
@@ -145,7 +146,6 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
 
                                 {/* Vertical Divider */}
                                 <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
-
 
                                 {/* Eye Icon Container */}
                                 <button
@@ -219,8 +219,9 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                                     onChange={onChange}
                                     className={`w-full h-[49px] px-4 pr-12 py-1 rounded-[10px] border border-[#578C7A] bg-[#B2D7CA3B]
                                     font-poppins font-normal text-[14px] leading-[100%] text-[#3B6255] placeholder-[#5F5F5F]
-                                    focus:outline-none focus:ring-2 focus:ring-[#578C7A] focus:border-transparent
+                                    focus:outline-none focus:ring-1 focus:ring-[#578C7A] focus:border-transparent
                                     transition-all duration-200 shadow-[inset_0px_2px_0px_0px_#E7EBEE33]
+                                    placeholder:relative placeholder:top-[2px]
                                     ${formData.confirmPassword && formData.newPassword !== formData.confirmPassword
                                             ? 'border-red-300 focus:ring-red-500'
                                             : formData.confirmPassword && formData.newPassword === formData.confirmPassword
@@ -229,8 +230,6 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                                         }`}
                                     placeholder="********"
                                 />
-
-                                {/* Vertical Divider */}
 
                                 {/* Vertical Divider */}
                                 <span className="absolute right-[54px] top-[4.5px] w-[1px] h-[40px] bg-[#CFD9E0]" aria-hidden="true" />
@@ -260,10 +259,10 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                             type="submit"
                             disabled={isLoading}
                             className={`w-full h-[45px] px-[25px] rounded-full 
-                       bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-                       shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
-                       text-white mt-[25px] cursor-pointer transition-all duration-300 ease-in 
-                       hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3
+                            bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+                            shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
+                            text-white mt-[25px] cursor-pointer transition-all duration-300 ease-in 
+                            hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center gap-3
                             disabled:opacity-50 disabled:cursor-not-allowed
                             ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
@@ -273,11 +272,10 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                 </div>
             </div>
 
-
             {/* Right Section */}
             <div
                 className="flex w-full lg:w-1/2 relative lg:items-center justify-center flex-1
-             bg-cover bg-center md:overflow-hidden"
+                bg-cover bg-center md:overflow-hidden"
                 style={{
                     backgroundImage: "url('/images/bg_1.jpg')",
                 }}
@@ -294,12 +292,11 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
                 {/* Decorative Circle (desktop only) */}
                 <div
                     className="hidden md:block absolute z-10 rounded-full backdrop-blur-[1px] overflow-hidden 
-               bg-gradient-to-b from-white/30 to-transparent 
-               md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
-               lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
-               pointer-events-none"
+                    bg-gradient-to-b from-white/30 to-transparent 
+                    md:bottom-[-200px] md:right-[-40px] md:w-[600px] md:h-[600px] 
+                    lg:bottom-[-260px] lg:right-[-100px] lg:w-[650px] lg:h-[650px]
+                    pointer-events-none"
                 />
-
 
                 {/* Text Content */}
                 <div className="relative z-20 w-full max-w-md px-6 py-32 sm:py-28 md:py-20 text-center md:absolute md:bottom-5  md:right-8 font-poppins">
@@ -314,7 +311,6 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
         </div>
     );
 };
-
 
 ResetPassword.propTypes = {
     isAuthenticated: PropTypes.bool,

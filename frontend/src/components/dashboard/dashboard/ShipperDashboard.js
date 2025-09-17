@@ -22,7 +22,17 @@ const ShipperDashboard = ({
     shipments
 }) => {
     const { user } = useSupabaseAuth();
-    const [searchQuery, setSearchQuery] = useState('');
+    const [dashboardData, setDashboardData] = useState({
+        totalActiveShipments: 35,
+        pendingRequests: 3,
+        deliveredThisMonth: 54,
+        weeklyShipments: [15, 18, 22, 19, 25, 20, 16],
+        deliveries: { ontime: 68, inProgress: 20, delayed: 12 },
+        shipments: [
+            { id: 'SHP-1003', description: 'Truck #B07 - Flatbed', status: 'pending' },
+            { id: 'SHP-1004', description: 'Truck #C45 - Container', status: 'in transit' }
+        ]
+    });
 
     useEffect(() => {
         getDashboardOverview();
@@ -30,20 +40,12 @@ const ShipperDashboard = ({
         getShipperShipments();
     }, [getDashboardOverview, getDashboardPieChart, getShipperShipments]);
 
-    const handleSearch = (query) => {
-        setSearchQuery(query);
-        console.log("Search query:", query);
-        // Optionally: dispatch searchLoads({ query });
-    };
-
     return (
         <>
             {/* Header */}
             <DashboardHeader
                 userName={user?.first_name || "Ahmed"}
                 subtitle="Here is your main dashboard"
-                onSearch={handleSearch}
-                searchPlaceholder="Search shipments, requests..."
                 userAvatar={user?.avatar_url}
             />
 
@@ -91,7 +93,10 @@ const ShipperDashboard = ({
                 </div>
 
                 {/* Your Shipments */}
-                <ShipmentsList shipments={shipments || []} />
+                <ShipmentsList 
+                    shipments={shipments || []}
+                    showTitle={true}
+                    limitCount={2} />
             </div>
 
             {/* Floating Chat Icon */}
