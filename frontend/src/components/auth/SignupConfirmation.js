@@ -24,13 +24,11 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
       setRole(roleParam);
     }
 
-    // If no email in URL, redirect to role selection
     if (!emailParam) {
       navigate('/role-selection');
     }
   }, [location.search, navigate]);
 
-  // Auto-redirect when user becomes authenticated
   useEffect(() => {
     if (isAuthenticated || supabaseUser) {
       navigate('/dashboard');
@@ -39,12 +37,11 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
 
   const handleResendConfirmation = async () => {
     setIsChecking(true);
-    // Here you would typically call your API to resend confirmation email
+    // call API here to resend confirmation email
     try {
       // await resendConfirmationEmail(email);
       console.log('Resending confirmation email to:', email);
       
-      // Show success feedback
       setTimeout(() => {
         setIsChecking(false);
       }, 2000);

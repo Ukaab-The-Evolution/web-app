@@ -11,7 +11,7 @@ import ShipperProfile from '../dashboard/profile/ShipperProfile';
 const ProfileLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState('truckDriver');
+  const [userRole, setUserRole] = useState('shipper');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -42,7 +42,7 @@ const ProfileLayout = () => {
       // - URL parameter during role selection
       
       // For now, let's simulate different roles based on email or set manually
-      const role = user?.user_metadata?.role || 'truckDriver';
+      const role = user?.user_metadata?.role || 'shipper';
       console.log(user)
       setUserRole(role);
     };

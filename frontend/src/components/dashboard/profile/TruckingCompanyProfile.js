@@ -315,10 +315,6 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
     setIsEditing(true);
   };
 
-  const handleSearch = (query) => {
-    // Implement search logic here if needed
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Toast */}
@@ -334,8 +330,6 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
       <ProfileHeader
         userName={user?.company_name || "Company"}
         subtitle="Your profile, your control - edit and save with ease."
-        onSearch={handleSearch}
-        searchPlaceholder="Search your query"
         userAvatar={user?.avatar_url}
       />
 

@@ -286,10 +286,6 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
     setIsEditing(true);
   };
 
-  const handleSearch = (query) => {
-    // Implement search logic here if needed
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Toast */}
@@ -305,8 +301,6 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
       <ProfileHeader
         userName={user?.full_name || "Ahmed"}
         subtitle="Your profile, your control - edit and save with ease."
-        onSearch={handleSearch}
-        searchPlaceholder="Search your query"
         userAvatar={user?.avatar_url}
       />
 
