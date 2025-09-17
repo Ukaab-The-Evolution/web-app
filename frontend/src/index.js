@@ -35,12 +35,13 @@ import SignupConfirmation from './components/auth/SignupConfirmation';
 // Providers
 import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
 
-
 import DashboardLayout from './components/layout/DashboardLayout';
 import Shipments from './components/dashboard/shipments/Shipments';
+import ShipmentDetails from './components/dashboard/shipments/ShipmentDetails';
 import LoadRequest from './components/dashboard/loadRequest/LoadRequest';
 import ProfileLayout from './components/layout/ProfileLayout';
 import Settings from './components/dashboard/settings/Settings';
+import ChangePassword from './components/dashboard/settings/ChangePassword';
 import Toast from './components/ui/Toast';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -66,9 +67,11 @@ root.render(
           <Route path="/dashboard" element={<DashboardLayout />}>
             
             <Route path="shipments" element={<Shipments />} />
+            <Route path="shipment-details/:id" element={<ShipmentDetails />} />
             <Route path="load-request" element={<LoadRequest />} />
             <Route path="profile" element={<ProfileLayout />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
         </Routes>

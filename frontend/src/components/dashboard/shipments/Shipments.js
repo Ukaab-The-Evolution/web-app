@@ -2,10 +2,12 @@ import { FaTag, FaTruck, FaCheckCircle, FaChevronLeft, FaChevronRight } from 're
 import { useEffect, useState } from 'react';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
 import ShipmentsHeader from '../../ui/ShipmentsHeader';
-import ShipmentsList, { getShipmentsData } from '../../ui/ShipmentsList';
+import ShipmentsList from '../../ui/ShipmentsList';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { getShipperShipments } from '../../../actions/dashboard';
+import shipmentsData from "./ShipmentsData";
+import { useNavigate } from "react-router-dom";
 
 const Shipments = ({
     getShipperShipments,
@@ -14,11 +16,20 @@ const Shipments = ({
     const { user } = useSupabaseAuth();
     const [viewType, setViewType] = useState('list');
     const [currentPage, setCurrentPage] = useState(1);
-    const allShipments = getShipmentsData();
+    const allShipments = shipmentsData;
+    const navigate = useNavigate();
 
     useEffect(() => {
         getShipperShipments();
     }, [getShipperShipments]);
+
+    const handleShipmentClick = (id) => {
+    navigate(`/shipment-details/${id}`);
+  };
+
+  const handleLoadRequest = () => {
+  navigate('/dashboard/load-request');
+};
 
     const ITEMS_PER_PAGE = viewType === 'grid' ? 9 : 7;
     const totalPages = Math.ceil((allShipments?.length || 0) / ITEMS_PER_PAGE);
@@ -160,7 +171,7 @@ const Shipments = ({
                 <div className="flex items-center gap-2 mb-4">
                     <button
                         onClick={() => setViewType('list')}
-                        className={`px-4 py-2 rounded-lg font-normal flex items-center gap-2 transition-colors ${
+                        className={`px-4 py-2 rounded-xl font-normal flex items-center gap-2 transition-colors ${
                             viewType === 'list' 
                                 ? 'bg-gradient-to-t from-[#3B6255] to-[#578C7A] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] hover:from-[#2F4F43] hover:to-[#4A7D6D] text-white' 
                                 : 'bg-gray-100 text-[#3B6255] hover:bg-gray-200'
@@ -173,7 +184,7 @@ const Shipments = ({
                     </button>
                     <button
                         onClick={() => setViewType('grid')}
-                        className={`px-4 py-2 rounded-lg font-normal flex items-center gap-2 transition-colors ${
+                        className={`px-4 py-2 rounded-xl font-normal flex items-center gap-2 transition-colors ${
                             viewType === 'grid' 
                                 ? 'bg-gradient-to-t from-[#3B6255] to-[#578C7A] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] hover:from-[#2F4F43] hover:to-[#4A7D6D] text-white' 
                                 : 'bg-gray-100 text-[#3B6255] hover:bg-gray-200'
@@ -207,8 +218,10 @@ const Shipments = ({
                         </div>
 
                         {/* New Load Request Button */}
-                        <button className="bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
-              shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold hover:from-[#2F4F43] hover:to-[#4A7D6D] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                        <button 
+                       onClick={handleLoadRequest} 
+                        className="bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
+              shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold hover:from-[#2F4F43] hover:to-[#4A7D6D] text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -249,6 +262,7 @@ const Shipments = ({
                     showTitle={false}
                     limitCount={null}
                     viewMode={viewType}
+                    onShipmentClick={handleShipmentClick}
                 />
                 
 

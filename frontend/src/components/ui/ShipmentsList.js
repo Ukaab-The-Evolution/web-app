@@ -1,63 +1,17 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import shipmentsData from "../dashboard/shipments/ShipmentsData";
 
 const ShipmentsList = ({ 
     shipments: externalShipments = [],
     showTitle = true,
     limitCount = null,
-    viewMode = 'list'
+    viewMode = 'list',
+    showFullDetails = false
 }) => {
-    // Dummy data (replace later with API)
-    const [dummyShipments] = useState([
-        { id: "SHP-1001", description: "Truck #A12 - 18-Wheeler", status: "delivered", driverName: "Ali Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1002", description: "Truck #B07 - Flatbed", status: "pending", driverName: "Ahmed", driverAvatar: <img src="/images/avatar2.png" alt="Avatar 2" />, currentLocation: "Karachi" },
-        { id: "SHP-1003", description: "Truck #C45 - Container", status: "pending", driverName: "Saad", driverAvatar: <img src="/images/avatar3.png" alt="Avatar 3" />, currentLocation: "Lahore" },
-        { id: "SHP-1004", description: "Truck #C45 - Container", status: "in transit", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar4.png" alt="Avatar 4" />, currentLocation: "Multan" },
-        { id: "SHP-1005", description: "Truck #B07 - Flatbed", status: "delivered", driverName: "Hassan", driverAvatar: <img src="/images/avatar5.png" alt="Avatar 5" />, currentLocation: "Faislabad" },
-        { id: "SHP-1006", description: "Truck #G32 - Pickup", status: "delivered", driverName: "Kamran", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Karachi" },
-        { id: "SHP-1007", description: "Truck #H04 - Trailer", status: "pending", driverName: "Bilal Ahmed", driverAvatar: <img src="/images/avatar2.png" alt="Avatar 2" />, currentLocation: "Lahore" },
-        { id: "SHP-1008", description: "Truck #B07 - Flatbed", status: "in transit", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar3.png" alt="Avatar 3" />, currentLocation: "Islamabad" },
-        { id: "SHP-1009", description: "Truck #D89 - Refrigerated", status: "delivered", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar4.png" alt="Avatar 4" />, currentLocation: "Gujranwala" },
-        { id: "SHP-1010", description: "Truck #E12 - Box Truck", status: "pending", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar5.png" alt="Avatar 5" />, currentLocation: "Lahore" },
-        { id: "SHP-1011", description: "Truck #F34 - Tanker", status: "in transit", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1012", description: "Truck #G56 - Dump Truck", status: "delivered", driverName: "Usman", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1013", description: "Truck #H78 - Semi Trailer", status: "pending", driverName: "Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1014", description: "Truck #I90 - Cargo Van", status: "in transit", driverName: "Ali", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1015", description: "Truck #J12 - Livestock Trailer", status: "delivered", driverName: "Saad", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Lahore" },
-        { id: "SHP-10016", description: "Truck #B07 - Flatbed", status: "in transit", driverName: "Ali Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-10017", description: "Truck #D89 - Refrigerated", status: "delivered", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1018", description: "Truck #E12 - Box Truck", status: "pending", driverName: "Ali", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1019", description: "Truck #F34 - Tanker", status: "in transit", driverName: "Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1020", description: "Truck #G56 - Dump Truck", status: "delivered", driverName: "Usman", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1021", description: "Truck #H78 - Semi Trailer", status: "pending", driverName: "Ahmad", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1022", description: "Truck #I90 - Cargo Van", status: "in transit", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1023", description: "Truck #J12 - Livestock Trailer", status: "delivered", driverName: "Hadi Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Lahore" }
-    ]);
-
-    // Placeholder for API call
-    useEffect(() => {
-        const fetchShipments = async () => {
-            try {
-                // Example API call (uncomment & replace when backend ready)
-                // const response = await fetch("/api/shipments");
-                // const data = await response.json();
-                // setShipments(data);
-
-                console.log("API call placeholder - shipments");
-
-            } catch (error) {
-                console.error("Error fetching shipments:", error);
-            }
-        };
-
-        fetchShipments();
-    }, []);
-
-    const shipmentsToUse = externalShipments.length > 0 ? externalShipments : dummyShipments;
-
-    const displayedShipments = limitCount
-        ? shipmentsToUse.slice(0, limitCount)
-        : shipmentsToUse;
-
+    
+    const shipmentsToUse = externalShipments.length > 0 ? externalShipments : shipmentsData;
+    const displayedShipments = limitCount ? shipmentsToUse.slice(0, limitCount) : shipmentsToUse;
 
     return (
         <div className="bg-white rounded-2xl p-6">
@@ -65,14 +19,35 @@ const ShipmentsList = ({
                 <h3 className="text-lg font-semibold text-[#3B6255]">Your Shipments</h3>
             )}
 
+            {/* sending Full details to Shipment Details */}
+            {showFullDetails && (
+                 <div className="pr-6 pl-6 pt-4">
+                {displayedShipments.map((shipment, index) => {
+                    const fullShipment = shipmentsData.find(
+                        (s) => s.id === shipment.id
+                    );
+                    return (
+                        <Link
+                            key={`detail-${shipment.id}-${index}`}
+                            to={`/shipments/${shipment.id}`}
+                            state={{ shipment: fullShipment }}
+                        ></Link>
+                );
+            })}
+                </div>
+            )}
+                
+
             {/* List View */}
-            {viewMode === "list" && (
+            {viewMode === "list" && !showFullDetails && (
             <div className="pr-6 pl-6 pt-1 pb-1">
                 <div className="space-y-3">
                     {displayedShipments.map((shipment, index) => (
-                        <div
+                        <Link
                             key={`${shipment.id}-${index}`}
-                            className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
+                            to={`/dashboard/shipment-details/${shipment.id}`}
+                            state={{ shipmentId: shipment.id }}
+                            className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 hover:rounded-lg transition cursor-pointer"
                         >
                            
                                 <p className=" text-[#737373]">{shipment.id}</p>
@@ -88,20 +63,22 @@ const ShipmentsList = ({
                             >
                                 {shipment.status}
                             </span>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>
             )}
 
             {/* Grid View */}
-{viewMode === "grid" && (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pr-6 pl-6">
-        {displayedShipments.map((shipment, index) => (
-            <div
+            {viewMode === "grid" && !showFullDetails && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pr-6 pl-6">
+            {displayedShipments.map((shipment, index) => (
+                <Link
                 key={`${shipment.id}-grid-${index}`}
-                className="bg-[#DAE8E3] shadow-lg border border-[#3B6255] rounded-xl p-6 flex flex-col"
-            >
+                to={`/dashboard/shipment-details/${shipment.id}`}
+                state={{ shipmentId: shipment.id }}
+                className="bg-[#DAE8E3] shadow-lg border border-[#3B6255] rounded-xl p-6 flex flex-col hover:shadow-xl transition cursor-pointer"
+                >
                 {/* Avatar and Name Section */}
                 <div className="flex flex-col items-center mb-4">
                     <div className="w-16 h-16 rounded-full border border-[#3B6255] p-0 mb-3">
@@ -141,40 +118,12 @@ const ShipmentsList = ({
                         <span className="text-[#3B6255] font-semibold">{shipment.currentLocation}</span>
                     </div>
                 </div>
-            </div>
+            </Link>
         ))}
     </div>
 )}
         </div>
     );
-};
-
-export const getShipmentsData = () => {
-    return [
-       { id: "SHP-1001", description: "Truck #A12 - 18-Wheeler", status: "delivered", driverName: "Ali Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1002", description: "Truck #B07 - Flatbed", status: "pending", driverName: "Ahmed", driverAvatar: <img src="/images/avatar2.png" alt="Avatar 2" />, currentLocation: "Karachi" },
-        { id: "SHP-1003", description: "Truck #C45 - Container", status: "pending", driverName: "Saad", driverAvatar: <img src="/images/avatar3.png" alt="Avatar 3" />, currentLocation: "Lahore" },
-        { id: "SHP-1004", description: "Truck #C45 - Container", status: "in transit", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar4.png" alt="Avatar 4" />, currentLocation: "Multan" },
-        { id: "SHP-1005", description: "Truck #B07 - Flatbed", status: "delivered", driverName: "Hassan", driverAvatar: <img src="/images/avatar5.png" alt="Avatar 5" />, currentLocation: "Faislabad" },
-        { id: "SHP-1006", description: "Truck #G32 - Pickup", status: "delivered", driverName: "Kamran", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Karachi" },
-        { id: "SHP-1007", description: "Truck #H04 - Trailer", status: "pending", driverName: "Bilal Ahmed", driverAvatar: <img src="/images/avatar2.png" alt="Avatar 2" />, currentLocation: "Lahore" },
-        { id: "SHP-1008", description: "Truck #B07 - Flatbed", status: "in transit", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar3.png" alt="Avatar 3" />, currentLocation: "Islamabad" },
-        { id: "SHP-1009", description: "Truck #D89 - Refrigerated", status: "delivered", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar4.png" alt="Avatar 4" />, currentLocation: "Gujranwala" },
-        { id: "SHP-1010", description: "Truck #E12 - Box Truck", status: "pending", driverName: "Ali Khan", driverAvatar: <img src="/images/avatar5.png" alt="Avatar 5" />, currentLocation: "Lahore" },
-        { id: "SHP-1011", description: "Truck #F34 - Tanker", status: "in transit", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1012", description: "Truck #G56 - Dump Truck", status: "delivered", driverName: "Usman", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1013", description: "Truck #H78 - Semi Trailer", status: "pending", driverName: "Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1014", description: "Truck #I90 - Cargo Van", status: "in transit", driverName: "Ali", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1015", description: "Truck #J12 - Livestock Trailer", status: "delivered", driverName: "Saad", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Lahore" },
-        { id: "SHP-10016", description: "Truck #B07 - Flatbed", status: "in transit", driverName: "Ali Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-10017", description: "Truck #D89 - Refrigerated", status: "delivered", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1018", description: "Truck #E12 - Box Truck", status: "pending", driverName: "Ali", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1019", description: "Truck #F34 - Tanker", status: "in transit", driverName: "Hassan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1020", description: "Truck #G56 - Dump Truck", status: "delivered", driverName: "Usman", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1021", description: "Truck #H78 - Semi Trailer", status: "pending", driverName: "Ahmad", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1022", description: "Truck #I90 - Cargo Van", status: "in transit", driverName: "Usama Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Islamabad" },
-        { id: "SHP-1023", description: "Truck #J12 - Livestock Trailer", status: "delivered", driverName: "Hadi Khan", driverAvatar: <img src="/images/avatar1.png" alt="Avatar 1" />, currentLocation: "Lahore" }
-    ];
 };
 
 export default ShipmentsList;
