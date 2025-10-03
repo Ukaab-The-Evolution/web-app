@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import Sidebar from './Sidebar';
+import ChatWidget from '../ui/ChatWidget';
 import DashboardSkeleton from './DashboardSkeleton';
 
 // Import role-based dashboard components
@@ -138,6 +139,8 @@ const DashboardLayout = () => {
         handleSignOut={handleSignOut}
         userRole={userRole}
       />
+
+      <ChatWidget />
       
       {/* Main Content Area */}
       <div className="flex-1 ml-56 overflow-auto">

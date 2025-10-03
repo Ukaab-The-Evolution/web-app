@@ -8,7 +8,6 @@ import { GiPieChart } from "react-icons/gi";
 import WeeklyShipmentsChart from '../../ui/WeeklyShipmentsChart';
 import DeliveriesDonutChart from '../../ui/DeliveriesDonutChart';
 import ShipmentsList from '../../ui/ShipmentsList';
-import { RiWechatLine } from "react-icons/ri";
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { getDashboardOverview, getDashboardPieChart, getShipperShipments } from '../../../actions/dashboard';
@@ -98,20 +97,6 @@ const ShipperDashboard = ({
                     showTitle={true}
                     limitCount={2} />
             </div>
-
-            {/* Floating Chat Icon */}
-            <button
-                className="
-          fixed bottom-6 right-3
-          bg-[#1847a5] text-white 
-          w-12 h-12 flex items-center justify-center 
-          shadow-xl border border-[#351580]
-          rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-none
-          hover:bg-blue-700 transition
-        "
-            >
-                <RiWechatLine className="w-6 h-6" />
-            </button>
         </>
     );
 };

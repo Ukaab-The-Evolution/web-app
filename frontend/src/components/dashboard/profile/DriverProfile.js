@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle, FaTrash } from 'react-icons/fa';
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import { IoClose } from "react-icons/io5";
+import { MdAddPhotoAlternate } from "react-icons/md";
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
 import { connect } from 'react-redux';
@@ -28,6 +29,8 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [profileImage, setProfileImage] = useState(user?.avatar_url || null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [tempProfileImage, setTempProfileImage] = useState(null);
   const [verificationData, setVerificationData] = useState({
     cnic: '',
     license: '',
@@ -97,7 +100,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
   const handleProfileImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB for profile image)
       if (file.size > 5 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -105,8 +107,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
         });
         return;
       }
-    
-      // Check file type
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -115,8 +115,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
         });
         return;
       }
-
-      // Create preview URL
       const imageUrl = URL.createObjectURL(file);
       setProfileImage(imageUrl);
       
@@ -138,7 +136,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 20MB)
       if (file.size > 20 * 1024 * 1024) {
         setToast({
           type: "error",
@@ -147,7 +144,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
         return;
       }
     
-      // Check file type
       const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         setToast({
@@ -611,29 +607,148 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
 
               {/* Camera button */}
               <div 
-                onClick={() => profileImageInputRef.current?.click()}
+                onClick={() => setShowProfileModal(true)}
                 className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-[1px] border-[#0A0A0A] cursor-pointer hover:bg-gray-200">
                 <FaCamera className="w-4 h-4 text-[#0A0A0A]" />
               </div>
 
-              {/* Remove button */}
-              {profileImage && (
-                <div 
-                  onClick={handleRemoveProfileImage}
-                  className="absolute top-0 right-0 w-7 h-7 bg-red-600 rounded-full shadow-lg flex items-center justify-center border-0 border-white cursor-pointer hover:bg-red-500"
-                >
-                  <FaTrash className="w-4 h-4 text-white" />
+              {showProfileModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 relative">
+                    <button
+                      onClick={() => setShowProfileModal(false)}
+                      className="absolute top-4 right-4 text-[#171717] hover:text-gray-600"
+                    >
+                      <IoClose className="w-5 h-5" />
+                    </button>
+
+                    {/* Save Changes Preview */}
+                    {tempProfileImage ? (
+                      <>
+                        <h2 className="text-xl font-semibold text-[#3B6255] mb-16">Your New Profile Picture!</h2>
+                        <div className="flex justify-center mb-16">
+                          <div className="w-36 h-36 rounded-full overflow-hidden border border-[#3B6255]">
+                            <img src={tempProfileImage} alt="Preview" className="w-full h-full object-cover" />
+                          </div>
+                        </div>
+                        <div className="flex space-x-4">
+                          <button
+                            onClick={() => {
+                              setTempProfileImage(null);
+                              setShowProfileModal(false);
+                            }}
+                            className="w-2/4 h-[45px] px-2 rounded-xl bg-[#D4D4D4] text-[#171717] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)] font-poppins font-medium text-[16px] hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center gap-1"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              setProfileImage(tempProfileImage);
+                              setTempProfileImage(null);
+                              setShowProfileModal(false);
+                              setToast({ 
+                                type: "success",
+                                message: "Profile photo updated successfully!"
+                              });
+                            }}
+                            className="w-2/4 h-[45px] px-2 rounded-xl 
+                            bg-gradient-to-t from-[#3B6255] to-[#578C7A]
+                            shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)]
+                            font-poppins font-medium text-[16px]
+                            text-white cursor-pointer transition-colors duration-300
+                            hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      </>
+                    ) : profileImage ? (
+                      /* Change Profile Picture */
+                      <>
+                        <h2 className="text-xl font-semibold text-[#3B6255] mb-2">Change Profile Picture</h2>
+                        <p className="text-[#737373] font-regular mb-16">A picture helps people recognize you</p>
+                        <div className="flex justify-center mb-16">
+                          <div className="w-36 h-36 rounded-full overflow-hidden border border-[#3B6255]">
+                            <img src={profileImage} alt="Current profile" className="w-full h-full object-cover" />
+                          </div>
+                        </div>
+                        <div className="flex space-x-4">
+                          <button
+                            onClick={() => {
+                              setProfileImage(null);
+                              setShowProfileModal(false);
+                              setToast({ 
+                                type: "success", 
+                                message: "Profile image removed successfully!" 
+                              });
+                            }}
+                            className="w-2/4 h-[45px] px-2 rounded-xl bg-[#D4D4D4] text-[#171717] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)] font-poppins font-medium text-[16px] hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center gap-1"
+                          >
+                            Remove
+                          </button>
+                          <button
+                            onClick={() => profileImageInputRef.current?.click()}
+                            className="w-2/4 h-[45px] px-2 rounded-xl
+                            bg-gradient-to-t from-[#3B6255] to-[#578C7A]
+                            shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)]
+                            font-poppins font-medium text-[16px]
+                            text-white cursor-pointer transition-colors duration-300
+                            hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center"
+                          >
+                            Change
+                          </button>
+                          <input
+                            type="file"
+                            ref={profileImageInputRef}
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const imageUrl = URL.createObjectURL(file);
+                                setTempProfileImage(imageUrl);
+                              }
+                            }}
+                            accept=".png,.jpg,.jpeg"
+                            className="hidden"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      /* Upload Profile Picture */
+                      <>
+                        <h2 className="text-xl font-semibold text-[#3B6255] mb-2">Upload Picture</h2>
+                        <p className="text-[#737373] font-regular mb-14">Choose a new image to refresh your profile's look!</p>
+                        <div className="flex justify-center mb-16">
+                          <MdAddPhotoAlternate className="w-24 h-24 text-[#3B6255]" />
+                          <input
+                            type="file"
+                            ref={profileImageInputRef}
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const imageUrl = URL.createObjectURL(file);
+                                setTempProfileImage(imageUrl);
+                              }
+                            }}
+                            accept=".png,.jpg,.jpeg"
+                            className="hidden"
+                          />
+                        </div>
+                        <button
+                          onClick={() => profileImageInputRef.current?.click()}
+                          className="w-full h-[45px] px-2 rounded-xl 
+                            bg-gradient-to-t from-[#3B6255] to-[#578C7A]
+                            shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)]
+                            font-poppins font-medium text-[16px]
+                            text-white cursor-pointer transition-colors duration-300
+                            hover:from-[#2F4F43] hover:to-[#4A7D6D] flex items-center justify-center"
+                        >
+                          Upload Photo
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
-              
-              {/* Hidden file input for profile image */}
-              <input
-                type="file"
-                ref={profileImageInputRef}
-                onChange={handleProfileImageUpload}
-                accept=".png,.jpg,.jpeg"
-                className="hidden"
-              />
             </div>
           </div>
 
@@ -757,7 +872,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
               {!isEditing ? (
                 <button
                   onClick={handleEdit}
-                  className="w-2/6 h-[45px] rounded-full
+                  className="w-2/6 h-[45px] rounded-xl
                   bg-gradient-to-t from-[#3B6255] to-[#578C7A] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)]
                   font-poppins font-semibold text-white text-[18px] leading-[100%]
                   mt-[6px] cursor-pointer transition-colors duration-300
@@ -769,7 +884,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
                 <>
                   <button
                     onClick={handleSaveChanges}
-                    className="w-3/4 h-[45px] px-2 rounded-full 
+                    className="w-3/4 h-[45px] px-2 rounded-xl
                     bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
                     shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px]
                     text-white mt-[6px] cursor-pointer transition-colors duration-300
@@ -779,7 +894,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="w-1/4 h-[45px] px-2 rounded-full bg-[#D4D4D4] text-[#171717] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] hover:bg-gray-200 mt-[6px] transition-colors duration-300 flex items-center justify-center"
+                    className="w-1/4 h-[45px] px-2 rounded-xl bg-[#D4D4D4] text-[#171717] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] hover:bg-gray-200 mt-[6px] transition-colors duration-300 flex items-center justify-center"
                   >
                     Cancel
                   </button>

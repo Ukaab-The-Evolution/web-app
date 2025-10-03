@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { signInWithGoogle } from '../../actions/auth';
 import { FcGoogle } from 'react-icons/fc';
-import { FaTimes } from 'react-icons/fa';
+import { IoClose } from "react-icons/io5";
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import Toast from "../ui/Toast";
 import { getInitialFormData, isValidRole } from '../../utils/fieldsConfig';
@@ -250,7 +250,7 @@ const GoogleSignInButton = ({
               onClick={handleCloseModal}
               className="absolute top-4 right-4 text-[#171717] hover:text-gray-600"
             >
-              <FaTimes className="w-5 h-5" />
+              <IoClose className="w-5 h-5" />
             </button>
             
             {/* Modal Header */}
