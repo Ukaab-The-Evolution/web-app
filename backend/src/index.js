@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
 import cors from 'cors';
 import path from 'path';
 
@@ -24,6 +25,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/profile', profileRoutes);
+app.use('/api/v1/booking', bookingRoutes);
 
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {
