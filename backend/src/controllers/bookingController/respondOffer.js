@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../config/supabase.js";
+import AppError from "../../utils/appError.js";
 
 export const respondOffer = async (req, res, next) => {
   try {
