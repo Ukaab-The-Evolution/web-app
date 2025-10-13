@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../config/supabase.js";
 import AppError from "../../utils/appError.js";
+import { io } from "../../index.js";
 
 export const postOrder = async (req, res, next) => {
   try {
@@ -40,7 +41,12 @@ export const postOrder = async (req, res, next) => {
     if (offerError) return next(new AppError(offerError.message, 400));
 
     // 5️⃣ (Optional) Emit real-time notification via Socket.IO
-    // io.emit("offer:new", { orderId: orderData.id, trucks: selectedTrucks });
+    selectedTrucks.forEach((truck) => {
+      io.to(`truck_${truck.id}`).emit("offer:new", {
+        order_id: orderData.id,
+        truck_id: truck.id,
+      });
+    });
 
     res.status(200).json({
       status: "success",
@@ -51,3 +57,30 @@ export const postOrder = async (req, res, next) => {
     next(err);
   }
 };
+
+/*
+CLIENT TEST HTML (socket.html)
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>Socket.IO Offer Test</h2>
+    <pre id="log"></pre>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+      const socket = io("http://localhost:3001");
+      const truckId = "truck_d348474f-6f65-4a30-89ae-90423771883d";
+
+      socket.on("connect", () => {
+        document.getElementById("log").innerText += `✅ Connected: ${socket.id}\n`;
+        socket.emit("join", truckId);
+      });
+
+      socket.on("offer:new", (data) => {
+        document.getElementById("log").innerText += `📦 Offer received: ${JSON.stringify(data)}\n`;
+      });
+    </script>
+  </body>
+</html>
+*/
