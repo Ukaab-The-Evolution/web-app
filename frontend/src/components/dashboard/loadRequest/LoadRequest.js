@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { FaMinus, FaPlus } from 'react-icons/fa';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { createLoad } from '../../../actions/loads';
 
 const LoadRequest = ({ user }) => {
+  const dispatch = useDispatch();
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     cargoType: '',
@@ -28,14 +31,14 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
-    if (!formData.loadWeight.trim()) {
+    if (!formData.loadWeight || Number(formData.loadWeight) <= 0) {
       setToast({
         type: "error",
         message: "Load weight is required.",
       });
       return false;
     }
-    if (formData.numberOfTrucks < 1) {
+    if (Number(formData.numberOfTrucks) < 1 || !Number.isInteger(Number(formData.numberOfTrucks))) {
       setToast({
         type: "error",
         message: "Number of trucks must be at least 1.",
@@ -56,7 +59,7 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
-    if (!formData.paymentOffer.trim()) {
+    if (formData.paymentOffer === '' || Number(formData.paymentOffer) < 0) {
       setToast({
         type: "error",
         message: "Payment offer is required.",
@@ -77,7 +80,7 @@ const LoadRequest = ({ user }) => {
   const handleNumberOfTrucksChange = (increment) => {
     setFormData(prev => ({
       ...prev,
-      numberOfTrucks: Math.max(1, prev.numberOfTrucks + increment)
+      numberOfTrucks: Math.max(1, Number(prev.numberOfTrucks) + increment)
     }));
   };
 
@@ -93,11 +96,22 @@ const LoadRequest = ({ user }) => {
 
     try {
       setIsSubmitting(true);
-      // implement API call here
-      console.log('Load request data:', formData);
+      const createdLoad = await dispatch(createLoad({
+        cargo_type: formData.cargoType,
+        load_weight: Number(formData.loadWeight),
+        origin: formData.origin,
+        destination: formData.destination,
+        payment_offer: Number(formData.paymentOffer),
+        required_trucks: Number(formData.numberOfTrucks),
+        pooling_allowed: formData.poolingAllowed === 'Yes',
+        required_capacity: Number(formData.loadWeight),
+        additional_notes: formData.additionalNotes,
+      }));
       setToast({
         type: "success",
-        message: "Load request submitted successfully!",
+        message: createdLoad?.pool?.fulfilled
+          ? "Load request booked successfully."
+          : "Load request submitted and opened for truckers.",
       });
       
       setFormData({
@@ -113,7 +127,7 @@ const LoadRequest = ({ user }) => {
     } catch (error) {
       setToast({
         type: "error",
-        message: "Failed to submit load request. Please try again.",
+        message: error?.response?.data?.message || error?.message || "Failed to submit load request. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -178,7 +192,7 @@ const LoadRequest = ({ user }) => {
                     placeholder="200"
                   />
                   <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#3B6255] text-sm">
-                    kg/tons
+                    kg
                   </span>
                 </div>
               </div>

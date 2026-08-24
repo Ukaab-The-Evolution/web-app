@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import Sidebar from './Sidebar';
 import ChatWidget from '../ui/ChatWidget';
@@ -13,7 +13,6 @@ import ShipperDashboard from '../dashboard/dashboard/ShipperDashboard';
 const DashboardLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(); 
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,17 +34,10 @@ const DashboardLayout = () => {
   const activeSection = getActiveSection();
 
   useEffect(() => {
-    const getUserRole = () => {
-      const role = localStorage.getItem('userRole');
-      setUserRole(role);
-    };
+    setLoading(isAuthenticated === null || (isAuthenticated === true && !user));
+  }, [isAuthenticated, user]);
 
-    getUserRole();
-
-    setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-  }, [user]); // Remove setUserRole from dependencies
+  const userRole = user?.user_type || localStorage.getItem('userRole');
 
   const handleSignOut = async () => {
     try {
@@ -99,15 +91,18 @@ const DashboardLayout = () => {
 
   const renderDashboardByRole = () => {
     switch (userRole) {
-      case 'truckingCompany':
+      case 'trucking_company':
         return <TruckingCompanyDashboard />;
       case 'driver':
         return <TruckDriverDashboard />;
       case 'shipper':
-      default:
         return <ShipperDashboard />;
+      default:
+        return <div className="p-8 text-red-700">Your account role is not configured.</div>;
     }
   };
+
+  if (isAuthenticated === false) return <Navigate to="/login" replace />;
 
  if (loading) {
     return (

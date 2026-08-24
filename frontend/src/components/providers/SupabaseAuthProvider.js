@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { supabase } from '../../index';
+import { supabase } from '../../lib/supabase';
 import { handleAuthStateChange, loadSupabaseSession } from '../../actions/auth';
 
 const SupabaseAuthProvider = ({ children }) => {

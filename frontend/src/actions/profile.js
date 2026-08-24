@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api, { normalizeApiError } from '../api/client';
 import {
   PROFILE_GET_SUCCESS,
   PROFILE_GET_FAIL,
@@ -11,26 +11,12 @@ import {
 } from './types';
 import { setAlert } from './alert';
 
-// Helper to get auth header
-const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-};
-
-const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/profile`;
+const API_URL = '/api/v1/profile';
 
 // 1. Get Profile
 export const getProfile = () => async (dispatch) => {
   try {
-    const res = await axios.get(
-      `${API_URL}`,
-      getAuthConfig()
-    );
-    console.log('Profile fetched:', res.data);
+    const res = await api.get(API_URL);
     dispatch({
       type: PROFILE_GET_SUCCESS,
       payload: res.data.data.user,
@@ -40,17 +26,18 @@ export const getProfile = () => async (dispatch) => {
       type: PROFILE_GET_FAIL,
       payload: error.response?.data?.message || 'Failed to fetch profile',
     });
-    dispatch(setAlert(error.response?.data?.message || 'Failed to fetch profile', 'danger'));
+    const message = normalizeApiError(error);
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
 // 2. Update Profile
 export const updateProfile = (formData) => async (dispatch) => {
   try {
-    const res = await axios.put(
-      `${API_URL}`,
+    const res = await api.patch(
+      API_URL,
       formData,
-      getAuthConfig()
     );
     dispatch({
       type: PROFILE_UPDATE_SUCCESS,
@@ -62,17 +49,18 @@ export const updateProfile = (formData) => async (dispatch) => {
       type: PROFILE_UPDATE_FAIL,
       payload: error.response?.data?.message || 'Failed to update profile',
     });
-    dispatch(setAlert(error.response?.data?.message || 'Failed to update profile', 'danger'));
+    const message = normalizeApiError(error);
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
 // 3. Join Company (Drivers only)
 export const joinCompany = (inviteCode) => async (dispatch) => {
   try {
-    const res = await axios.post(
+    const res = await api.post(
       `${API_URL}/join-company`,
       { invite_code: inviteCode },
-      getAuthConfig()
     );
     dispatch({
       type: PROFILE_JOIN_COMPANY_SUCCESS,
@@ -86,7 +74,9 @@ export const joinCompany = (inviteCode) => async (dispatch) => {
       type: PROFILE_JOIN_COMPANY_FAIL,
       payload: error.response?.data?.message || 'Failed to join company',
     });
-    dispatch(setAlert(error.response?.data?.message || 'Failed to join company', 'danger'));
+    const message = normalizeApiError(error);
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
@@ -94,10 +84,9 @@ export const joinCompany = (inviteCode) => async (dispatch) => {
 export const generateInvite = (companyId = null) => async (dispatch) => {
   try {
     const body = companyId ? { company_id: companyId } : {};
-    const res = await axios.post(
-      `${API_URL}/generate-invite`,
+    const res = await api.post(
+      `${API_URL}/generate-invite-code`,
       body,
-      getAuthConfig()
     );
     dispatch({
       type: PROFILE_GENERATE_INVITE_SUCCESS,
@@ -109,6 +98,8 @@ export const generateInvite = (companyId = null) => async (dispatch) => {
       type: PROFILE_GENERATE_INVITE_FAIL,
       payload: error.response?.data?.message || 'Failed to generate invite code',
     });
-    dispatch(setAlert(error.response?.data?.message || 'Failed to generate invite code', 'danger'));
+    const message = normalizeApiError(error);
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };

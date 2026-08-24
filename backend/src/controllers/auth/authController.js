@@ -231,5 +231,22 @@ export const updatePassword = async (req, res, next) => {
   }
 };
 
+export const deleteAccount = async (req, res, next) => {
+  try {
+    if (!req.body.currentPassword) return next(new AppError('Current password is required', 400));
+    const identity = req.user.email
+      ? { email: req.user.email, password: req.body.currentPassword }
+      : { phone: req.user.phone, password: req.body.currentPassword };
+    const { error: verifyError } = await supabase.auth.signInWithPassword(identity);
+    if (verifyError) return next(new AppError('Current password is incorrect', 401));
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(req.user.auth_user_id);
+    if (error) return next(new AppError(error.message, 400));
+    return res.status(204).send();
+  } catch (error) {
+    return next(new AppError(error.message || 'Failed to delete account', 400));
+  }
+};
+
 export const restrictTo = (...roles) => requireRole(...roles);
 export { protect };

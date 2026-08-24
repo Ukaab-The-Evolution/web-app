@@ -32,6 +32,23 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
     }
   },
 
+  getMyLoads: async (req, res, next) => {
+    try {
+      if (!assertShipper(req, next)) return;
+      const { data, error } = await db.from('loads')
+        .select('*')
+        .eq('shipper_organization_id', req.user.organization_id)
+        .order('created_at', { ascending: false });
+      if (error) return fail(next, error.message, 400);
+      return res.status(200).json({
+        status: 'success',
+        data: { loads: (data || []).map(normalizeLoadResponse) },
+      });
+    } catch (error) {
+      return fail(next, error.message, 400);
+    }
+  },
+
   getAvailableLoads: async (req, res, next) => {
     try {
       const page = Math.max(Number.parseInt(req.query.page || '1', 10), 1);
@@ -140,6 +157,7 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
 const controller = createLoadController();
 export const {
   createLoad,
+  getMyLoads,
   getAvailableLoads,
   getLoad,
   submitBid,

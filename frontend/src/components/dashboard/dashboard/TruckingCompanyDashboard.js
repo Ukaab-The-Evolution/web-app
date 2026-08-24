@@ -1,200 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getAvailableLoads } from '../../../actions/loads';
+import { normalizeApiError } from '../../../api/client';
+import api from '../../../api/client';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
-import { connect } from 'react-redux';
-import { truckingCompanyFields } from '../../../selectors/truckingCompanyFields';
-import { getDashboardOverview, getDashboardPieChart } from '../../../actions/dashboard';
 
-const TruckingCompanyDashboard = ({
-  totalLoadsThisMonth,
-  pendingRequests,
-  averagePerformance,
-  weeklyShipments,
-  deliveries,
-  getDashboardOverview,
-  getDashboardPieChart
-}) => {
+const TruckingCompanyDashboard = () => {
+  const dispatch = useDispatch();
   const { user } = useSupabaseAuth();
+  const { items: loads = [], loading, error } = useSelector((state) => state.loads || {});
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleForm, setVehicleForm] = useState({ registration_number: '', vehicle_type: 'truck', capacity: '', driver_id: '' });
+  const [vehicleMessage, setVehicleMessage] = useState('');
 
-  useEffect(() => {
-    getDashboardOverview();
-    getDashboardPieChart();
-  }, [getDashboardOverview, getDashboardPieChart]);
+  const loadVehicles = () => api.get('/api/v1/vehicles').then((response) => setVehicles(response.data?.data?.vehicles || [])).catch((requestError) => setVehicleMessage(normalizeApiError(requestError)));
+  useEffect(() => { dispatch(getAvailableLoads()); loadVehicles(); }, [dispatch]);
 
-  return (
-    <>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome {user?.first_name || "Company"}!</h1>
-            <p className="text-gray-600 mt-1">Here is your main dashboard</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-          </div>
-        </div>
-      </div>
+  const createVehicle = async (event) => {
+    event.preventDefault();
+    try {
+      await api.post('/api/v1/vehicles', { ...vehicleForm, capacity: Number(vehicleForm.capacity), driver_id: vehicleForm.driver_id || undefined });
+      setVehicleForm({ registration_number: '', vehicle_type: 'truck', capacity: '', driver_id: '' });
+      setVehicleMessage('Vehicle added. Assign it to a driver through the vehicle record before bidding.');
+      await loadVehicles();
+    } catch (requestError) { setVehicleMessage(normalizeApiError(requestError)); }
+  };
 
-      {/* Stats Cards */}
-      <div className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Total Loads This Month</p>
-                <p className="text-3xl font-bold">{totalLoadsThisMonth}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Pending Requests</p>
-                <p className="text-3xl font-bold">{pendingRequests}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Average Performance</p>
-                <p className="text-3xl font-bold">{averagePerformance}%</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Weekly Shipments Chart */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-800">Weekly Shipments Chart</h3>
-              <select className="border border-gray-300 rounded-lg px-3 py-1 text-sm">
-                <option>This Week</option>
-              </select>
-            </div>
-            <div className="h-64 bg-gradient-to-t from-green-100 to-transparent rounded-lg flex items-end justify-between px-4 pb-4">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-                <div key={day} className="flex flex-col items-center">
-                  <div 
-                    className="bg-[#578C7A] rounded-t-lg w-8 mb-2"
-                    style={{ height: `${(weeklyShipments[index] / 30) * 200}px` }}
-                  ></div>
-                  <span className="text-xs text-gray-600">{day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Deliveries Donut Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Deliveries</h3>
-            <div className="flex items-center justify-center mb-6">
-              <div className="relative w-32 h-32">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">{averagePerformance}%</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-[#578C7A] rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">Ontime</span>
-                </div>
-                <span className="text-sm font-medium">{deliveries.ontime}%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">In Progress</span>
-                </div>
-                <span className="text-sm font-medium">{deliveries.inProgress}%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">Delayed</span>
-                </div>
-                <span className="text-sm font-medium">{deliveries.delayed}%</span>
-              </div>
-            </div>
-            <button className="w-full mt-6 bg-[#578C7A] text-white py-2 rounded-lg hover:bg-[#4a7a69] transition-colors">
-              Download Statistics
-            </button>
-          </div>
-        </div>
-
-        {/* Incoming Load Requests */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Incoming Load Requests</h3>
-          </div>
-          <div className="p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-gray-600 border-b">
-                    <th className="pb-3"># Shipment ID</th>
-                    <th className="pb-3">📍 Origin</th>
-                    <th className="pb-3">📍 Destination</th>
-                    <th className="pb-3">🚛 Trucks</th>
-                    <th className="pb-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incomingRequests.length > 0 ? (
-                    incomingRequests.map((req) => (
-                      <tr className="border-b" key={req.id}>
-                        <td className="py-4">{req.id}</td>
-                        <td className="py-4">{req.origin}</td>
-                        <td className="py-4">{req.destination}</td>
-                        <td className="py-4">{req.trucks}</td>
-                        <td className="py-4">
-                          <div className="flex space-x-2">
-                            <button className="bg-[#578C7A] text-white px-3 py-1 rounded text-sm">Accept</button>
-                            <button className="bg-red-500 text-white px-3 py-1 rounded text-sm">Decline</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="py-4 text-gray-500" colSpan={5}>No incoming requests</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+  return <div className="min-h-screen bg-[#f8fafc]"><div className="border-b border-gray-200 bg-white px-8 py-6"><h1 className="text-2xl font-bold text-gray-800">Welcome {user?.full_name || 'Trucking Company'}!</h1><p className="mt-1 text-gray-600">Manage fleet capacity and review pooled loads.</p></div><div className="grid gap-6 p-8 lg:grid-cols-[1.2fr_1fr]"><section className="rounded-xl bg-white p-6 shadow-sm"><div className="mb-5 rounded-xl bg-[#578C7A] p-6 text-white"><p className="text-sm opacity-90">Open loads in the network</p><p className="text-4xl font-bold">{loads.length}</p></div><h2 className="mb-5 text-lg font-semibold text-gray-800">Open load pools</h2>{loading && <p className="text-gray-500">Loading open loads…</p>}{error && <p className="text-red-600">{error}</p>}{!loading && !error && loads.length === 0 && <p className="text-gray-500">No open load pools are available.</p>}<div className="space-y-4">{loads.map((load) => <div key={load.id} className="rounded-lg border border-gray-200 p-4"><div className="flex justify-between gap-4"><div><p className="font-semibold text-gray-800">{load.cargo_type}</p><p className="text-sm text-gray-600">{load.origin} → {load.destination}</p></div><span className="text-sm font-medium text-[#3B6255]">{load.pool?.remaining || load.required_trucks} truck(s) needed</span></div><p className="mt-3 text-sm text-gray-600">Pool progress: {load.pool?.accepted || 0}/{load.pool?.required || load.required_trucks} trucks · {load.pool?.accepted_capacity || 0}/{load.pool?.required_capacity || load.load_weight} kg</p></div>)}</div></section><section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-2 text-lg font-semibold text-gray-800">Fleet vehicles</h2><p className="mb-5 text-sm text-gray-500">Create vehicles here, then assign them to driver profiles using the vehicle API.</p>{vehicleMessage && <p className="mb-4 rounded-lg bg-[#E8F2EE] p-3 text-sm text-[#3B6255]">{vehicleMessage}</p>}<form onSubmit={createVehicle} className="space-y-3"><input required value={vehicleForm.registration_number} onChange={(event) => setVehicleForm({ ...vehicleForm, registration_number: event.target.value })} placeholder="Registration number" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm" /><select value={vehicleForm.vehicle_type} onChange={(event) => setVehicleForm({ ...vehicleForm, vehicle_type: event.target.value })} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm"><option value="truck">Truck</option><option value="trailer">Trailer</option><option value="van">Van</option></select><input required type="number" min="1" step="0.01" value={vehicleForm.capacity} onChange={(event) => setVehicleForm({ ...vehicleForm, capacity: event.target.value })} placeholder="Capacity (kg)" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm" /><button type="submit" className="w-full rounded-lg bg-[#578C7A] px-4 py-3 font-medium text-white">Add vehicle</button></form><div className="mt-6 space-y-2">{vehicles.map((vehicle) => <div key={vehicle.id} className="rounded-lg border border-gray-200 p-3 text-sm"><div className="flex justify-between"><span className="font-medium text-gray-700">{vehicle.registration_number}</span><span className="capitalize text-gray-500">{vehicle.status}</span></div><p className="mt-1 text-gray-500">{vehicle.capacity} kg · {vehicle.driver_id ? 'Assigned' : 'Unassigned'}</p></div>)}</div></section></div></div>;
 };
 
-const mapStateToProps = (state) => truckingCompanyFields(state);
-
-export default connect(mapStateToProps, {
-  getDashboardOverview,
-  getDashboardPieChart,
-  
-})(TruckingCompanyDashboard);
+export default TruckingCompanyDashboard;

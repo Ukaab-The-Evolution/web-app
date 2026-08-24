@@ -9,6 +9,7 @@ import { connect } from 'react-redux';
 import { getProfile, updateProfile } from '../../../actions/profile';
 import {isAuthenticated} from '../../../actions/auth';
 import PropTypes from 'prop-types';
+import { uploadDocument } from '../../../actions/documents';
 
 const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
@@ -204,24 +205,18 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
 
     try {
       setVerificationLoading(true);
-      
-      // make an API call here to submit verification documents
-      console.log('Submitting verification:', verificationData);
-            
+      await uploadDocument(verificationData.registrationDocument, 'driver_registration');
+      await updateProfile({
+        cnic: verificationData.cnic,
+        license_number: verificationData.license,
+      });
       setShowVerificationModal(false);
       setShowSuccessModal(true);
-      
-      // Auto close success modal after 3 seconds
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setIsVerified(true);
-      }, 5000);
-      
+      setToast({ type: 'success', message: 'Documents submitted for review.' });
     } catch (error) {
-      console.error('Error submitting verification:', error);
       setToast({
         type: "error",
-        message: "Failed to submit verification. Please try again.",
+        message: error?.response?.data?.message || error?.message || "Failed to submit verification. Please try again.",
       });
     } finally {
       setVerificationLoading(false);

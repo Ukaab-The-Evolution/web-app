@@ -4,6 +4,7 @@ import { requireRole } from '../middleware/auth.js';
 import catchAsync from '../utils/catchAsync.js';
 import {
   createLoad,
+  getMyLoads,
   getAvailableLoads,
   getLoad,
   submitBid,
@@ -15,6 +16,7 @@ const router = express.Router();
 router.use(protect);
 
 router.post('/', requireRole('shipper'), catchAsync(createLoad));
+router.get('/', requireRole('shipper'), catchAsync(getMyLoads));
 router.get('/available', requireRole('driver', 'trucking_company', 'shipper'), catchAsync(getAvailableLoads));
 router.get('/:id', requireRole('driver', 'trucking_company', 'shipper'), catchAsync(getLoad));
 router.post('/:id/bids', requireRole('driver'), catchAsync(submitBid));

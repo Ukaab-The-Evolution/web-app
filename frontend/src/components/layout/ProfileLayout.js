@@ -11,7 +11,6 @@ import ShipperProfile from '../dashboard/profile/ShipperProfile';
 const ProfileLayout = () => {
   const { user, signOut } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState('shipper');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -32,28 +31,10 @@ const ProfileLayout = () => {
 
   const activeSection = getActiveSection();
 
-  useEffect(() => {
-    // Get user role from user metadata, backend, or local storage
-    const getUserRole = () => {
-      // This could come from:
-      // - user?.user_metadata?.role
-      // - localStorage.getItem('userRole')
-      // - API call to get user profile
-      // - URL parameter during role selection
-      
-      // For now, let's simulate different roles based on email or set manually
-      const role = user?.user_metadata?.role || 'shipper';
-      console.log(user)
-      setUserRole(role);
-    };
+  const userRole = user?.user_type || localStorage.getItem('userRole');
 
-    if (user) {
-      getUserRole();
-    }
-    
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+  useEffect(() => {
+    setLoading(!user);
   }, [user]);
 
   const handleSignOut = async () => {
@@ -108,9 +89,9 @@ const ProfileLayout = () => {
 
   const renderProfileByRole = () => {
     switch (userRole) {
-      case 'truckingCompany':
+      case 'trucking_company':
         return <TruckingCompanyProfile user={user} />;
-      case 'truckDriver':
+      case 'driver':
         return <TruckDriverProfile user={user} />;
       case 'shipper':
       default:

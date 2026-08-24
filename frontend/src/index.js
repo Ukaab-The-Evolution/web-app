@@ -4,22 +4,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import './index.css';
 import store from './store';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl= process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey= process.env.REACT_APP_SUPABASE_KEY;
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,{
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  }
-}
-);
-//supabase.from('your_table').select('*').then(console.log).catch(console.error);
+export { supabase } from './lib/supabase';
 
 //components
 import Landing from './components/layout/Landing';

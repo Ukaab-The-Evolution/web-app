@@ -50,6 +50,7 @@ export const protect = async (req, res, next) => {
 
     req.user = {
       ...canonicalUser,
+      user_id: canonicalUser.id,
       auth_user_id: authData.user.id,
       driver_id: driver?.id || null,
       organization_id: driver?.organization_id || organizations?.[0]?.organization_id || null,

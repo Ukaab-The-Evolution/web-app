@@ -17,8 +17,8 @@ const RoleSelection = ({ isAuthenticated }) => {
 
   const roles = [
     { name: "Shipper", value: "shipper" },
-    { name: "Trucking Company", value: "truckingCompany" },
-    { name: "Truck Driver", value: "truckDriver" },
+    { name: "Trucking Company", value: "trucking_company" },
+    { name: "Truck Driver", value: "driver" },
   ];
 
   const companyTypes = [
@@ -40,7 +40,7 @@ const RoleSelection = ({ isAuthenticated }) => {
     }
 
     // Show popup for trucking company
-    if (selectedRole.value === "truckingCompany") {
+    if (selectedRole.value === "trucking_company") {
       setShowPopup(true);
       return;
     }

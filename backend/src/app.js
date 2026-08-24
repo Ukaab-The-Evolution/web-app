@@ -5,10 +5,10 @@ import helmet from 'helmet';
 import path from 'path';
 import globalErrorHandler from './controllers/errorController.js';
 import authRoutes from './routes/authRoutes.js';
-import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import loadRoutes from './routes/loadRoutes.js';
+import vehicleRoutes from './routes/vehicleRoutes.js';
 import { loadEnv } from './config/env.js';
 
 export const createApp = (config = loadEnv()) => {
@@ -30,10 +30,10 @@ export const createApp = (config = loadEnv()) => {
   });
 
   app.use('/api/v1/auth', authRoutes);
-  app.use('/api/v1/dashboard', dashboardRoutes);
   app.use('/api/v1/upload', uploadRoutes);
   app.use('/api/v1/profile', profileRoutes);
   app.use('/api/v1/loads', loadRoutes);
+  app.use('/api/v1/vehicles', vehicleRoutes);
 
   app.use((req, res) => {
     res.status(404).json({

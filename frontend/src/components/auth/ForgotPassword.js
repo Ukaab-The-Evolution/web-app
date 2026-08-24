@@ -5,7 +5,6 @@ import { Navigate } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { forgotPassword } from '../../actions/auth';
 import { MdOutlineSupportAgent } from "react-icons/md";
-import axios from "axios";
 import Toast from "../ui/Toast";
 
 const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
@@ -32,21 +31,14 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
 
 
     try {
-
-      // insert backend api call here
-      
+      setLoading(true);
       await forgotPassword(email);
-
-      // On success
-      navigate('/reset-password', {
-        state: {
-          email: email,
-          isPasswordReset: true
-        }
-      });
+      setToast({ type: 'success', message: 'Reset link sent. Check your email.' });
     } catch (error) {
-      console.error("Forgot password error:", error);
-    } 
+      setToast({ type: 'error', message: error?.message || 'Unable to send reset link.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Redirect if already authenticated
@@ -110,7 +102,7 @@ const ForgotPassword = ({ forgotPassword, isAuthenticated }) => {
           
           {/* Description */}
           <p className="w-full sm:max-w-[500px] h-[48px] font-sans font-medium text-base leading-6 text-[#5F5F5F] opacity-100 mb-8 text-left sm:text-left">
-            Enter your email and we'll send you an OTP code to reset your password.
+            Enter your email and we'll send you a secure password reset link.
           </p>
   
           {/* Email Form */}

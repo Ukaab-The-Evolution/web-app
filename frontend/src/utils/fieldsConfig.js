@@ -1,7 +1,7 @@
 export const ROLES = {
   SHIPPER: 'shipper',
-  TRUCKING_COMPANY: 'truckingCompany',
-  TRUCK_DRIVER: 'truckDriver'
+  TRUCKING_COMPANY: 'trucking_company',
+  TRUCK_DRIVER: 'driver'
 };
 
 export const ROLE_DISPLAY_NAMES = {
@@ -9,6 +9,13 @@ export const ROLE_DISPLAY_NAMES = {
   [ROLES.TRUCKING_COMPANY]: 'Trucking Company',
   [ROLES.TRUCK_DRIVER]: 'Truck Driver'
 };
+
+const ROLE_ALIASES = {
+  truckingCompany: ROLES.TRUCKING_COMPANY,
+  truckDriver: ROLES.TRUCK_DRIVER,
+};
+
+export const normalizeRole = (role) => ROLE_ALIASES[role] || role;
 
 // Base fields that are common across all roles
 const baseFields = [
@@ -113,6 +120,7 @@ export const roleContent = {
  * @returns {Array} Array of field configurations
  */
 export const getFieldsForRole = (role) => {
+  role = normalizeRole(role);
   if (!role || !roleSpecificFields[role]) {
     return baseFields;
   }
@@ -134,6 +142,7 @@ export const getFieldsForRole = (role) => {
  * @returns {Object} Initial form data object
  */
 export const getInitialFormData = (role) => {
+  role = normalizeRole(role);
   const fields = getFieldsForRole(role);
   return fields.reduce((acc, field) => {
     acc[field.name] = '';
@@ -147,7 +156,7 @@ export const getInitialFormData = (role) => {
  * @returns {string} Display name
  */
 export const getRoleDisplayName = (role) => {
-  return ROLE_DISPLAY_NAMES[role] || '';
+  return ROLE_DISPLAY_NAMES[normalizeRole(role)] || '';
 };
 
 /**
@@ -156,7 +165,7 @@ export const getRoleDisplayName = (role) => {
  * @returns {Object} Content configuration
  */
 export const getRoleContent = (role) => {
-  return roleContent[role] || {
+  return roleContent[normalizeRole(role)] || {
     title: 'Welcome to Ukaab!',
     description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
   };
@@ -168,7 +177,7 @@ export const getRoleContent = (role) => {
  * @returns {boolean} Whether the role is valid
  */
 export const isValidRole = (role) => {
-  return Object.values(ROLES).includes(role);
+  return Object.values(ROLES).includes(normalizeRole(role));
 };
 
 /**

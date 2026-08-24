@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import shipmentsData from "../dashboard/shipments/ShipmentsData";
 
 const ShipmentsList = ({ 
     shipments: externalShipments = [],
@@ -10,7 +9,7 @@ const ShipmentsList = ({
     showFullDetails = false
 }) => {
     
-    const shipmentsToUse = externalShipments.length > 0 ? externalShipments : shipmentsData;
+    const shipmentsToUse = externalShipments;
     const displayedShipments = limitCount ? shipmentsToUse.slice(0, limitCount) : shipmentsToUse;
 
     return (

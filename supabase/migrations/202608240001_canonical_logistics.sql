@@ -25,9 +25,18 @@ create table if not exists public.organizations (
   name text not null,
   kind text not null check (kind in ('shipper', 'trucking_company')),
   owner_user_id uuid not null references public.profiles(user_id) on delete restrict,
+  invite_code text not null default encode(gen_random_bytes(16), 'hex'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.organizations add column if not exists invite_code text;
+update public.organizations
+set invite_code = encode(gen_random_bytes(16), 'hex')
+where invite_code is null;
+create unique index if not exists organizations_invite_code_uidx
+  on public.organizations(invite_code)
+  where invite_code is not null;
 
 create table if not exists public.organization_members (
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -126,6 +135,20 @@ create table if not exists public.shipment_events (
   created_by uuid references public.profiles(user_id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(user_id) on delete cascade,
+  document_type text not null,
+  storage_path text not null unique,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  uploaded_at timestamptz not null default now(),
+  reviewed_by uuid references public.profiles(user_id) on delete set null,
+  reviewed_at timestamptz
+);
+
+create index if not exists documents_status_idx
+  on public.documents(status, uploaded_at desc);
 
 create index if not exists loads_open_idx
   on public.loads(status, created_at desc)

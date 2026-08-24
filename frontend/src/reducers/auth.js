@@ -34,6 +34,12 @@ const initialState = {
 export default function (state = initialState, action) {
   const { type, payload } = action;
 
+  const persistAuth = (nextPayload = {}) => {
+    if (nextPayload.token) localStorage.setItem('token', nextPayload.token);
+    const role = nextPayload.user?.user_type;
+    if (role) localStorage.setItem('userRole', role);
+  };
+
   switch (type) {
     // User loaded (after token check)
     case USER_LOADED:
@@ -41,6 +47,7 @@ export default function (state = initialState, action) {
         ...state,
         isAuthenticated: true,
         loading: false,
+        supabaseUser: payload,
         user: payload,
       };
 
@@ -54,14 +61,13 @@ export default function (state = initialState, action) {
         isAuthenticated: false,
         user: null,
         token: null,
-        otpEmail: payload?.email || null,
+        otpEmail: payload?.user?.email || null,
         otpError: null,
       };
 
     // OTP verification: user is now verified and authenticated
     case OTP_VERIFY_SUCCESS:
-      localStorage.setItem('token', payload.token);
-      localStorage.setItem('userRole', payload.user.role);
+      persistAuth(payload);
       return {
         ...state,
         ...payload,
@@ -77,18 +83,17 @@ export default function (state = initialState, action) {
     case LOGIN_SUCCESS:
     case GOOGLE_AUTH_SUCCESS:
     case SUPABASE_SESSION_LOADED:
-      localStorage.setItem('token', payload.token);
-      localStorage.setItem('userRole', payload.user.user_type);
+      persistAuth(payload);
 
       return {
         ...state,
         ...payload,
-        supabaseUser: payload.user,
-        token: payload.token,
+        supabaseUser: payload.user || state.supabaseUser,
+        token: payload.token || state.token,
         isAuthenticated: true,
         loading: false,
         googleLoading: false,
-        user: payload.user, 
+        user: payload.user || state.user,
       };
 
     // Google Auth loading

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaChevronRight, FaTimes } from 'react-icons/fa';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { IoClose } from "react-icons/io5";
+import api, { normalizeApiError } from '../../../api/client';
 
 const Settings = ({ user }) => {
   const [activeSection, setActiveSection] = useState('account');
@@ -32,10 +33,13 @@ const Settings = ({ user }) => {
     }
 
     setIsDeleting(true);
-    
-    setTimeout(() => {
+    try {
+      await api.delete('/api/v1/auth/account', { data: { currentPassword: deletePassword } });
       navigate('/register');
-    }, 1500);
+    } catch (error) {
+      setIsDeleting(false);
+      window.alert(normalizeApiError(error));
+    }
   };
 
   return (

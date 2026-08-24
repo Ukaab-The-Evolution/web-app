@@ -3,6 +3,7 @@ import {
   signup,
   login,
   updatePassword,
+  deleteAccount,
   getMe,
   forgotPassword,
   resetPassword,
@@ -25,5 +26,6 @@ router.post('/reset-password', resetPassword);
 router.use(protect);
 router.get('/me', getMe);
 router.patch('/updatePassword', updatePassword);
+router.delete('/account', deleteAccount);
 
 export default router;

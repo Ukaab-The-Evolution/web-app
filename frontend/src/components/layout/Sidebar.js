@@ -12,7 +12,7 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
   // Define navigation items based on user role
   const getNavigationItems = () => {
     switch (userRole) {
-      case 'truckingCompany':
+      case 'trucking_company':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: <TbLayoutDashboardFilled className="w-6 h-6" /> },
           { id: 'loadRequests', label: 'Load Requests', icon: <TbCubePlus className="w-6 h-6" /> },
@@ -20,7 +20,7 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
           { id: 'fleet', label: 'Fleet Management', icon: <FiTruck className="w-6 h-6" /> },
         ];
       
-      case 'truckDriver':
+      case 'driver':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: <TbLayoutDashboardFilled className="w-6 h-6" /> },
           { id: 'orders', label: 'My Orders', icon: <BiPackage className="w-6 h-6" /> },

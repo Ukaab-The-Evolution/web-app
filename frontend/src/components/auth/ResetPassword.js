@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { connect, useDispatch } from 'react-redux';
 import { useState } from 'react';
 import { MdOutlineSupportAgent } from 'react-icons/md';
@@ -9,7 +9,7 @@ import { setAlert } from '../../actions/alert';
 
 const ResetPassword = ({ isAuthenticated, resetPassword }) => {
     const navigate = useNavigate();
-    const { token } = useParams();
+    const dispatch = useDispatch();
     const [formData, setFormData] = useState({
         newPassword: '',
         confirmPassword: ''
@@ -24,10 +24,6 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
         hasMinLength: false,
         hasNumberOrSymbol: false
     });
-
-    if (isAuthenticated) {
-        return <Navigate to='/dashboard' />;
-    }
 
     // Password validation function
     const validatePassword = (password) => {
@@ -58,27 +54,29 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
         e.preventDefault();
 
         if (!formData.newPassword || !formData.confirmPassword) {
-            useDispatch(setAlert('Please fill in all fields', 'danger'));
+            dispatch(setAlert('Please fill in all fields', 'danger'));
             return;
         }
 
         if (formData.newPassword !== formData.confirmPassword) {
-            useDispatch(setAlert('Passwords do not match', 'danger'));
+            dispatch(setAlert('Passwords do not match', 'danger'));
             return;
         }
 
         const isPasswordValid = validatePassword(formData.newPassword);
 
         if (!isPasswordValid) {
-            useDispatch(setAlert('Password does not meet the requirements', 'danger'));
+            dispatch(setAlert('Password does not meet the requirements', 'danger'));
             return;
         }
 
         try {
-            await resetPassword(token, formData.newPassword, navigate);
+            setIsLoading(true);
+            await resetPassword(null, formData.newPassword, navigate);
         } catch (error) {
-            console.error('Reset password error:', error);
-            useDispatch(setAlert('Failed to reset password. Please try again.', 'danger'));
+            dispatch(setAlert(error?.message || 'Failed to reset password. Please try again.', 'danger'));
+        } finally {
+            setIsLoading(false);
         }
     };
 

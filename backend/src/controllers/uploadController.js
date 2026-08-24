@@ -1,9 +1,8 @@
-import supabase from '../config/supabase.js';
-import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../config/supabase.js'; 
+import { supabaseAdmin } from '../config/supabase.js';
 import AppError from '../utils/appError.js';
 import catchAsync from '../utils/catchAsync.js';
 import crypto from 'crypto';
+import path from 'path';
 
 // Upload document for verification
 export const uploadDocument = catchAsync(async (req, res, next) => {
@@ -16,7 +15,11 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const fileExt = req.file.originalname.split('.').pop();
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    const allowedExtensions = new Set(['.pdf', '.png', '.jpg', '.jpeg']);
+    if (!allowedExtensions.has(fileExt)) {
+      return next(new AppError('Unsupported document type', 400));
+    }
     const fileName = `${crypto.randomBytes(16).toString('hex')}.${fileExt}`;
     const storagePath = `users/${req.user.user_id}/${fileName}`;
 
@@ -35,8 +38,7 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     const { data: docData, error: dbError } = await supabaseAdmin
       .from('documents')
       .insert({
-        user_id: req.user.user_id,
-        auth_user_id: req.user.auth_user_id,
+        user_id: req.user.id,
         document_type: req.body.document_type,
         storage_path: storagePath,
         status: 'pending',
@@ -55,7 +57,6 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     });
 
   } catch (err) {
-    console.error('Upload error:', err);
     next(new AppError(`Upload failed: ${err.message}`, 400));
   }
 });
@@ -67,17 +68,13 @@ export const getPendingDocuments = catchAsync(async (req, res, next) => {
     const { data: documents, error } = await supabaseAdmin
       .from('documents')
       .select(`
-        document_id,
+        id,
         user_id,
         document_type,
         storage_path,
         uploaded_at,
         status,
-        users:user_id (
-          user_id,
-          full_name,
-          user_type
-        )
+        profiles:user_id (full_name, user_type, email, phone)
       `)
       .eq('status', 'pending')
       .order('uploaded_at', { ascending: false });
@@ -113,7 +110,7 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .select('user_id, storage_path')
-      .eq('document_id', document_id)
+      .eq('id', document_id)
       .single();
 
     if (docError) throw docError;
@@ -126,7 +123,7 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
         reviewed_by: req.user.user_id,
         reviewed_at: new Date().toISOString()
       })
-      .eq('document_id', document_id);
+      .eq('id', document_id);
 
     if (updateError) throw updateError;
 

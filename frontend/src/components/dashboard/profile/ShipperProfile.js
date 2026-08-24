@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { getProfile, updateProfile } from '../../../actions/profile';
 import { isAuthenticated } from '../../../actions/auth';
+import { uploadDocument } from '../../../actions/documents';
 
 const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
@@ -186,17 +187,15 @@ const ShipperProfile = ({ user, isAuthenticated, getProfile, updateProfile }) =>
 
     try {
       setVerificationLoading(true);
-      // TODO: Implement backend API call for verification
+      await uploadDocument(verificationData.registrationDocument, 'shipper_registration');
+      await updateProfile({ cnic: verificationData.cnic });
       setShowVerificationModal(false);
       setShowSuccessModal(true);
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setIsVerified(true);
-      }, 5000);
+      setToast({ type: 'success', message: 'Documents submitted for review.' });
     } catch (error) {
       setToast({
         type: "error",
-        message: "Failed to submit verification. Please try again.",
+        message: error?.response?.data?.message || error?.message || "Failed to submit verification. Please try again.",
       });
     } finally {
       setVerificationLoading(false);
