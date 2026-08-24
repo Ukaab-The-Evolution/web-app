@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
-import { protect, restrictTo } from '../controllers/auth/authController.js';
+import { protect } from '../middleware/protect.js';
+import { requireRole } from '../middleware/auth.js';
 import { 
   uploadDocument, 
   getPendingDocuments, 
@@ -16,8 +17,8 @@ router.use(protect);
 // User document upload
 router.post('/upload', upload.single('document'), uploadDocument);
 
-// Admin routes
-router.use(restrictTo('admin'));
+// Review routes are restricted to verified organization owners until a dedicated admin role is added.
+router.use(requireRole('trucking_company'));
 
 router.get('/pending', getPendingDocuments);
 router.patch('/review', reviewVerification);

@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../controllers/auth/authController.js';
+import { protect } from '../middleware/protect.js';
 import { getProfile, 
     updateProfile, 
     joinCompany, 
