@@ -1,53 +1,35 @@
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { loadEnv } from './env.js';
 
-dotenv.config();
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey || !supabaseServiceRoleKey) {
-  throw new Error('Supabase credentials must be provided in environment variables');
-}
-
-// Regular client (uses ANON key)
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
-  },
-  db: {
-    schema: 'public'
-  }
-});
-
-// Admin client (uses SERVICE ROLE key)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
-  }
-});
-
-export const createUserClient = (token) => {
-  return createClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      global: {
-        headers: {
-          Authorization: token
-        }
-      },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    }
-  );
+const config = loadEnv();
+const baseAuthOptions = {
+  persistSession: false,
+  autoRefreshToken: false,
 };
 
-// Keep both named and default exports for backward compatibility
+const supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+  auth: baseAuthOptions,
+  db: { schema: 'public' },
+});
+
+const supabaseAdmin = createClient(config.supabaseUrl, config.supabaseServiceRoleKey, {
+  auth: baseAuthOptions,
+  db: { schema: 'public' },
+});
+
+export const createUserClient = (token) => createClient(
+  config.supabaseUrl,
+  config.supabaseAnonKey,
+  {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: baseAuthOptions,
+    db: { schema: 'public' },
+  },
+);
+
 export { supabase, supabaseAdmin };
-export default supabase;  // Add this line back
+export default supabase;
