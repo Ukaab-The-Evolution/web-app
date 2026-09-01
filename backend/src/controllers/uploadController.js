@@ -4,6 +4,15 @@ import catchAsync from '../utils/catchAsync.js';
 import crypto from 'crypto';
 import path from 'path';
 
+const documentTypeMap = Object.freeze({
+  driver_registration: 'license',
+  company_registration: 'certification',
+  license: 'license',
+  certification: 'certification',
+  proof_of_delivery: 'proof_of_delivery',
+  payment_proof: 'payment_proof',
+});
+
 // Upload document for verification
 export const uploadDocument = catchAsync(async (req, res, next) => {
   if (!req.file) return next(new AppError('File required', 400));
@@ -35,11 +44,14 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     if (uploadError) throw uploadError;
 
     // Create document record
+    const documentType = documentTypeMap[req.body.document_type];
+    if (!documentType) return next(new AppError('Unsupported document type', 400));
     const { data: docData, error: dbError } = await supabaseAdmin
       .from('documents')
       .insert({
         user_id: req.user.id,
-        document_type: req.body.document_type,
+        auth_user_id: req.user.auth_user_id,
+        document_type: documentType,
         storage_path: storagePath,
         status: 'pending',
         uploaded_at: new Date().toISOString()
@@ -68,7 +80,7 @@ export const getPendingDocuments = catchAsync(async (req, res, next) => {
     const { data: documents, error } = await supabaseAdmin
       .from('documents')
       .select(`
-        id,
+        document_id,
         user_id,
         document_type,
         storage_path,
@@ -110,7 +122,7 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .select('user_id, storage_path')
-      .eq('id', document_id)
+      .eq('document_id', document_id)
       .single();
 
     if (docError) throw docError;
@@ -123,7 +135,7 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
         reviewed_by: req.user.user_id,
         reviewed_at: new Date().toISOString()
       })
-      .eq('id', document_id);
+      .eq('document_id', document_id);
 
     if (updateError) throw updateError;
 

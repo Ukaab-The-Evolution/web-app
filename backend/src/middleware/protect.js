@@ -1,6 +1,6 @@
 import AppError from '../utils/appError.js';
 import { supabase, supabaseAdmin } from '../config/supabase.js';
-import { buildCanonicalUser } from '../services/authService.js';
+import { buildLegacyUser } from '../services/currentSchemaService.js';
 import { extractBearerToken } from './auth.js';
 
 export const protect = async (req, res, next) => {
@@ -13,47 +13,57 @@ export const protect = async (req, res, next) => {
       return next(new AppError('Invalid or expired token', 401));
     }
 
-    let { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('auth_user_id', authData.user.id)
       .maybeSingle();
-
-    if (!profile && !profileError) {
-      const fallback = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('user_id', authData.user.id)
-        .maybeSingle();
-      profile = fallback.data;
-      profileError = fallback.error;
-    }
-
     if (profileError) throw profileError;
     if (!profile) return next(new AppError('Application profile not found', 401));
 
-    const { data: organizations, error: organizationError } = await supabaseAdmin
-      .from('organization_members')
-      .select('organization_id, member_role, organizations(id, name, kind)')
-      .eq('user_id', profile.user_id);
+    const [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult] = await Promise.all([
+      supabaseAdmin.from('trucking_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+      supabaseAdmin.from('shipper_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+      supabaseAdmin.from('shippers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+      supabaseAdmin.from('drivers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    ]);
 
-    if (organizationError) throw organizationError;
+    for (const result of [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult]) {
+      if (result.error) throw result.error;
+    }
 
-    const canonicalUser = buildCanonicalUser(profile, organizations || []);
-    const { data: driver, error: driverError } = await supabaseAdmin
-      .from('drivers')
-      .select('id, organization_id')
-      .eq('user_id', profile.user_id)
-      .maybeSingle();
-
-    if (driverError) throw driverError;
+    const truckingCompany = truckingCompanyResult.data;
+    const shipperCompany = shipperCompanyResult.data;
+    const shipper = shipperResult.data;
+    const driver = driverResult.data;
+    let company = truckingCompany || shipperCompany || null;
+    if (!company && driver?.company_id) {
+      const { data, error } = await supabaseAdmin.from('trucking_companies')
+        .select('*').eq('company_id', driver.company_id).maybeSingle();
+      if (error) throw error;
+      company = data;
+    }
+    if (!company && shipper?.company_id) {
+      const { data, error } = await supabaseAdmin.from('shipper_companies')
+        .select('*').eq('company_id', shipper.company_id).maybeSingle();
+      if (error) throw error;
+      company = data;
+    }
+    const canonicalUser = buildLegacyUser(profile, {
+      company_id: driver?.company_id || truckingCompany?.company_id || shipperCompany?.company_id || null,
+      driver_id: driver?.driver_id || null,
+      shipper_id: shipper?.shipper_id || null,
+      company,
+      organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
+    });
 
     req.user = {
       ...canonicalUser,
       user_id: canonicalUser.id,
       auth_user_id: authData.user.id,
-      driver_id: driver?.id || null,
-      organization_id: driver?.organization_id || organizations?.[0]?.organization_id || null,
+      driver_id: driver?.driver_id || null,
+      shipper_id: shipper?.shipper_id || null,
+      company_id: driver?.company_id || truckingCompany?.company_id || shipperCompany?.company_id || null,
     };
     req.accessToken = token;
     return next();

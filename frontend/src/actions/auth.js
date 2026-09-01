@@ -110,7 +110,14 @@ export const loadSupabaseSession = () => async (dispatch) => {
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (!data.session) return null;
+    if (!data.session) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        dispatch({ type: AUTH_ERROR });
+        return null;
+      }
+      return dispatch(loadUser());
+    }
 
     localStorage.setItem('token', data.session.access_token);
     dispatch({

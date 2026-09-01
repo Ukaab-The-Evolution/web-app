@@ -22,14 +22,14 @@ const TruckDriverDashboard = () => {
   const openBidForm = (load) => {
     setSelectedLoad(load);
     setMessage('');
-    setForm({ vehicle_id: vehicles[0]?.id || '', bid_amount: '', proposed_capacity: String(load.required_capacity || load.load_weight || '') });
+    setForm({ vehicle_id: vehicles[0]?.id ? String(vehicles[0].id) : '', bid_amount: '', proposed_capacity: String(load.required_capacity || load.load_weight || '') });
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage('');
     try {
-      await dispatch(submitBid(selectedLoad.id, { vehicle_id: form.vehicle_id.trim(), bid_amount: Number(form.bid_amount), proposed_capacity: Number(form.proposed_capacity) }));
+      await dispatch(submitBid(selectedLoad.id, { vehicle_id: String(form.vehicle_id).trim(), bid_amount: Number(form.bid_amount), proposed_capacity: Number(form.proposed_capacity) }));
       setMessage('Your truck has joined the load pool pending shipper acceptance.');
       setSelectedLoad(null);
     } catch (requestError) {

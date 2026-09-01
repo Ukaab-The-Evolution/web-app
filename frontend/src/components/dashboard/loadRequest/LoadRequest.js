@@ -16,6 +16,7 @@ const LoadRequest = ({ user }) => {
     numberOfTrucks: 1,
     origin: '',
     destination: '',
+    pickupTime: '',
     paymentOffer: '',
     poolingAllowed: 'Yes',
     additionalNotes: ''
@@ -52,11 +53,23 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
+    if (!/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(formData.origin.trim())) {
+      setToast({ type: "error", message: "Origin must use latitude, longitude coordinates." });
+      return false;
+    }
     if (!formData.destination.trim()) {
       setToast({
         type: "error",
         message: "Destination is required.",
       });
+      return false;
+    }
+    if (!/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(formData.destination.trim())) {
+      setToast({ type: "error", message: "Destination must use latitude, longitude coordinates." });
+      return false;
+    }
+    if (!formData.pickupTime) {
+      setToast({ type: "error", message: "Pickup time is required." });
       return false;
     }
     if (formData.paymentOffer === '' || Number(formData.paymentOffer) < 0) {
@@ -101,6 +114,7 @@ const LoadRequest = ({ user }) => {
         load_weight: Number(formData.loadWeight),
         origin: formData.origin,
         destination: formData.destination,
+        pickup_time: new Date(formData.pickupTime).toISOString(),
         payment_offer: Number(formData.paymentOffer),
         required_trucks: Number(formData.numberOfTrucks),
         pooling_allowed: formData.poolingAllowed === 'Yes',
@@ -120,6 +134,7 @@ const LoadRequest = ({ user }) => {
         numberOfTrucks: 1,
         origin: '',
         destination: '',
+        pickupTime: '',
         paymentOffer: '',
         poolingAllowed: 'Yes',
         additionalNotes: ''
@@ -166,13 +181,28 @@ const LoadRequest = ({ user }) => {
               <label className="block text-sm font-medium text-[#333333] mb-2">
                 Cargo Type
               </label>
-              <input
-                type="text"
+              <select
                 name="cargoType"
                 value={formData.cargoType}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                placeholder="Frozen Goods"
+              >
+                <option value="">Select cargo type</option>
+                <option value="general">General</option>
+                <option value="fragile">Fragile</option>
+                <option value="hazardous">Hazardous</option>
+                <option value="perishable">Perishable</option>
+              </select>
+            </div>
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-[#333333] mb-2">Pickup Time</label>
+              <input
+                required
+                type="datetime-local"
+                name="pickupTime"
+                value={formData.pickupTime}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-[#E8F2EE] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
               />
             </div>
 
@@ -244,7 +274,7 @@ const LoadRequest = ({ user }) => {
                   value={formData.origin}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                  placeholder="Islamabad"
+                  placeholder="33.6844, 73.0479"
                 />
               </div>
               
@@ -258,7 +288,7 @@ const LoadRequest = ({ user }) => {
                   value={formData.destination}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                  placeholder="Karachi"
+                  placeholder="24.8607, 67.0011"
                 />
               </div>
             </div>

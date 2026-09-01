@@ -1,4 +1,11 @@
-import { validateLoadInput } from '../domain/validation.js';
+// Stable service entry point retained for existing imports. Database-specific
+// mapping lives in currentSchemaService so controllers cannot drift from the
+// existing integer-ID Supabase schema.
+import {
+  buildLegacyBidInsert,
+  buildLegacyLoadInsert,
+  normalizeLegacyLoad,
+} from './currentSchemaService.js';
 
 export const getPoolState = (load = {}) => {
   const required = Number(load.required_trucks || 1);
@@ -24,48 +31,6 @@ export const getPoolState = (load = {}) => {
   };
 };
 
-export const buildLoadInsert = (input, user) => {
-  if (!user?.id || !user.organization_id) {
-    throw new Error('Authenticated shipper organization is required');
-  }
-
-  const normalized = validateLoadInput(input);
-  return {
-    ...normalized,
-    shipper_organization_id: user.organization_id,
-    created_by: user.id,
-    status: 'open',
-    accepted_trucks: 0,
-    accepted_capacity: 0,
-  };
-};
-
-export const buildBidInsert = (input, user) => {
-  const vehicleId = typeof input?.vehicle_id === 'string' ? input.vehicle_id.trim() : '';
-  if (!vehicleId) throw new Error('vehicle_id is required');
-
-  const bidAmount = Number(input.bid_amount);
-  if (!Number.isFinite(bidAmount) || bidAmount < 0) {
-    throw new Error('bid_amount must be zero or greater');
-  }
-
-  const proposedCapacity = Number(input.proposed_capacity);
-  if (!Number.isFinite(proposedCapacity) || proposedCapacity <= 0) {
-    throw new Error('proposed_capacity must be greater than zero');
-  }
-
-  if (!user?.driver_id && !user?.id) throw new Error('Authenticated driver is required');
-
-  return {
-    driver_id: user.driver_id || user.id,
-    vehicle_id: vehicleId,
-    bid_amount: bidAmount,
-    proposed_capacity: proposedCapacity,
-    status: 'pending',
-  };
-};
-
-export const normalizeLoadResponse = (load) => ({
-  ...load,
-  pool: getPoolState(load),
-});
+export const buildLoadInsert = buildLegacyLoadInsert;
+export const buildBidInsert = buildLegacyBidInsert;
+export const normalizeLoadResponse = normalizeLegacyLoad;

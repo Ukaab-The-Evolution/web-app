@@ -11,7 +11,7 @@ import TruckDriverDashboard from '../dashboard/dashboard/TruckDriverDashboard';
 import ShipperDashboard from '../dashboard/dashboard/ShipperDashboard';
 
 const DashboardLayout = () => {
-  const { user, signOut } = useSupabaseAuth();
+  const { user, signOut, isAuthenticated } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();

@@ -3,10 +3,10 @@ import { supabase, supabaseAdmin, createUserClient } from '../../config/supabase
 import { loadEnv } from '../../config/env.js';
 import { normalizeRole } from '../../domain/validation.js';
 import {
-  buildCanonicalUser,
   buildSignupInput,
   validatePasswordStrength,
 } from '../../services/authService.js';
+import { buildLegacyUser } from '../../services/currentSchemaService.js';
 import { extractBearerToken, requireRole } from '../../middleware/auth.js';
 import { protect } from '../../middleware/protect.js';
 import AppError from '../../utils/appError.js';
@@ -14,37 +14,48 @@ import AppError from '../../utils/appError.js';
 const config = loadEnv();
 
 const getProfileAggregate = async (authUserId) => {
-  let { data: profile, error: profileError } = await supabaseAdmin
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('*')
     .eq('auth_user_id', authUserId)
     .maybeSingle();
-
-  if (!profile && !profileError) {
-    const fallback = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('user_id', authUserId)
-      .maybeSingle();
-    profile = fallback.data;
-    profileError = fallback.error;
-  }
-
   if (profileError) throw profileError;
   if (!profile) return null;
 
-  const { data: organizations, error: organizationError } = await supabaseAdmin
-    .from('organization_members')
-    .select('organization_id, member_role, organizations(id, name, kind)')
-    .eq('user_id', profile.user_id);
+  const [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult] = await Promise.all([
+    supabaseAdmin.from('trucking_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('shipper_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('shippers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('drivers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+  ]);
+  for (const result of [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult]) {
+    if (result.error) throw result.error;
+  }
 
-  if (organizationError) throw organizationError;
-  return buildCanonicalUser(profile, organizations || []);
+  let company = truckingCompanyResult.data || shipperCompanyResult.data || null;
+  if (!company && driverResult.data?.company_id) {
+    const { data, error } = await supabaseAdmin.from('trucking_companies')
+      .select('*').eq('company_id', driverResult.data.company_id).maybeSingle();
+    if (error) throw error;
+    company = data;
+  }
+  if (!company && shipperResult.data?.company_id) {
+    const { data, error } = await supabaseAdmin.from('shipper_companies')
+      .select('*').eq('company_id', shipperResult.data.company_id).maybeSingle();
+    if (error) throw error;
+    company = data;
+  }
+  return buildLegacyUser(profile, {
+    company_id: driverResult.data?.company_id || company?.company_id || null,
+    driver_id: driverResult.data?.driver_id || null,
+    shipper_id: shipperResult.data?.shipper_id || null,
+    company,
+    organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
+  });
 };
 
 const createApplicationRecords = async ({ authUser, input, userType }) => {
   const profilePayload = {
-    user_id: authUser.id,
     auth_user_id: authUser.id,
     email: authUser.email || input.email || null,
     phone: authUser.phone || input.phone || null,
@@ -61,36 +72,46 @@ const createApplicationRecords = async ({ authUser, input, userType }) => {
   if (profileError) throw profileError;
 
   if (userType === 'driver') {
+    const driverPayload = { user_id: profile.user_id };
+    if (input.cnic) {
+      const cnic = String(input.cnic).replace(/\D/g, '');
+      if (cnic) driverPayload.cnic = cnic;
+    }
+    if (input.license_number) driverPayload.license_number = String(input.license_number).trim();
     const { error: driverError } = await supabaseAdmin
       .from('drivers')
-      .insert({ user_id: profile.user_id });
+      .insert(driverPayload);
     if (driverError) throw driverError;
     return profile;
   }
 
   const organizationName = input.organization_name?.trim()
     || `${profilePayload.full_name}'s Organization`;
-  const { data: organization, error: organizationError } = await supabaseAdmin
-    .from('organizations')
-    .insert({
-      name: organizationName,
-      kind: userType,
-      owner_user_id: profile.user_id,
-    })
-    .select('*')
-    .single();
+  const companyPayload = {
+    user_id: profile.user_id,
+    company_name: organizationName,
+    company_address: String(input.company_address || input.address || 'Not provided').trim(),
+  };
+  if (userType === 'trucking_company') {
+    const fleetSize = Number(input.fleet_size || 1);
+    if (!Number.isInteger(fleetSize) || fleetSize < 1) throw new Error('fleet_size must be a positive whole number');
+    const { error: companyError } = await supabaseAdmin
+      .from('trucking_companies')
+      .insert({ ...companyPayload, fleet_size: fleetSize });
+    if (companyError) throw companyError;
+  } else {
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('shipper_companies')
+      .insert({ ...companyPayload, tax_id: input.tax_id || null })
+      .select('company_id')
+      .single();
+    if (companyError) throw companyError;
 
-  if (organizationError) throw organizationError;
-
-  const { error: membershipError } = await supabaseAdmin
-    .from('organization_members')
-    .insert({
-      organization_id: organization.id,
-      user_id: profile.user_id,
-      member_role: 'owner',
-    });
-
-  if (membershipError) throw membershipError;
+    const { error: shipperError } = await supabaseAdmin
+      .from('shippers')
+      .insert({ user_id: profile.user_id, company_id: company.company_id, is_primary: true });
+    if (shipperError) throw shipperError;
+  }
   return profile;
 };
 

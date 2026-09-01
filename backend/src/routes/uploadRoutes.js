@@ -24,8 +24,8 @@ router.use(protect);
 // User document upload
 router.post('/upload', upload.single('document'), uploadDocument);
 
-// Review routes are restricted to verified organization owners until a dedicated admin role is added.
-router.use(requireRole('trucking_company'));
+// The current schema has a dedicated admin profile role for document review.
+router.use(requireRole('admin'));
 
 router.get('/pending', getPendingDocuments);
 router.patch('/review', reviewVerification);
