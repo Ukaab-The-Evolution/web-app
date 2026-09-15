@@ -4,8 +4,6 @@ import { connect } from 'react-redux';
 import { login } from '../../actions/auth';
 import { useState } from 'react';
 
-import { FcGoogle } from 'react-icons/fc';
-import { FaFacebook } from 'react-icons/fa';
 import { MdOutlineSupportAgent } from 'react-icons/md';
 
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
@@ -37,8 +35,6 @@ const Login = ({ login, isAuthenticated }) => {
   if (isAuthenticated) {
     return <Navigate to='/dashboard' />;
   }
-  console.log(isAuthenticated);
-
   return (
     <div className="min-h-screen  flex flex-col lg:flex-row relative font-poppins bg-[#f8fafc]">
       {/* Top Left Logo */}
@@ -158,24 +154,6 @@ const Login = ({ login, isAuthenticated }) => {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-          <div className='flex items-center my-6' aria-label='or-divider'>
-            <hr className='flex-grow border-[var(--color-green-main)]' />
-            <span className='mx-2 text-[#737373] text-base font-poppins'>
-              OR
-            </span>
-            <hr className='flex-grow border-[var(--color-green-main)]' />
-          </div>
-          <section className='space-y-3'>
-            <button
-              type='button'
-              className='w-full flex items-center justify-center gap-3  h-[45px] px-[25px] rounded-full border border-[var(--color-border-social)] bg-[var(--color-bg-white)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-social)] text-base shadow-none font-[var(--font-poppins)]'
-              aria-label='Continue with Google'
-            >
-              <FcGoogle className='text-2xl' />
-              Continue with Google
-            </button>
-
-          </section>
         </section>
       </main>
       {/* Right Section */}
@@ -210,7 +188,7 @@ const Login = ({ login, isAuthenticated }) => {
             Welcome Back!
           </h2>
           <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
-            Manage your shipments with speed and confidence - login to access real-time tracking, instant load assignmnets, and seamless logistics management.
+            Manage your shipments with speed and confidence - login to access trip updates, load assignments, and seamless logistics management.
           </p>
         </div>
       </div>

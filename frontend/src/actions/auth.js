@@ -1,386 +1,157 @@
-import axios from 'axios';
-import { supabase } from '../index';
-
+import { supabase } from '../lib/supabase';
+import api, { buildAuthHeaders, normalizeApiError } from '../api/client';
 import {
   AUTH_ERROR,
   LOGIN_SUCCESS,
   LOGIN_FAIL,
-  // LOGOUT,
-  // RESET_PASSWORD_SUCCESS,
-  // RESET_PASSWORD_FAILURE,
   REGISTER_SUCCESS,
   REGISTER_FAIL,
   USER_LOADED,
-  GOOGLE_AUTH_START,
-  GOOGLE_AUTH_SUCCESS,
-  GOOGLE_AUTH_FAIL,
   SUPABASE_SESSION_LOADED,
   SUPABASE_SIGNOUT,
-  OTP_SEND_SUCCESS,
-  OTP_SEND_FAIL,
-  OTP_VERIFY_SUCCESS,
-  OTP_VERIFY_FAIL,
   RESET_PASSWORD_SUCCESS,
   RESET_PASSWORD_FAIL,
 } from './types';
 import { setAlert } from './alert';
 
-const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/auth`;
-const getAuthConfig = async () => {
-  const { data } = await supabase.auth.getSession();
-  const user  = await supabase.auth.getUser();
-  console.log("Auth User:", user);
-  const token = data.session?.access_token || localStorage.getItem('token');
-  console.log("Auth Token:", data.session?.access_token);
-  console.log("Data Session:", data);
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-};
+const authPath = '/api/v1/auth';
 
 export const loadUser = () => async (dispatch) => {
   try {
-    const res = await axios.get(`${API_URL}/me`, getAuthConfig());
-  
-    dispatch({
-      type: USER_LOADED,
-      payload: res.data.data, 
-    });
-  } catch (err) {
-    dispatch({
-      type: AUTH_ERROR,
-    });
-    dispatch(setAlert('Authentication error. Please log in again.', 'danger'));
+    const response = await api.get(`${authPath}/me`);
+    const user = response.data?.data?.user;
+    dispatch({ type: USER_LOADED, payload: user });
+    return user;
+  } catch (error) {
+    dispatch({ type: AUTH_ERROR });
+    throw error;
   }
 };
 
-export const register =
-  (formData, role) =>
-  async (dispatch) => {
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-    const body = JSON.stringify({ 
-      email: formData.email, 
-      phone: formData.phone, 
-      password: formData.password,  
+export const register = (formData, role) => async (dispatch) => {
+  try {
+    const response = await api.post(`${authPath}/signup`, {
+      email: formData.email || undefined,
+      phone: formData.phone || undefined,
+      password: formData.password,
       full_name: formData.name,
-      user_type: role
+      user_type: role,
+      organization_name: formData.companyname || formData.companyName || undefined,
+      company_code: formData.companycode || formData.companyCode || undefined,
+      cnic: formData.cnic || undefined,
     });
-    try {
-      console.log(body)
-      const res = await axios.post(`${API_URL}/signup`, body, config);
+    dispatch({ type: REGISTER_SUCCESS, payload: response.data?.data });
+    dispatch(setAlert('Account created. Check your email to verify it.', 'success'));
+    return response.data;
+  } catch (error) {
+    const message = normalizeApiError(error);
+    dispatch({ type: REGISTER_FAIL, payload: message });
+    dispatch(setAlert(message, 'danger'));
+    throw error;
+  }
+};
 
-      console.log(res.data);
-      dispatch({
-        type: REGISTER_SUCCESS,
-        payload: res.data,
-      });
-      dispatch(sendOTP(formData.email));
-      dispatch(setAlert('Registration successful! Please verify the OTP sent to your email.', 'success'));
-
-    } catch (err) {
-      const errors = err.response.data.errors;
-      if (errors) {
-        errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
-      }
-      dispatch({
-        type: REGISTER_FAIL,
-      });
-      dispatch(setAlert('Registration failed. Please check your network or try again.', 'danger'));
-    }
-  };
-
-// Login User
-export const login = (email, password) => async (dispatch) => {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-  const body = JSON.stringify({ email, password });
+export const login = (identifier, password) => async (dispatch) => {
   try {
-    const res = await axios.post(`${API_URL}/login`, body, config);
-    // res.data.data is the user object
-    dispatch({
-      type: LOGIN_SUCCESS,
-      payload: {
-        token: res.data.token,
-        user: res.data.data, // <-- this is the user object
-      },
-    });
+    const response = await api.post(`${authPath}/login`, { identifier, password });
+    const payload = {
+      token: response.data?.token,
+      user: response.data?.data,
+    };
+    dispatch({ type: LOGIN_SUCCESS, payload });
     dispatch(setAlert('Login successful!', 'success'));
-    dispatch(loadUser());
-  } catch (err) {
-    const errors = err.response?.data.errors;
-    if (errors) {
-      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
-    }
-    dispatch({
-      type: LOGIN_FAIL,
-    });
+    return payload.user;
+  } catch (error) {
+    const message = normalizeApiError(error);
+    dispatch({ type: LOGIN_FAIL, payload: message });
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
-//forgot password
 export const forgotPassword = (email) => async (dispatch) => {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-  const body = JSON.stringify({ email });
   try {
-    const res = await axios.post(
-      `${API_URL}/forgotPassword`,
-      body,
-      config
-    );
+    await api.post(`${authPath}/forgot-password`, { email });
     dispatch(setAlert('Password reset link sent', 'success'));
-  } catch (err) {
-    const errors = err.response.data.errors;
-    if (errors) {
-      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
-    }
-    dispatch(setAlert('Failed to send reset link', 'danger'));
+    return true;
+  } catch (error) {
+    const message = normalizeApiError(error);
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
-// Reset Password Action
 export const resetPassword = (token, newPassword, navigate) => async (dispatch) => {
   try {
-    const res = await axios.patch(
-      `${API_URL}/resetPassword/${token}`,
-      { newPassword }
-    );
-
-    if (res.data && res.data.token) {
-      dispatch({
-        type: RESET_PASSWORD_SUCCESS,
-        payload: res.data,
-      });
-      dispatch(setAlert(res.data.message || "Password updated successfully", "success"));
-      dispatch(loadUser());
-      if (navigate) navigate("/dashboard");
-    } else {
-      dispatch(setAlert("Password updated, but no token received.", "warning"));
+    let accessToken = token || localStorage.getItem('token');
+    if (!accessToken) {
+      const { data } = await supabase.auth.getSession();
+      accessToken = data.session?.access_token;
     }
-  } catch (err) {
-    const message =
-      err.response?.data?.message ||
-      "Failed to reset password. Please try again.";
-    dispatch(setAlert(message, "danger"));
-    dispatch({
-      type: RESET_PASSWORD_FAIL,
+    const response = await api.post(`${authPath}/reset-password`, { newPassword }, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
+    dispatch({ type: RESET_PASSWORD_SUCCESS, payload: response.data });
+    dispatch(setAlert('Password updated successfully', 'success'));
+    if (navigate) navigate('/login');
+    return response.data;
+  } catch (error) {
+    const message = normalizeApiError(error);
+    dispatch({ type: RESET_PASSWORD_FAIL, payload: message });
+    dispatch(setAlert(message, 'danger'));
+    throw error;
   }
 };
 
-// Load Supabase session on app start
 export const loadSupabaseSession = () => async (dispatch) => {
   try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-
+    const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-
-    if (session) {
-      dispatch({
-        type: SUPABASE_SESSION_LOADED,
-        payload: {
-          user: session.user,
-          token: session.access_token,
-        },
-      });
-    }
-  } catch (error) {
-    console.error('Error loading session:', error);
-  }
-};
-
-// Google OAuth sign in
-export const signInWithGoogle = () => async (dispatch) => {
-  try {
-    dispatch({ type: GOOGLE_AUTH_START });
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    });
-
-    if (error) throw error;
-
-    // OAuth redirect will handle the rest
-  } catch (error) {
-    console.error('Google OAuth error:', error);
-    dispatch({
-      type: GOOGLE_AUTH_FAIL,
-      payload: error.message,
-    });
-    dispatch(setAlert('Google authentication failed', 'danger'));
-  }
-};
-
-// Handle auth state changes
-export const handleAuthStateChange = (event, session) => async (dispatch) => {
-  try {
-    if (event === 'SIGNED_IN' && session) {
-      // Create or update user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile && !profileError) {
-        // Create new profile for first-time Google user
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: session.user.id,
-              email: session.user.email,
-              name:
-                session.user.user_metadata.full_name ||
-                session.user.user_metadata.name,
-              avatar_url: session.user.user_metadata.avatar_url,
-              provider: 'google',
-              created_at: new Date().toISOString(),
-            },
-          ]);
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-        }
+    if (!data.session) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        dispatch({ type: AUTH_ERROR });
+        return null;
       }
-
-      dispatch({
-        type: GOOGLE_AUTH_SUCCESS,
-        payload: {
-          user: session.user,
-          token: session.access_token,
-        },
-      });
-
-      dispatch(setAlert('Successfully signed in with Google', 'success'));
-    } else if (event === 'SIGNED_OUT') {
-      dispatch({ type: SUPABASE_SIGNOUT });
+      return dispatch(loadUser());
     }
-  } catch (error) {
-    console.error('Auth state change error:', error);
+
+    localStorage.setItem('token', data.session.access_token);
     dispatch({
-      type: GOOGLE_AUTH_FAIL,
-      payload: error.message,
+      type: SUPABASE_SESSION_LOADED,
+      payload: { token: data.session.access_token },
     });
+    return dispatch(loadUser());
+  } catch (error) {
+    dispatch({ type: AUTH_ERROR });
+    return null;
   }
 };
 
-// Sign out
+export const handleAuthStateChange = (event, session) => async (dispatch) => {
+  if (event === 'SIGNED_OUT') {
+    dispatch({ type: SUPABASE_SIGNOUT });
+    return;
+  }
+  if (!session) return;
+
+  localStorage.setItem('token', session.access_token);
+  dispatch({ type: SUPABASE_SESSION_LOADED, payload: { token: session.access_token } });
+  try {
+    await dispatch(loadUser());
+  } catch (error) {
+    dispatch({ type: AUTH_ERROR });
+  }
+};
+
 export const signOutUser = () => async (dispatch) => {
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-
+    await api.post(`${authPath}/logout`, {}, { headers: buildAuthHeaders() });
+    await supabase.auth.signOut();
     dispatch({ type: SUPABASE_SIGNOUT });
     dispatch(setAlert('Successfully signed out', 'success'));
   } catch (error) {
-    dispatch(setAlert('Error signing out', 'danger'));
+    dispatch(setAlert(normalizeApiError(error), 'danger'));
+    throw error;
   }
 };
-
-// Send OTP for registration
-export const sendOTP = (email) => async (dispatch) => {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  const body = JSON.stringify({
-    toEmail: email,
-  });
-
-  try {
-
-    const res = await axios.post(`${API_URL}/send-otp`, body, config);
-    dispatch({
-      type: OTP_SEND_SUCCESS,
-      payload: res.data,
-    });
-    
-    dispatch(setAlert('OTP sent to your email', 'success'));
-
-  } catch (err) {
-    const errors = err.response?.data?.errors;
-    if (errors) {
-      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
-    } else {
-      dispatch(setAlert(err.response?.data?.message || 'Failed to send OTP', 'danger'));
-    }
-
-    dispatch({
-      type: OTP_SEND_FAIL,
-      payload: err.response?.data?.message || 'Failed to send OTP',
-    });
-
-  }
-};
-
-// Verify OTP and complete registration
-export const verifyOTP = (enteredOtp, email) => async (dispatch) => {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  const body = JSON.stringify({ otp: enteredOtp, toEmail: email });
-
-  try {
-
-    const res = await axios.post(`${API_URL}/verify-otp`, body, config);
-
-    dispatch({
-      type: OTP_VERIFY_SUCCESS,
-      payload: res.data,
-    });
-
-    dispatch({
-      type: REGISTER_SUCCESS,
-      payload: res.data,
-    });
-
-    dispatch(setAlert('Registration completed successfully!', 'success'));
-    dispatch(loadUser());
-
-
-  } catch (err) {
-    const errors = err.response?.data?.errors;
-    if (errors) {
-      errors.forEach((error) => dispatch(setAlert(error.msg, 'danger')));
-    } else {
-      dispatch(setAlert(err.response?.data?.message || 'Invalid or expired OTP', 'danger'));
-    }
-
-    dispatch({
-      type: OTP_VERIFY_FAIL,
-      payload: err.response?.data?.message || 'OTP verification failed',
-    });
-
-  }
-};
-
-
-

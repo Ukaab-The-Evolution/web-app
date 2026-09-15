@@ -1,14 +1,14 @@
 import PropTypes from 'prop-types';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { connect, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { connect } from 'react-redux';
 import { useState } from 'react';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from '../../ui/Toast';
+import api, { normalizeApiError } from '../../../api/client';
 
 const ChangePassword = ({ isAuthenticated, user }) => {
     const navigate = useNavigate();
-    const dispatch = useDispatch();
     const [toast, setToast] = useState(null);
     const [formData, setFormData] = useState({
         currentPassword: '',
@@ -30,7 +30,7 @@ const ChangePassword = ({ isAuthenticated, user }) => {
     const validatePassword = (password) => {
         const hasUppercase = /[A-Z]/.test(password);
         const hasMinLength = password.length >= 8;
-        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+=\x5B\x5D{};':"\\|,.<>/?-]/.test(password);
 
         setPasswordValidation({
             hasUppercase,
@@ -50,12 +50,10 @@ const ChangePassword = ({ isAuthenticated, user }) => {
         }
     };
     
-    const changePassword = async (currentPassword, newPassword) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (currentPassword === "wrong") reject(new Error("Invalid current password"));
-                else resolve("success");
-            }, 1000);
+    const submitPasswordChange = async (currentPassword, newPassword) => {
+        await api.patch('/api/v1/auth/updatePassword', {
+            currentPassword,
+            newPassword,
         });
     };
 
@@ -115,18 +113,16 @@ const ChangePassword = ({ isAuthenticated, user }) => {
         setIsLoading(true);
         
         try {
-            await changePassword(formData.currentPassword, formData.newPassword);
+            await submitPasswordChange(formData.currentPassword, formData.newPassword);
             setToast({
                 type: "success",
                 message: "Password changed successfully!",
             });
-            setTimeout(() => {
-                navigate('/dashboard/settings');
-            }, 3000); 
+            navigate('/dashboard/settings');
         } catch (error) {
             setToast({
                 type: "error",
-                message: "Failed to change password. Please try again.",
+                message: normalizeApiError(error),
             });
         } finally {
             setIsLoading(false);

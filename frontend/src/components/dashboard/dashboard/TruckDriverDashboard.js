@@ -1,207 +1,70 @@
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getAvailableLoads, submitBid } from '../../../actions/loads';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
-import { connect } from 'react-redux';
-import { truckDriverFields } from '../../../selectors/truckDriverFields';
-import { getDashboardOverview, getDashboardPieChart, getAvailableLoads } from '../../../actions/dashboard';
+import { normalizeApiError } from '../../../api/client';
+import api from '../../../api/client';
 
-const TruckDriverDashboard = ({
-  totalActiveOrders,
-  deliveredThisMonth,
-  upcomingOrders,
-  currentLoad,
-  donutOntime,
-  donutInProgress,
-  donutDelayed,
-  upcomingOrdersList,
-  getDashboardOverview,
-  getDashboardPieChart,
-  getAvailableLoads
-}) => {
+const TruckDriverDashboard = () => {
+  const dispatch = useDispatch();
   const { user } = useSupabaseAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { items: loads = [], loading, error } = useSelector((state) => state.loads || {});
+  const [selectedLoad, setSelectedLoad] = useState(null);
+  const [form, setForm] = useState({ vehicle_id: '', bid_amount: '', proposed_capacity: '' });
+  const [message, setMessage] = useState('');
+  const [vehicles, setVehicles] = useState([]);
+  const [locationForm, setLocationForm] = useState({ vehicle_id: '', latitude: '', longitude: '' });
+  const [locationMessage, setLocationMessage] = useState('');
 
+  useEffect(() => { dispatch(getAvailableLoads()); }, [dispatch]);
   useEffect(() => {
-    getDashboardOverview();
-    getDashboardPieChart();
-    getAvailableLoads();
-  }, [getDashboardOverview, getDashboardPieChart, getAvailableLoads]);
+    api.get('/api/v1/vehicles').then((response) => setVehicles(response.data?.data?.vehicles || [])).catch(() => setVehicles([]));
+  }, []);
+
+  const openBidForm = (load) => {
+    setSelectedLoad(load);
+    setMessage('');
+    setForm({ vehicle_id: vehicles[0]?.id ? String(vehicles[0].id) : '', bid_amount: '', proposed_capacity: String(load.required_capacity || load.load_weight || '') });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setMessage('');
+    try {
+      await dispatch(submitBid(selectedLoad.id, { vehicle_id: String(form.vehicle_id).trim(), bid_amount: Number(form.bid_amount), proposed_capacity: Number(form.proposed_capacity) }));
+      setMessage('Your truck has joined the load pool pending shipper acceptance.');
+      setSelectedLoad(null);
+    } catch (requestError) {
+      setMessage(normalizeApiError(requestError));
+    }
+  };
+
+  const handleLocationSubmit = async (event) => {
+    event.preventDefault();
+    setLocationMessage('');
+    try {
+      await api.patch(`/api/v1/vehicles/${locationForm.vehicle_id}/location`, {
+        latitude: Number(locationForm.latitude),
+        longitude: Number(locationForm.longitude),
+      });
+      setLocationMessage('Vehicle location updated.');
+    } catch (requestError) {
+      setLocationMessage(normalizeApiError(requestError));
+    }
+  };
 
   return (
-    <>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome {user?.first_name || "Driver"}!</h1>
-            <p className="text-gray-600 mt-1">Here is your main dashboard</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="border-b border-gray-200 bg-white px-8 py-6"><h1 className="text-2xl font-bold text-gray-800">Welcome {user?.full_name || 'Driver'}!</h1><p className="mt-1 text-gray-600">Join open load pools with your available truck capacity.</p></div>
       <div className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Total Active Orders</p>
-                <p className="text-3xl font-bold">{totalActiveOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Upcoming Orders</p>
-                <p className="text-3xl font-bold">{upcomingOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#578C7A] text-white p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg mr-4">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm opacity-90">Delivered This Month</p>
-                <p className="text-3xl font-bold">{deliveredThisMonth}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Current Active Load and Orders */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Current Active Load */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-800">Current Active Load</h3>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                {currentLoad?.status || 'in transit'}
-              </span>
-            </div>
-            {currentLoad ? (
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipment ID:</span>
-                  <span className="font-medium">{currentLoad.load_id || currentLoad.shipmentId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Origin:</span>
-                  <span className="font-medium">{currentLoad.origin}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Destination:</span>
-                  <span className="font-medium">{currentLoad.destination}</span>
-                </div>
-                {/* If you have currentLocation, show it */}
-                {currentLoad.currentLocation && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Current Location:</span>
-                    <span className="font-medium">{currentLoad.currentLocation}</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-500">No active loads</div>
-            )}
-            <button className="w-full mt-6 bg-[#578C7A] text-white py-2 rounded-lg hover:bg-[#4a7a69] transition-colors">
-              View More
-            </button>
-          </div>
-
-          {/* Orders Donut Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Orders</h3>
-            <div className="flex items-center justify-center mb-6">
-              <div className="relative w-32 h-32">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">
-                    {donutOntime + donutInProgress + donutDelayed > 0
-                      ? Math.round((donutOntime / (donutOntime + donutInProgress + donutDelayed)) * 100)
-                      : 0
-                    }%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-[#578C7A] rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">Ontime</span>
-                </div>
-                <span className="text-sm font-medium">{donutOntime}%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">In Progress</span>
-                </div>
-                <span className="text-sm font-medium">{donutInProgress}%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">Delayed</span>
-                </div>
-                <span className="text-sm font-medium">{donutDelayed}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Your Upcoming Orders */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Your Upcoming Orders</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {upcomingOrdersList.map((order) => (
-                <div key={order.load_id || order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">{order.load_id || order.id}</p>
-                    <p className="text-sm text-gray-600">{order.origin} → {order.destination}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    order.status === 'pending' 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {order.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3"><div className="rounded-xl bg-[#578C7A] p-6 text-white"><p className="text-sm opacity-90">Open loads</p><p className="text-3xl font-bold">{loads.length}</p></div><div className="rounded-xl bg-white p-6 shadow-sm"><p className="text-sm text-gray-500">Pool slots visible</p><p className="text-3xl font-bold text-[#3B6255]">{loads.reduce((sum, load) => sum + Number(load.pool?.remaining || 0), 0)}</p></div><div className="rounded-xl bg-white p-6 shadow-sm"><p className="text-sm text-gray-500">Role</p><p className="text-3xl font-bold capitalize text-[#3B6255]">{user?.user_type || 'driver'}</p></div></div>
+        <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Available pooled loads</h2>{loading && <p className="text-gray-500">Loading open loads…</p>}{error && <p className="text-red-600">{error}</p>}{!loading && !error && loads.length === 0 && <p className="text-gray-500">No open loads are available right now.</p>}<div className="space-y-4">{loads.map((load) => <div key={load.id} className="rounded-lg border border-gray-200 p-4"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-semibold text-gray-800">{load.cargo_type || 'Load request'}</p><p className="text-sm text-gray-600">{load.origin} → {load.destination}</p><p className="mt-1 text-xs text-gray-400">{load.id}</p></div><button type="button" onClick={() => openBidForm(load)} className="rounded-lg bg-[#578C7A] px-4 py-2 text-sm font-medium text-white">Join this pool</button></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm text-gray-600 md:grid-cols-4"><span>Weight: {Number(load.load_weight || 0).toLocaleString()} kg</span><span>Trucks: {load.pool?.accepted || 0}/{load.pool?.required || load.required_trucks}</span><span>Remaining: {load.pool?.remaining || 0}</span><span>Capacity: {load.pool?.accepted_capacity || 0}/{load.pool?.required_capacity || load.load_weight} kg</span></div></div>)}</div></section>
+        <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-2 text-lg font-semibold text-gray-800">Update vehicle location</h2><p className="mb-5 text-sm text-gray-500">Use this pilot control to send a GPS reading to the shipper.</p>{locationMessage && <p className="mb-4 rounded-lg bg-[#E8F2EE] p-3 text-sm text-[#3B6255]">{locationMessage}</p>}<form onSubmit={handleLocationSubmit} className="grid gap-3 md:grid-cols-3"><select required value={locationForm.vehicle_id} onChange={(event) => setLocationForm({ ...locationForm, vehicle_id: event.target.value })} aria-label="Vehicle for location update" className="rounded-lg border border-gray-200 px-4 py-3 text-sm"><option value="">Select vehicle</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.registration_number}</option>)}</select><input required type="number" min="-90" max="90" step="any" value={locationForm.latitude} onChange={(event) => setLocationForm({ ...locationForm, latitude: event.target.value })} placeholder="Latitude" aria-label="Latitude" className="rounded-lg border border-gray-200 px-4 py-3 text-sm" /><input required type="number" min="-180" max="180" step="any" value={locationForm.longitude} onChange={(event) => setLocationForm({ ...locationForm, longitude: event.target.value })} placeholder="Longitude" aria-label="Longitude" className="rounded-lg border border-gray-200 px-4 py-3 text-sm" /><button disabled={!vehicles.length} type="submit" className="rounded-lg bg-[#578C7A] px-4 py-3 text-sm font-medium text-white disabled:opacity-50 md:col-span-3">Send location</button></form></section>
+        {message && <p className="mt-5 rounded-lg bg-[#E8F2EE] p-4 text-sm text-[#3B6255]">{message}</p>}
       </div>
-    </>
+      {selectedLoad && <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4"><form onSubmit={handleSubmit} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"><h2 className="text-lg font-semibold text-gray-800">Join {selectedLoad.cargo_type || 'load'} pool</h2><p className="mt-1 text-sm text-gray-500">Choose an assigned vehicle and the capacity it can contribute.</p><div className="mt-5 space-y-4">{vehicles.length ? <select required value={form.vehicle_id} onChange={(event) => setForm({ ...form, vehicle_id: event.target.value })} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm"><option value="">Select vehicle</option>{vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.registration_number} · {vehicle.capacity} kg</option>)}</select> : <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">No vehicle is assigned to your driver profile yet. Ask your trucking company to add and assign one.</p>}<input required type="number" min="0" step="0.01" value={form.proposed_capacity} onChange={(event) => setForm({ ...form, proposed_capacity: event.target.value })} placeholder="Capacity (kg)" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm" /><input required type="number" min="0" step="0.01" value={form.bid_amount} onChange={(event) => setForm({ ...form, bid_amount: event.target.value })} placeholder="Bid amount" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm" /></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setSelectedLoad(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm">Cancel</button><button disabled={!vehicles.length} type="submit" className="rounded-lg bg-[#578C7A] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Submit bid</button></div></form></div>}
+    </div>
   );
 };
 
-const mapStateToProps = (state) => truckDriverFields(state);
-
-export default connect(mapStateToProps, {
-  getDashboardOverview,
-  getDashboardPieChart,
-  getAvailableLoads
-})(TruckDriverDashboard);
+export default TruckDriverDashboard;

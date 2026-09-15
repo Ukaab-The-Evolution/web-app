@@ -1,7 +1,7 @@
 export const ROLES = {
   SHIPPER: 'shipper',
-  TRUCKING_COMPANY: 'truckingCompany',
-  TRUCK_DRIVER: 'truckDriver'
+  TRUCKING_COMPANY: 'trucking_company',
+  TRUCK_DRIVER: 'driver'
 };
 
 export const ROLE_DISPLAY_NAMES = {
@@ -9,6 +9,13 @@ export const ROLE_DISPLAY_NAMES = {
   [ROLES.TRUCKING_COMPANY]: 'Trucking Company',
   [ROLES.TRUCK_DRIVER]: 'Truck Driver'
 };
+
+const ROLE_ALIASES = {
+  truckingCompany: ROLES.TRUCKING_COMPANY,
+  truckDriver: ROLES.TRUCK_DRIVER,
+};
+
+export const normalizeRole = (role) => ROLE_ALIASES[role] || role;
 
 // Base fields that are common across all roles
 const baseFields = [
@@ -69,13 +76,11 @@ const roleSpecificFields = {
     {
       name: 'companycode',
       type: 'text',
-      label: 'Company Code',
-      placeholder: '98765',
+      label: 'Company Invite Code',
+      placeholder: 'Paste your company invite code',
       autoComplete: 'organization',
       required: true,
       gridCol: 2,
-      pattern: '[0-9]*',
-      inputMode: 'numeric'
     }
   ],
   [ROLES.TRUCKING_COMPANY]: [
@@ -95,15 +100,15 @@ const roleSpecificFields = {
 export const roleContent = {
   [ROLES.SHIPPER]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   },
   [ROLES.TRUCK_DRIVER]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   },
   [ROLES.TRUCKING_COMPANY]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   }
 };
 
@@ -113,6 +118,7 @@ export const roleContent = {
  * @returns {Array} Array of field configurations
  */
 export const getFieldsForRole = (role) => {
+  role = normalizeRole(role);
   if (!role || !roleSpecificFields[role]) {
     return baseFields;
   }
@@ -134,6 +140,7 @@ export const getFieldsForRole = (role) => {
  * @returns {Object} Initial form data object
  */
 export const getInitialFormData = (role) => {
+  role = normalizeRole(role);
   const fields = getFieldsForRole(role);
   return fields.reduce((acc, field) => {
     acc[field.name] = '';
@@ -147,7 +154,7 @@ export const getInitialFormData = (role) => {
  * @returns {string} Display name
  */
 export const getRoleDisplayName = (role) => {
-  return ROLE_DISPLAY_NAMES[role] || '';
+  return ROLE_DISPLAY_NAMES[normalizeRole(role)] || '';
 };
 
 /**
@@ -156,9 +163,9 @@ export const getRoleDisplayName = (role) => {
  * @returns {Object} Content configuration
  */
 export const getRoleContent = (role) => {
-  return roleContent[role] || {
+  return roleContent[normalizeRole(role)] || {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   };
 };
 
@@ -168,7 +175,7 @@ export const getRoleContent = (role) => {
  * @returns {boolean} Whether the role is valid
  */
 export const isValidRole = (role) => {
-  return Object.values(ROLES).includes(role);
+  return Object.values(ROLES).includes(normalizeRole(role));
 };
 
 /**
@@ -184,7 +191,7 @@ export const validateFieldInput = (fieldName, value) => {
   }
 
   if (fieldName === 'companycode') {
-    return /^\d+$/.test(value);
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
   }
   if (fieldName === 'name' || fieldName === 'fullName' || fieldName === 'emergencyContactName') {
     return /^[a-zA-Z\s]{2,}$/.test(value.trim());

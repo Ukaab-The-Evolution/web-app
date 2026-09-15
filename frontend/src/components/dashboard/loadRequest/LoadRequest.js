@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { FaMinus, FaPlus } from 'react-icons/fa';
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { createLoad } from '../../../actions/loads';
 
 const LoadRequest = ({ user }) => {
+  const dispatch = useDispatch();
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     cargoType: '',
@@ -13,6 +16,7 @@ const LoadRequest = ({ user }) => {
     numberOfTrucks: 1,
     origin: '',
     destination: '',
+    pickupTime: '',
     paymentOffer: '',
     poolingAllowed: 'Yes',
     additionalNotes: ''
@@ -28,14 +32,14 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
-    if (!formData.loadWeight.trim()) {
+    if (!formData.loadWeight || Number(formData.loadWeight) <= 0) {
       setToast({
         type: "error",
         message: "Load weight is required.",
       });
       return false;
     }
-    if (formData.numberOfTrucks < 1) {
+    if (Number(formData.numberOfTrucks) < 1 || !Number.isInteger(Number(formData.numberOfTrucks))) {
       setToast({
         type: "error",
         message: "Number of trucks must be at least 1.",
@@ -49,6 +53,10 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
+    if (!/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(formData.origin.trim())) {
+      setToast({ type: "error", message: "Origin must use latitude, longitude coordinates." });
+      return false;
+    }
     if (!formData.destination.trim()) {
       setToast({
         type: "error",
@@ -56,7 +64,15 @@ const LoadRequest = ({ user }) => {
       });
       return false;
     }
-    if (!formData.paymentOffer.trim()) {
+    if (!/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(formData.destination.trim())) {
+      setToast({ type: "error", message: "Destination must use latitude, longitude coordinates." });
+      return false;
+    }
+    if (!formData.pickupTime) {
+      setToast({ type: "error", message: "Pickup time is required." });
+      return false;
+    }
+    if (formData.paymentOffer === '' || Number(formData.paymentOffer) < 0) {
       setToast({
         type: "error",
         message: "Payment offer is required.",
@@ -77,7 +93,7 @@ const LoadRequest = ({ user }) => {
   const handleNumberOfTrucksChange = (increment) => {
     setFormData(prev => ({
       ...prev,
-      numberOfTrucks: Math.max(1, prev.numberOfTrucks + increment)
+      numberOfTrucks: Math.max(1, Number(prev.numberOfTrucks) + increment)
     }));
   };
 
@@ -93,11 +109,23 @@ const LoadRequest = ({ user }) => {
 
     try {
       setIsSubmitting(true);
-      // implement API call here
-      console.log('Load request data:', formData);
+      const createdLoad = await dispatch(createLoad({
+        cargo_type: formData.cargoType,
+        load_weight: Number(formData.loadWeight),
+        origin: formData.origin,
+        destination: formData.destination,
+        pickup_time: new Date(formData.pickupTime).toISOString(),
+        payment_offer: Number(formData.paymentOffer),
+        required_trucks: Number(formData.numberOfTrucks),
+        pooling_allowed: formData.poolingAllowed === 'Yes',
+        required_capacity: Number(formData.loadWeight),
+        additional_notes: formData.additionalNotes,
+      }));
       setToast({
         type: "success",
-        message: "Load request submitted successfully!",
+        message: createdLoad?.pool?.fulfilled
+          ? "Load request booked successfully."
+          : "Load request submitted and opened for truckers.",
       });
       
       setFormData({
@@ -106,6 +134,7 @@ const LoadRequest = ({ user }) => {
         numberOfTrucks: 1,
         origin: '',
         destination: '',
+        pickupTime: '',
         paymentOffer: '',
         poolingAllowed: 'Yes',
         additionalNotes: ''
@@ -113,7 +142,7 @@ const LoadRequest = ({ user }) => {
     } catch (error) {
       setToast({
         type: "error",
-        message: "Failed to submit load request. Please try again.",
+        message: error?.response?.data?.message || error?.message || "Failed to submit load request. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -152,13 +181,28 @@ const LoadRequest = ({ user }) => {
               <label className="block text-sm font-medium text-[#333333] mb-2">
                 Cargo Type
               </label>
-              <input
-                type="text"
+              <select
                 name="cargoType"
                 value={formData.cargoType}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                placeholder="Frozen Goods"
+              >
+                <option value="">Select cargo type</option>
+                <option value="general">General</option>
+                <option value="fragile">Fragile</option>
+                <option value="hazardous">Hazardous</option>
+                <option value="perishable">Perishable</option>
+              </select>
+            </div>
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-[#333333] mb-2">Pickup Time</label>
+              <input
+                required
+                type="datetime-local"
+                name="pickupTime"
+                value={formData.pickupTime}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-[#E8F2EE] border border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
               />
             </div>
 
@@ -178,7 +222,7 @@ const LoadRequest = ({ user }) => {
                     placeholder="200"
                   />
                   <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#3B6255] text-sm">
-                    kg/tons
+                    kg
                   </span>
                 </div>
               </div>
@@ -230,7 +274,7 @@ const LoadRequest = ({ user }) => {
                   value={formData.origin}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                  placeholder="Islamabad"
+                  placeholder="33.6844, 73.0479"
                 />
               </div>
               
@@ -244,7 +288,7 @@ const LoadRequest = ({ user }) => {
                   value={formData.destination}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-[#E8F2EE] border border-1 border-[#578C7A] rounded-lg text-[#3B6255] focus:outline-none focus:ring-1 focus:ring-[#3B6255]"
-                  placeholder="Karachi"
+                  placeholder="24.8607, 67.0011"
                 />
               </div>
             </div>

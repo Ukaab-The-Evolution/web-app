@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { MdOutlineEmail, MdOutlineRefresh } from 'react-icons/md';
-import { FaCheckCircle } from 'react-icons/fa';
+import { MdOutlineEmail } from 'react-icons/md';
 import PropTypes from 'prop-types';
+import { supabase } from '../../lib/supabase';
 
 const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
   const location = useLocation();
@@ -11,6 +11,7 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [isChecking, setIsChecking] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -37,31 +38,24 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
 
   const handleResendConfirmation = async () => {
     setIsChecking(true);
-    // call API here to resend confirmation email
     try {
-      // await resendConfirmationEmail(email);
-      console.log('Resending confirmation email to:', email);
-      
-      setTimeout(() => {
-        setIsChecking(false);
-      }, 2000);
+      setResendError('');
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) throw error;
+      setIsChecking(false);
     } catch (error) {
-      console.error('Error resending confirmation email:', error);
+      setResendError(error.message);
       setIsChecking(false);
     }
-  };
-
-  const handleCheckStatus = () => {
-    window.location.reload();
   };
 
   const getRoleDisplayName = (roleValue) => {
     switch (roleValue) {
       case 'shipper':
         return 'Shipper';
-      case 'truckingCompany':
+      case 'trucking_company':
         return 'Trucking Company';
-      case 'truckDriver':
+      case 'driver':
         return 'Truck Driver';
       default:
         return 'User';
@@ -128,6 +122,7 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
               {isChecking ? 'Sending...' : 'Resend Email'}
             </button>
           </div>
+          {resendError && <p className="mt-3 text-sm text-red-600">{resendError}</p>}
 
           {/* Help Text */}
           <div className="mt-8 pt-6 border-t border-gray-200">

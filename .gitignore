@@ -13,4 +13,5 @@ supabase/types/
 Thumbs.db
 .vscode/
 **/.env
-
+.worktrees/
+backend/coverage/

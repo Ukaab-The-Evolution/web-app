@@ -2,17 +2,14 @@ import express from 'express';
 import {
   signup,
   login,
-  protect,
   updatePassword,
+  deleteAccount,
   getMe,
   forgotPassword,
   resetPassword,
-  restrictTo,
-  createAdmin,
-  // verifyEmail,
-  // resendVerification,
   logout
 } from '../controllers/auth/authController.js';
+import { protect } from '../middleware/protect.js';
 
 const router = express.Router();
 
@@ -25,12 +22,10 @@ router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
-// Admin routes
-router.post('/createAdmin', protect, restrictTo('admin'), createAdmin);
-
 // Protected routes
 router.use(protect);
 router.get('/me', getMe);
 router.patch('/updatePassword', updatePassword);
+router.delete('/account', deleteAccount);
 
 export default router;

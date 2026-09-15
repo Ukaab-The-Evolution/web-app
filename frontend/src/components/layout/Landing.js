@@ -30,7 +30,7 @@ const Landing = () => {
 
           <p className="text-[#333333] mb-8 mt-8">
             Welcome to Ukaab — your all-in-one logistics partner. Track, assign,
-            and manage your shipments effortlessly and in real time!
+            and manage your shipments effortlessly with the latest trip updates.
           </p>
 
           <button

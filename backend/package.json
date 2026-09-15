@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest --coverage"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "jest": "^29.0.0",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.1.14",
     "supertest": "^6.3.0"
   },
   "engines": {

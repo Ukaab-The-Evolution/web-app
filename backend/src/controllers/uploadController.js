@@ -1,9 +1,18 @@
-import supabase from '../config/supabase.js';
-import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../config/supabase.js'; 
+import { supabaseAdmin } from '../config/supabase.js';
 import AppError from '../utils/appError.js';
 import catchAsync from '../utils/catchAsync.js';
 import crypto from 'crypto';
+import path from 'path';
+
+const documentTypeMap = Object.freeze({
+  driver_registration: 'license',
+  company_registration: 'certification',
+  shipper_registration: 'certification',
+  license: 'license',
+  certification: 'certification',
+  proof_of_delivery: 'proof_of_delivery',
+  payment_proof: 'payment_proof',
+});
 
 // Upload document for verification
 export const uploadDocument = catchAsync(async (req, res, next) => {
@@ -15,8 +24,15 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     return next(new AppError('Authentication required', 401));
   }
 
+  const documentType = documentTypeMap[req.body.document_type];
+  if (!documentType) return next(new AppError('Unsupported document type', 400));
+
   try {
-    const fileExt = req.file.originalname.split('.').pop();
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    const allowedExtensions = new Set(['.pdf', '.png', '.jpg', '.jpeg']);
+    if (!allowedExtensions.has(fileExt)) {
+      return next(new AppError('Unsupported document type', 400));
+    }
     const fileName = `${crypto.randomBytes(16).toString('hex')}.${fileExt}`;
     const storagePath = `users/${req.user.user_id}/${fileName}`;
 
@@ -35,9 +51,9 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     const { data: docData, error: dbError } = await supabaseAdmin
       .from('documents')
       .insert({
-        user_id: req.user.user_id,
+        user_id: req.user.id,
         auth_user_id: req.user.auth_user_id,
-        document_type: req.body.document_type,
+        document_type: documentType,
         storage_path: storagePath,
         status: 'pending',
         uploaded_at: new Date().toISOString()
@@ -55,8 +71,7 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     });
 
   } catch (err) {
-    console.error('Upload error:', err);
-    next(new AppError(`Upload failed: ${err.message}`, 400));
+    next(new AppError('Upload failed', 500, { expose: false }));
   }
 });
 
@@ -73,11 +88,7 @@ export const getPendingDocuments = catchAsync(async (req, res, next) => {
         storage_path,
         uploaded_at,
         status,
-        users:user_id (
-          user_id,
-          full_name,
-          user_type
-        )
+        profiles:user_id (full_name, user_type, email, phone)
       `)
       .eq('status', 'pending')
       .order('uploaded_at', { ascending: false });
@@ -130,15 +141,23 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
 
     if (updateError) throw updateError;
 
+    const { data: profile, error: profileError } = await supabaseAdmin.from('profiles')
+      .select('user_type').eq('user_id', document.user_id).single();
+    if (profileError) throw profileError;
+    const targetTable = profile.user_type === 'driver'
+      ? 'drivers'
+      : profile.user_type === 'shipper' ? 'shipper_companies' : 'trucking_companies';
+    const { error: verificationError } = await supabaseAdmin.from(targetTable)
+      .update({ verification_status: action === 'approve' ? 'verified' : 'rejected' })
+      .eq('user_id', document.user_id);
+    if (verificationError) throw verificationError;
+
     // 3. If rejected, delete the file
     if (action === 'reject') {
       await supabaseAdmin.storage
         .from('documents')
         .remove([document.storage_path]);
     }
-
-    // 4. User verification is now handled by Supabase Auth
-    // No need to update verification status in our database
 
     res.status(200).json({
       status: 'success',

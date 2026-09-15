@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle, FaTrash } from 'react-icons/fa';
+import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle } from 'react-icons/fa';
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import { IoClose } from "react-icons/io5";
 import { MdAddPhotoAlternate } from "react-icons/md";
@@ -8,9 +8,9 @@ import Toast from "../../ui/Toast";
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { getProfile, updateProfile } from '../../../actions/profile';
-import { isAuthenticated } from '../../../actions/auth';
+import { uploadDocument } from '../../../actions/documents';
 
-const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
+const TruckingCompanyProfile = ({ user, getProfile, updateProfile }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     companyName: '',
@@ -22,7 +22,7 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(user?.verification_status === 'verified');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -56,7 +56,7 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
         fleetSize: user.fleet_size ? String(user.fleet_size) : '',
       });
       setProfileImage(user.avatar_url || null);
-      setIsVerified(user.is_verified || false);
+      setIsVerified(user.verification_status === 'verified');
     }
   }, [user]);
 
@@ -109,41 +109,6 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
     }));
   };
 
-  const handleProfileImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setToast({
-          type: "error",
-          message: "Profile photo must be less than 5MB.",
-        });
-        return;
-      }
-      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      if (!allowedTypes.includes(file.type)) {
-        setToast({
-          type: "error",
-          message: "Only PNG and JPG files are allowed for profile photo.",
-        });
-        return;
-      }
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-      setToast({
-        type: "success",
-        message: "Profile photo uploaded successfully!",
-      });
-    }
-  };
-
-  const handleRemoveProfileImage = () => {
-    setProfileImage(null);
-    setToast({
-      type: "success",
-      message: "Profile image removed successfully!",
-    });
-  };
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -193,17 +158,14 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
     }
     try {
       setVerificationLoading(true);
-      // TODO: Implement backend API call for verification
+      await uploadDocument(verificationData.registrationDocument, 'company_registration');
       setShowVerificationModal(false);
       setShowSuccessModal(true);
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setIsVerified(true);
-      }, 5000);
+      setToast({ type: 'success', message: 'Documents submitted for review.' });
     } catch (error) {
       setToast({
         type: "error",
-        message: "Failed to submit verification. Please try again.",
+        message: error?.response?.data?.message || error?.message || "Failed to submit verification. Please try again.",
       });
     } finally {
       setVerificationLoading(false);
@@ -484,7 +446,7 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
                 <FaCheckCircle className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-xl font-semibold text-center text-[#171717] mb-16">
-                Company profile verified successfully
+                Documents submitted. Your company is pending review.
               </h2>
             </div>
             
@@ -526,9 +488,9 @@ const TruckingCompanyProfile = ({ user, isAuthenticated, getProfile, updateProfi
               </div>
 
               {/* Camera button */}
-              <div 
-                onClick={() => setShowProfileModal(true)}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-[1px] border-[#0A0A0A] cursor-pointer hover:bg-gray-200">
+              <div
+                title="Profile photo changes are not available in the pilot"
+                className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-full shadow-lg flex items-center justify-center border-[1px] border-gray-300 opacity-60">
                 <FaCamera className="w-4 h-4 text-[#0A0A0A]" />
               </div>
 
@@ -826,12 +788,10 @@ TruckingCompanyProfile.propTypes = {
  
   getProfile: PropTypes.func.isRequired,
   updateProfile: PropTypes.func.isRequired,
-  isAuthenticated: PropTypes.bool,
 };
 
 const mapStateToProps = (state) => ({
   user: state.profile.profile,
-  isAuthenticated: state.auth.isAuthenticated,
   
 });
 

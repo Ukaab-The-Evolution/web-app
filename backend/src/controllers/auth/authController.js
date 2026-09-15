@@ -1,449 +1,356 @@
-import supabase from '../../config/supabase.js';
-import User from '../../models/User.js';
-import AppError from '../../utils/appError.js';
 import validator from 'validator';
-import { supabaseAdmin } from '../../config/supabase.js';
-import catchAsync from '../../utils/catchAsync.js';
+import { supabase, supabaseAdmin, createUserClient } from '../../config/supabase.js';
+import { loadEnv } from '../../config/env.js';
+import { normalizeRole } from '../../domain/validation.js';
+import {
+  buildSignupInput,
+  validatePasswordStrength,
+} from '../../services/authService.js';
+import { buildLegacyUser } from '../../services/currentSchemaService.js';
+import { extractBearerToken, requireRole } from '../../middleware/auth.js';
+import { protect } from '../../middleware/protect.js';
+import AppError from '../../utils/appError.js';
+
+const config = loadEnv();
+const internalError = (message, status = 500) => new AppError(message, status, { expose: false });
+
+const cleanupApplicationRecords = async (userId) => {
+  if (!userId) return;
+  // Signup only creates one profile and one role record. Remove those records
+  // in dependency order when provisioning fails after Auth has succeeded.
+  await supabaseAdmin.from('drivers').delete().eq('user_id', userId);
+  await supabaseAdmin.from('shippers').delete().eq('user_id', userId);
+  await supabaseAdmin.from('trucking_companies').delete().eq('user_id', userId);
+  await supabaseAdmin.from('shipper_companies').delete().eq('user_id', userId);
+  await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
+};
+
+const anonymizeApplicationRecords = async (userId) => {
+  const { data: documents, error: documentLookupError } = await supabaseAdmin
+    .from('documents').select('storage_path').eq('user_id', userId);
+  if (documentLookupError) throw documentLookupError;
+  const paths = (documents || []).map((document) => document.storage_path).filter(Boolean);
+  if (paths.length) {
+    const { error: storageError } = await supabaseAdmin.storage.from('documents').remove(paths);
+    if (storageError) throw storageError;
+  }
+  const { error: documentDeleteError } = await supabaseAdmin.from('documents').delete().eq('user_id', userId);
+  if (documentDeleteError) throw documentDeleteError;
+
+  const { error: driverError } = await supabaseAdmin.from('drivers').update({
+    cnic: null,
+    license_number: null,
+    experience_years: null,
+    current_company: null,
+    emergency_contact: null,
+    emergency_contact_name: null,
+    address: null,
+  }).eq('user_id', userId);
+  if (driverError) throw driverError;
+
+  const { error: profileError } = await supabaseAdmin.from('profiles').update({
+    full_name: `Deleted user ${userId}`,
+    email: null,
+    phone: null,
+    avatar_url: null,
+  }).eq('user_id', userId);
+  if (profileError) throw profileError;
+};
+
+const getProfileAggregate = async (authUserId) => {
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('auth_user_id', authUserId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile) return null;
+
+  const [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult] = await Promise.all([
+    supabaseAdmin.from('trucking_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('shipper_companies').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('shippers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+    supabaseAdmin.from('drivers').select('*').eq('user_id', profile.user_id).maybeSingle(),
+  ]);
+  for (const result of [truckingCompanyResult, shipperCompanyResult, shipperResult, driverResult]) {
+    if (result.error) throw result.error;
+  }
+
+  let company = truckingCompanyResult.data || shipperCompanyResult.data || null;
+  if (!company && driverResult.data?.company_id) {
+    const { data, error } = await supabaseAdmin.from('trucking_companies')
+      .select('*').eq('company_id', driverResult.data.company_id).maybeSingle();
+    if (error) throw error;
+    company = data;
+  }
+  if (!company && shipperResult.data?.company_id) {
+    const { data, error } = await supabaseAdmin.from('shipper_companies')
+      .select('*').eq('company_id', shipperResult.data.company_id).maybeSingle();
+    if (error) throw error;
+    company = data;
+  }
+  return buildLegacyUser(profile, {
+    company_id: driverResult.data?.company_id || company?.company_id || null,
+    driver_id: driverResult.data?.driver_id || null,
+    shipper_id: shipperResult.data?.shipper_id || null,
+    driver: driverResult.data || null,
+    company,
+    organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
+  });
+};
+
+const createApplicationRecords = async ({ authUser, input, userType }) => {
+  const profilePayload = {
+    auth_user_id: authUser.id,
+    email: authUser.email || input.email || null,
+    phone: authUser.phone || input.phone || null,
+    full_name: input.full_name?.trim() || authUser.user_metadata?.full_name || 'User',
+    user_type: userType,
+  };
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .insert(profilePayload)
+    .select('*')
+    .single();
+
+  if (profileError) throw profileError;
+
+  if (userType === 'driver') {
+    let companyId = null;
+    if (input.company_code) {
+      const { data: company, error: companyLookupError } = await supabaseAdmin
+        .from('trucking_companies')
+        .select('company_id')
+        .eq('invite_code', String(input.company_code).trim())
+        .maybeSingle();
+      if (companyLookupError) throw companyLookupError;
+      if (!company) throw new AppError('Invalid trucking company invite code', 400);
+      companyId = company.company_id;
+    }
+
+    const driverPayload = { user_id: profile.user_id, company_id: companyId };
+    if (input.cnic) {
+      const cnic = String(input.cnic).replace(/\D/g, '');
+      if (cnic) driverPayload.cnic = cnic;
+    }
+    if (input.license_number) driverPayload.license_number = String(input.license_number).trim();
+    const { error: driverError } = await supabaseAdmin
+      .from('drivers')
+      .insert(driverPayload);
+    if (driverError) throw driverError;
+    return profile;
+  }
+
+  const organizationName = input.organization_name?.trim()
+    || `${profilePayload.full_name}'s Organization`;
+  const companyPayload = {
+    user_id: profile.user_id,
+    company_name: organizationName,
+    company_address: String(input.company_address || input.address || 'Not provided').trim(),
+  };
+  if (userType === 'trucking_company') {
+    const fleetSize = Number(input.fleet_size || 1);
+    if (!Number.isInteger(fleetSize) || fleetSize < 1) {
+      throw new AppError('fleet_size must be a positive whole number', 400);
+    }
+    const { error: companyError } = await supabaseAdmin
+      .from('trucking_companies')
+      .insert({ ...companyPayload, fleet_size: fleetSize });
+    if (companyError) throw companyError;
+  } else {
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('shipper_companies')
+      .insert({ ...companyPayload, tax_id: input.tax_id || null })
+      .select('company_id')
+      .single();
+    if (companyError) throw companyError;
+
+    const { error: shipperError } = await supabaseAdmin
+      .from('shippers')
+      .insert({ user_id: profile.user_id, company_id: company.company_id, is_primary: true });
+    if (shipperError) throw shipperError;
+  }
+  return profile;
+};
 
 export const signup = async (req, res, next) => {
+  let authUserId;
+  let applicationUserId;
   try {
-    const { email, password, user_type, full_name, phone, owns_company, cnic } = req.body;
+    const input = {
+      ...req.body,
+      user_type: normalizeRole(req.body.user_type),
+      organization_name: req.body.organization_name || req.body.company_name || req.body.companyname,
+    };
+    const signupInput = buildSignupInput(input);
 
-    if (!email && !phone) {
-      return next(new AppError('Please provide either email or phone number', 400));
+    const { data: authData, error: authError } = await supabase.auth.signUp(signupInput);
+    if (authError || !authData.user) {
+      return next(new AppError(authError?.message || 'Failed to create authentication user', 400));
     }
+    authUserId = authData.user.id;
 
-    // For trucking_company type, validate owns_company field
-    if (user_type === 'trucking_company') {
-      if (typeof owns_company !== 'boolean') {
-        return next(new AppError('Please specify if you own the company or are an individual driver', 400));
-      }
-    }
+    const profile = await createApplicationRecords({ authUser: authData.user, input, userType: input.user_type });
+    applicationUserId = profile.user_id;
+    const user = await getProfileAggregate(authUserId);
 
-    // Validate password strength
-    if (!validator.isStrongPassword(password, { 
-      minLength: 8, 
-      minLowercase: 1, 
-      minUppercase: 1, 
-      minNumbers: 1, 
-      minSymbols: 1 
-    })) {
-      return next(new AppError('Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 symbol', 400));
-    }
-
-    // Use Supabase Auth for signup
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
-          user_type: user_type,
-          full_name: full_name,
-          phone: phone,
-          owns_company: owns_company,
-          cnic: cnic
-        }
-      }
-    });
-
-    if (authError) {
-      return next(new AppError(authError.message, 400));
-    }
-
-    if (!authData.user) {
-      return next(new AppError('Failed to create user', 500));
-    }
-
-    // Create user profile in our database
-    const newUser = await User.create({
-      email: email,
-      phone: phone,
-      user_type: user_type,
-      full_name: full_name,
-      owns_company: owns_company,
-      cnic: cnic,
-      auth_user_id: authData.user.id
-    });
-
-    let message = 'User created successfully. Please check your email to verify your account.';
-    
-    // Special message for individual drivers in trucking company
-    if (user_type === 'trucking_company' && !owns_company) {
-      message = 'Driver account created. Please check your email to verify your account and complete your profile with CNIC.';
-    }
-    
-    res.status(201).json({
+    return res.status(201).json({
       status: 'success',
-      message,
-      data: { 
-        user_id: newUser.user_id,
-        user_type: newUser.user_type,
-        needs_verification: true,
-        session: authData.session
-      }
+      message: 'Account created. Verify your email before signing in.',
+      data: {
+        user,
+        session: authData.session,
+        needs_verification: !authData.session,
+      },
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    let cleanupUserId = applicationUserId;
+    if (!cleanupUserId && authUserId) {
+      const { data: createdProfile } = await supabaseAdmin.from('profiles')
+        .select('user_id').eq('auth_user_id', authUserId).maybeSingle();
+      cleanupUserId = createdProfile?.user_id;
+    }
+    try {
+      await cleanupApplicationRecords(cleanupUserId);
+    } catch {
+      return next(internalError('Registration cleanup failed'));
+    }
+    if (authUserId) {
+      await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => undefined);
+    }
+    if (error instanceof AppError && error.expose) return next(error);
+    if (!authUserId && error instanceof Error) return next(new AppError(error.message, 400));
+    return next(internalError('Registration failed'));
   }
 };
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return next(new AppError('Please provide email and password!', 400));
+    const identifier = req.body.email || req.body.phone || req.body.identifier;
+    const password = req.body.password;
+    if (!identifier || !password) {
+      return next(new AppError('Email/phone and password are required', 400));
     }
 
-    // Use Supabase Auth for login
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (authError) {
-      return next(new AppError(authError.message, 401));
+    const credentials = validator.isEmail(identifier)
+      ? { email: identifier.trim().toLowerCase(), password }
+      : { phone: identifier.trim(), password };
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword(credentials);
+    if (authError || !authData.user) {
+      return next(new AppError(authError?.message || 'Login failed', 401));
     }
 
-    if (!authData.user) {
-      return next(new AppError('Login failed', 401));
-    }
+    const user = await getProfileAggregate(authData.user.id);
+    if (!user) return next(new AppError('Application profile not found', 401));
 
-    // Get user from our database
-    const user = await User.findByEmailOrPhone(email);
-    
-    if (!user) {
-      return next(new AppError('User not found in database', 401));
-    }
-    
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
-      token: authData.session.access_token,
-      data: user
+      token: authData.session?.access_token,
+      data: user,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    return next(internalError('Login failed'));
   }
 };
 
-export const protect = async (req, res, next) => {
+export const logout = async (req, res, next) => {
   try {
-    let token;
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    const token = extractBearerToken(req);
+    if (token) {
+      const { error } = await createUserClient(token).auth.signOut();
+      if (error) return next(internalError('Logout failed'));
     }
-
-    if (!token) return next(new AppError('Not logged in!', 401));
-
-    // Verify token with Supabase
-    const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !authUser) {
-      return next(new AppError('Invalid or expired token', 401));
-    }
-
-    // Get user from our database
-    const currentUser = await User.findByEmailOrPhone(authUser.email);
-    
-    if (!currentUser) return next(new AppError('User not found in database!', 401));
-
-    req.user = {
-      _id: currentUser.user_id,
-      user_id: currentUser.user_id,
-      auth_user_id: currentUser.auth_user_id,
-      email: currentUser.email,
-      user_type: currentUser.user_type
-    };
-
-    // Add role-specific IDs
-    if (currentUser.user_type === 'shipper') {
-      const { data: shipper } = await supabase
-        .from('shippers')
-        .select('shipper_id')
-        .eq('user_id', currentUser.user_id)
-        .single();
-      
-      if (shipper) {
-        req.user.shipper_id = shipper.shipper_id;
-      }
-    } else if (currentUser.user_type === 'driver') {
-      const { data: driver } = await supabase
-        .from('drivers')
-        .select('driver_id, company_id')
-        .eq('user_id', currentUser.user_id)
-        .single();
-      
-      if (driver) {
-        req.user.driver_id = driver.driver_id;
-        req.user.company_id = driver.company_id;
-      }
-    } else if (currentUser.user_type === 'trucking_company') {
-      const { data: company } = await supabase
-        .from('trucking_companies')
-        .select('company_id')
-        .eq('user_id', currentUser.user_id)
-        .single();
-      
-      if (company) {
-        req.user.company_id = company.company_id;
-      }
-    }
-
-    next();
-  } catch (err) {
-    next(new AppError('Authentication failed', 401));
+    return res.status(200).json({ status: 'success', message: 'Signed out' });
+  } catch (error) {
+    return next(internalError('Logout failed'));
   }
 };
 
-export const restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.user_type)) {
-      return next(new AppError('Unauthorized action!', 403));
+export const getMe = async (req, res) => {
+  res.status(200).json({ status: 'success', data: { user: req.user } });
+};
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email || !validator.isEmail(email)) {
+      return next(new AppError('A valid email is required', 400));
     }
-    next();
-  };
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${config.frontendUrl}/reset-password`,
+    });
+    if (error) return next(internalError('Failed to send reset link'));
+    return res.status(200).json({ status: 'success', message: 'Password reset link sent' });
+  } catch (error) {
+    return next(internalError('Failed to send reset link'));
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const token = extractBearerToken(req);
+    if (!token) return next(new AppError('Recovery token is required', 401));
+    try {
+      validatePasswordStrength(req.body.newPassword);
+    } catch (error) {
+      return next(new AppError(error.message, 400));
+    }
+
+    const { error } = await createUserClient(token).auth.updateUser({
+      password: req.body.newPassword,
+    });
+    if (error) return next(internalError('Failed to reset password'));
+    return res.status(200).json({ status: 'success', message: 'Password updated successfully' });
+  } catch (error) {
+    return next(internalError('Failed to reset password'));
+  }
 };
 
 export const updatePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return next(new AppError('Authentication required', 401));
+    if (!req.body.currentPassword) {
+      return next(new AppError('Current password is required', 400));
     }
-
-    // Use Supabase Auth to update password
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-
-    if (error) {
+    try {
+      validatePasswordStrength(req.body.newPassword);
+    } catch (error) {
       return next(new AppError(error.message, 400));
     }
 
-    // Update password in our database as well
-    await User.updatePassword(req.user.user_id, newPassword);
-    
-    res.status(200).json({
-      status: 'success',
-      message: 'Password updated successfully'
-    });
-  } catch (err) {
-    next(err);
+    const identity = req.user.email
+      ? { email: req.user.email, password: req.body.currentPassword }
+      : { phone: req.user.phone, password: req.body.currentPassword };
+    const { error: verifyError } = await supabase.auth.signInWithPassword(identity);
+    if (verifyError) return next(new AppError('Current password is incorrect', 401));
+
+    const token = extractBearerToken(req);
+    const { error } = await createUserClient(token).auth.updateUser({ password: req.body.newPassword });
+    if (error) return next(internalError('Failed to change password'));
+    return res.status(200).json({ status: 'success', message: 'Password changed successfully' });
+  } catch (error) {
+    return next(internalError('Failed to change password'));
   }
 };
 
-export const getMe = async (req, res, next) => {
+export const deleteAccount = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.user_id);
-    
-    let responseData = {
-      user_id: user.user_id,
-      email: user.email,
-      user_type: user.user_type,
-      full_name: user.full_name,
-      phone: user.phone,
-      auth_user_id: user.auth_user_id
-    };
+    if (!req.body.currentPassword) return next(new AppError('Current password is required', 400));
+    const identity = req.user.email
+      ? { email: req.user.email, password: req.body.currentPassword }
+      : { phone: req.user.phone, password: req.body.currentPassword };
+    const { error: verifyError } = await supabase.auth.signInWithPassword(identity);
+    if (verifyError) return next(new AppError('Current password is incorrect', 401));
 
-    // Add company details if trucking company
-    if (user.user_type === 'trucking_company') {
-      const { data: companyData } = await supabase
-        .from('trucking_companies')
-        .select('*')
-        .eq('user_id', user.user_id)
-        .single();
-      responseData.company = companyData;
-    }
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user: responseData
-      }
-    });
-  } catch (err) {
-    next(err);
+    await anonymizeApplicationRecords(req.user.user_id);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(req.user.auth_user_id);
+    if (error) return next(internalError('Failed to delete account'));
+    return res.status(204).send();
+  } catch (error) {
+    return next(internalError('Failed to delete account'));
   }
 };
 
-export const forgotPassword = catchAsync(async (req, res, next) => {
-  try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return next(new AppError('Email is required', 400));
-    }
-
-    // Use Supabase Auth for password reset
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL}/reset-password`
-    });
-
-    if (error) {
-      return next(new AppError(error.message, 400));
-    }
-    
-    res.status(200).json({
-      status: 'success',
-      message: 'Password reset link sent to email'
-    });
-  } catch (err) {
-    console.error('Password reset error:', err);
-    next(err);
-  }
-});
-
-export const resetPassword = async (req, res, next) => {
-  try {
-    const { newPassword } = req.body;
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token || !newPassword) {
-      return next(new AppError('Token and new password are required', 400));
-    }
-
-    // Use Supabase Auth to update password
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-
-    if (error) {
-      return next(new AppError(error.message, 400));
-    }
-
-    // Update password in our database as well
-    const user = await User.findByEmailOrPhone(data.user.email);
-    if (user) {
-      await User.updatePassword(user.user_id, newPassword);
-    }
-    
-    res.status(200).json({
-      status: 'success',
-      message: 'Password updated successfully'
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const createAdmin = catchAsync(async (req, res, next) => {
-  // Only allow existing admins to create new admins
-  if (req.user?.user_type !== 'admin') {
-    return next(new AppError('Unauthorized', 403));
-  }
-
-  const { email, password, full_name } = req.body;
-
-  // Validate inputs
-  if (!email) {
-    return next(new AppError('Email is required for admin users', 400));
-  }
-
-  // Use Supabase Auth for admin creation
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-    email: email,
-    password: password,
-    user_metadata: { 
-      user_type: 'admin',
-      full_name: full_name
-    },
-    email_confirm: true // Auto-confirm admin emails
-  });
-
-  if (authError) {
-    return next(new AppError(authError.message, 400));
-  }
-
-  // Create admin user profile in our database
-  const newUser = await User.create({ 
-    email, 
-    user_type: 'admin', 
-    full_name,
-    auth_user_id: authData.user.id
-  });
-  
-  res.status(201).json({
-    status: 'success',
-    data: { user: newUser }
-  });
-});
-
-// // New function to handle email verification
-// export const verifyEmail = async (req, res, next) => {
-//   try {
-//     const { token_hash, type } = req.query;
-
-//     if (!token_hash || !type) {
-//       return next(new AppError('Token and type are required', 400));
-//     }
-
-//     // Use Supabase Auth to verify email
-//     const { data, error } = await supabase.auth.verifyOtp({
-//       token_hash,
-//       type
-//     });
-
-//     if (error) {
-//       return next(new AppError(error.message, 400));
-//     }
-
-//     // User verification is now handled by Supabase Auth
-//     // No need to update verification status in our database
-
-//     res.status(200).json({
-//       status: 'success',
-//       message: 'Email verified successfully',
-//       session: data.session
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// // New function to resend verification email
-// export const resendVerification = async (req, res, next) => {
-//   try {
-//     const { email } = req.body;
-
-//     if (!email) {
-//       return next(new AppError('Email is required', 400));
-//     }
-
-//     // Use Supabase Auth to resend verification
-//     const { error } = await supabase.auth.resend({
-//       type: 'signup',
-//       email: email
-//     });
-
-//     if (error) {
-//       return next(new AppError(error.message, 400));
-//     }
-
-//     res.status(200).json({
-//     status: 'success',
-//       message: 'Verification email sent'
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// New function to logout
-export const logout = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (token) {
-      await supabase.auth.signOut();
-    }
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Logged out successfully'
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const restrictTo = (...roles) => requireRole(...roles);
+export { protect };
