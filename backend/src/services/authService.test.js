@@ -28,6 +28,16 @@ describe('auth service contracts', () => {
     expect(() => validatePasswordStrength('password')).toThrow('strong');
   });
 
+  test('preserves a driver company code in signup metadata', () => {
+    expect(buildSignupInput({
+      email: 'driver@example.com',
+      password: 'Secure!123',
+      user_type: 'driver',
+      full_name: 'A Driver',
+      company_code: 'company-invite-code',
+    }).options.data.company_code).toBe('company-invite-code');
+  });
+
   test('returns a canonical user shape with organization membership', () => {
     expect(buildCanonicalUser(
       {

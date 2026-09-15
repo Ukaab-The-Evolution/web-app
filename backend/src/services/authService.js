@@ -27,7 +27,7 @@ export const buildSignupInput = (input = {}) => {
     full_name: input.full_name?.trim() || '',
   };
 
-  for (const key of ['phone', 'organization_name', 'owns_company', 'cnic']) {
+  for (const key of ['phone', 'organization_name', 'owns_company', 'cnic', 'company_code']) {
     if (input[key] !== undefined && input[key] !== null && input[key] !== '') {
       metadata[key] = input[key];
     }

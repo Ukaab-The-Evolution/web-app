@@ -53,6 +53,7 @@ export const protect = async (req, res, next) => {
       company_id: driver?.company_id || truckingCompany?.company_id || shipperCompany?.company_id || null,
       driver_id: driver?.driver_id || null,
       shipper_id: shipper?.shipper_id || null,
+      driver,
       company,
       organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
     });
@@ -68,7 +69,7 @@ export const protect = async (req, res, next) => {
     req.accessToken = token;
     return next();
   } catch (error) {
-    return next(new AppError(error.message || 'Authentication failed', 401));
+    return next(new AppError('Authentication failed', 500, { expose: false }));
   }
 };
 

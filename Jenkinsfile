@@ -28,7 +28,25 @@ pipeline {
         }
         stage('Frontend') {
           agent { docker { image 'node:20-alpine' } }
-          steps { dir("${FRONTEND}") { sh 'CI=true npm test -- --watchAll=false --runInBand' } }
+          steps {
+            dir("${FRONTEND}") {
+              sh 'CI=true npm test -- --watchAll=false --runInBand'
+              sh 'npm run lint'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Dependency audit') {
+      parallel {
+        stage('Backend audit') {
+          agent { docker { image 'node:20-alpine' } }
+          steps { dir("${BACKEND}") { sh 'npm audit --omit=dev --audit-level=high' } }
+        }
+        stage('Frontend audit') {
+          agent { docker { image 'node:20-alpine' } }
+          steps { dir("${FRONTEND}") { sh 'npm audit --omit=dev --audit-level=high' } }
         }
       }
     }
@@ -39,7 +57,10 @@ pipeline {
     }
 
     stage('Docker Build') {
-      steps { sh 'docker compose build' }
+      steps {
+        sh 'docker build --target production -t ukaab-frontend:ci frontend'
+        sh 'docker build -t ukaab-backend:ci backend'
+      }
     }
   }
 

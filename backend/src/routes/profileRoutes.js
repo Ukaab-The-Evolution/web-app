@@ -3,7 +3,8 @@ import { protect } from '../middleware/protect.js';
 import { getProfile, 
     updateProfile, 
     joinCompany, 
-    generateInviteCode 
+    generateInviteCode,
+    getCompanyDrivers,
 } from '../controllers/profileController.js';
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.get('/', getProfile);
 router.patch('/', updateProfile);
 router.post('/join-company', joinCompany);
 router.post('/generate-invite-code', generateInviteCode);
+router.get('/company-drivers', getCompanyDrivers);
 
 export default router;

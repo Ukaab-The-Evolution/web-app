@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { connect, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { connect } from 'react-redux';
 import { useState } from 'react';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import ProfileHeader from '../../ui/ProfileHeader';
@@ -9,7 +9,6 @@ import api, { normalizeApiError } from '../../../api/client';
 
 const ChangePassword = ({ isAuthenticated, user }) => {
     const navigate = useNavigate();
-    const dispatch = useDispatch();
     const [toast, setToast] = useState(null);
     const [formData, setFormData] = useState({
         currentPassword: '',
@@ -31,7 +30,7 @@ const ChangePassword = ({ isAuthenticated, user }) => {
     const validatePassword = (password) => {
         const hasUppercase = /[A-Z]/.test(password);
         const hasMinLength = password.length >= 8;
-        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+=\x5B\x5D{};':"\\|,.<>/?-]/.test(password);
 
         setPasswordValidation({
             hasUppercase,

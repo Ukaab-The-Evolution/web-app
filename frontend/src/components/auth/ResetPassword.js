@@ -29,7 +29,7 @@ const ResetPassword = ({ isAuthenticated, resetPassword }) => {
     const validatePassword = (password) => {
         const hasUppercase = /[A-Z]/.test(password);
         const hasMinLength = password.length >= 8;
-        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        const hasNumberOrSymbol = /[0-9!@#$%^&*()_+=\x5B\x5D{};':"\\|,.<>/?-]/.test(password);
 
         setPasswordValidation({
             hasUppercase,

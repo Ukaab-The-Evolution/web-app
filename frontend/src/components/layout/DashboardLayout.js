@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import Sidebar from './Sidebar';
-import ChatWidget from '../ui/ChatWidget';
 import DashboardSkeleton from './DashboardSkeleton';
 
 // Import role-based dashboard components
@@ -21,11 +20,12 @@ const DashboardLayout = () => {
     const path = location.pathname;
     if (path === '/dashboard') return 'dashboard';
     if (path.includes('/shipments')) return 'shipments';
+    if (path.includes('/load-requests')) return 'loadRequests';
     if (path.includes('/load-request')) return 'loadRequest';
-    if (path.includes('/loadRequests')) return 'loadRequests';
-    if (path.includes('/acceptedLoads')) return 'acceptedLoads';
+    if (path.includes('/accepted-loads')) return 'acceptedLoads';
     if (path.includes('/fleet')) return 'fleet';
     if (path.includes('/orders')) return 'orders';
+    if (path.includes('/accepted-loads')) return 'assignedLoads';
     if (path.includes('/profile')) return 'profile';
     if (path.includes('/settings')) return 'settings';
     return 'dashboard';
@@ -66,7 +66,7 @@ const DashboardLayout = () => {
         navigate('/dashboard/load-requests');
         break;
       case 'acceptedLoads':
-        navigate('/dashboard/accepted-loads');
+        navigate('/dashboard/shipments');
         break;
       case 'fleet':
         navigate('/dashboard/fleet');
@@ -75,6 +75,9 @@ const DashboardLayout = () => {
       // Truck Driver routes
       case 'orders':
         navigate('/dashboard/orders');
+        break;
+      case 'assignedLoads':
+        navigate('/dashboard/accepted-loads');
         break;
 
       // Common routes
@@ -135,8 +138,6 @@ const DashboardLayout = () => {
         userRole={userRole}
       />
 
-      <ChatWidget />
-      
       {/* Main Content Area */}
       <div className="flex-1 ml-56 overflow-auto">
         {location.pathname === '/dashboard' ? (

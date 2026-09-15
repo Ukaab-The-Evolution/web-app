@@ -5,7 +5,6 @@ import { register } from '../../actions/auth';
 import { useState, useEffect } from 'react';
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import GoogleSignInButton from './GoogleSignInButton';
 
 import {
   getFieldsForRole,
@@ -53,7 +52,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
   const validatePassword = (password) => {
     const hasUppercase = /[A-Z]/.test(password);
     const hasMinLength = password.length >= 8;
-    const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasNumberOrSymbol = /[0-9!@#$%^&*()_+=\x5B\x5D{};':"\\|,.<>/?-]/.test(password);
 
     setPasswordValidation({
       hasUppercase,
@@ -112,7 +111,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
     e.preventDefault();
 
     if (!isFormValid()) {
-      console.log('Form validation failed');
       return;
     }
 
@@ -129,7 +127,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
       };
 
       await register(registrationData, role);
-      console.log('Registration successful.');
       navigate(`/signup-confirmation?email=${encodeURIComponent(formData.email)}&role=${role}`);
     } catch (error) {
       console.error('Registration error:', error);
@@ -310,10 +307,6 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
             <hr className='flex-grow border-[var(--color-green-main)]' />
           </div>
 
-          <section className="space-y-2 pb-2">
-            <GoogleSignInButton />
-          </section>
-
           {role && (
             <div className="text-center">
               <Link
@@ -352,7 +345,7 @@ const Register = ({ register, isAuthenticated, supabaseUser, loading }) => {
           </h2>
           <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
             Get started in seconds – connect with shippers, fleets, and drivers instantly to post
-            requests, assign loads, and track in real time across one unified platform.
+            requests, assign loads, and share trip updates across one unified platform.
           </p>
         </div>
       </div>

@@ -102,7 +102,7 @@ All protected routes derive the acting user from the bearer token and enforce or
 
 ## Environment finding
 
-The current `backend/.env` contains `SUPABASE_URL` and `SUPABASE_KEY` but does not contain `SUPABASE_SERVICE_ROLE_KEY`, even though the current backend configuration requires it. Implementation will fail fast with a clear configuration message and the environment template will document the required backend-only variable without including any secret value.
+The backend requires `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `FRONTEND_URL`. The service-role key is backend-only and must be configured in the deployment environment without being copied into source control or any `REACT_APP_*` variable.
 
 ## Verification criteria
 

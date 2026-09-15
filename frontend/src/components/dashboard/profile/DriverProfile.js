@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle, FaTrash } from 'react-icons/fa';
+import { FaCamera, FaChevronDown, FaCloudUploadAlt, FaCheckCircle } from 'react-icons/fa';
 import { ShieldSlash, ShieldTick } from 'iconsax-react';
 import { IoClose } from "react-icons/io5";
 import { MdAddPhotoAlternate } from "react-icons/md";
 import ProfileHeader from '../../ui/ProfileHeader';
 import Toast from "../../ui/Toast";
 import { connect } from 'react-redux';
-import { getProfile, updateProfile } from '../../../actions/profile';
-import {isAuthenticated} from '../../../actions/auth';
+import { getProfile, updateProfile, joinCompany } from '../../../actions/profile';
 import PropTypes from 'prop-types';
 import { uploadDocument } from '../../../actions/documents';
 
-const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => {
+const DriverProfile = ({ user, getProfile, updateProfile, joinCompany }) => {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -25,7 +24,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isVerified, setIsVerified] = useState(user?.is_verified || false);
+  const [isVerified, setIsVerified] = useState(user?.verification_status === 'verified');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -38,6 +37,8 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
     registrationDocument: null
   });
   const [verificationLoading, setVerificationLoading] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [joiningCompany, setJoiningCompany] = useState(false);
 
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -96,42 +97,6 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleProfileImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setToast({
-          type: "error",
-          message: "Profile photo must be less than 5MB.",
-        });
-        return;
-      }
-      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      if (!allowedTypes.includes(file.type)) {
-        setToast({
-          type: "error",
-          message: "Only PNG and JPG files are allowed for profile photo.",
-        });
-        return;
-      }
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-      
-      setToast({
-        type: "success",
-        message: "Profile photo uploaded successfully!",
-      });
-    }
-  };
-
-  const handleRemoveProfileImage = () => {
-    setProfileImage(null);
-    setToast({
-      type: "success",
-      message: "Profile image removed successfully!",
-    });
   };
 
   const handleFileUpload = (e) => {
@@ -239,6 +204,22 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
 
   const closeSuccessModal = () => {
     setShowSuccessModal(false);
+  };
+
+  const handleJoinCompany = async (event) => {
+    event.preventDefault();
+    if (!inviteCode.trim()) return;
+    try {
+      setJoiningCompany(true);
+      await joinCompany(inviteCode.trim());
+      setInviteCode('');
+      setToast({ type: 'success', message: 'You joined the trucking company successfully.' });
+      await getProfile();
+    } catch (error) {
+      setToast({ type: 'error', message: error?.response?.data?.message || error?.message || 'Unable to join company.' });
+    } finally {
+      setJoiningCompany(false);
+    }
   };
   
   const handleSaveChanges = async () => {
@@ -371,7 +352,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
         address: user.address || '',
       });
       setProfileImage(user.avatar_url || null);
-      setIsVerified(user.is_verified || false);
+      setIsVerified(user.verification_status === 'verified');
     }
   }, [user]);
 
@@ -559,7 +540,7 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
                 <FaCheckCircle className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-xl font-semibold text-center text-[#171717] mb-16">
-                Driver profile verified successfully
+                Documents submitted. Your profile is pending review.
               </h2>
             </div>
             
@@ -581,6 +562,26 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
       <div className="max-w-4xl mx-auto px-8 py-0">
         <div className="bg-white rounded-xl p-8">
 
+          {!user?.company_id && (
+            <form onSubmit={handleJoinCompany} className="mb-8 rounded-xl border border-[#B2D7CA] bg-[#F5FBF8] p-5">
+              <h2 className="text-lg font-semibold text-[#3B6255]">Join your trucking company</h2>
+              <p className="mt-1 text-sm text-gray-600">Paste the invite code provided by your trucking company.</p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value)}
+                  placeholder="Company invite code"
+                  aria-label="Company invite code"
+                  className="flex-1 rounded-lg border border-[#578C7A] bg-white px-4 py-2 text-sm text-[#3B6255]"
+                  disabled={joiningCompany}
+                />
+                <button type="submit" disabled={joiningCompany || !inviteCode.trim()} className="rounded-lg bg-[#578C7A] px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
+                  {joiningCompany ? 'Joining…' : 'Join company'}
+                </button>
+              </div>
+            </form>
+          )}
+
           {/* Profile Picture Section */}
           <div className="flex justify-center mb-8">
             <div className="relative">
@@ -601,9 +602,9 @@ const DriverProfile = ({ user, isAuthenticated, getProfile, updateProfile }) => 
               </div>
 
               {/* Camera button */}
-              <div 
-                onClick={() => setShowProfileModal(true)}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border-[1px] border-[#0A0A0A] cursor-pointer hover:bg-gray-200">
+              <div
+                title="Profile photo changes are not available in the pilot"
+                className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-full shadow-lg flex items-center justify-center border-[1px] border-gray-300 opacity-60">
                 <FaCamera className="w-4 h-4 text-[#0A0A0A]" />
               </div>
 
@@ -916,14 +917,13 @@ DriverProfile.propTypes = {
     avatar_url: PropTypes.string,
     is_verified: PropTypes.bool,
   }),
-  isAuthenticated: PropTypes.bool,
   getProfile: PropTypes.func.isRequired,
   updateProfile: PropTypes.func.isRequired,
+  joinCompany: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
   user: state.profile.profile,
-  isAuthenticated: state.auth.isAuthenticated,
 });
 
-export default connect(mapStateToProps, { getProfile, updateProfile })(DriverProfile);
+export default connect(mapStateToProps, { getProfile, updateProfile, joinCompany })(DriverProfile);

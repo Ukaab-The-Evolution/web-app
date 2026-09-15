@@ -3,13 +3,13 @@ import ProfileHeader from '../../ui/ProfileHeader';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronRight, FaTimes } from 'react-icons/fa';
+import { FaChevronRight } from 'react-icons/fa';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { IoClose } from "react-icons/io5";
 import api, { normalizeApiError } from '../../../api/client';
 
 const Settings = ({ user }) => {
-  const [activeSection, setActiveSection] = useState('account');
+  const [activeSection] = useState('account');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -86,18 +86,6 @@ const Settings = ({ user }) => {
                   </div>     
                 </div>
               
-                <h3 className="text-md font-medium text-[#A3A3A3] mb-6 mt-6">Preferences</h3>
-                <div className="space-y-6">
-                    
-                  <div className="flex justify-between items-center pb-4 ml-8">
-                    <h3 className="text-md font-medium text-[#171717]">Notifications</h3>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-[#A3A3A3] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#3B6255]"></div>
-                    </label>
-                  </div>        
-                </div>
-                    
                 <h3 className="text-md font-medium text-[#A3A3A3] mb-6 mt-6">Delete Account</h3>
                 <div className="space-y-6">
                   <div className="flex justify-between items-center pb-4 ml-8">

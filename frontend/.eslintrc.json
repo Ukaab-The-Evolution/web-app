@@ -1,0 +1,9 @@
+{
+  "extends": ["react-app"],
+  "overrides": [
+    {
+      "files": ["src/**/*.test.js"],
+      "env": { "jest": true }
+    }
+  ]
+}

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { MdOutlineEmail, MdOutlineRefresh } from 'react-icons/md';
-import { FaCheckCircle } from 'react-icons/fa';
+import { MdOutlineEmail } from 'react-icons/md';
 import PropTypes from 'prop-types';
 import { supabase } from '../../lib/supabase';
 
@@ -48,10 +47,6 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
       setResendError(error.message);
       setIsChecking(false);
     }
-  };
-
-  const handleCheckStatus = () => {
-    window.location.reload();
   };
 
   const getRoleDisplayName = (roleValue) => {

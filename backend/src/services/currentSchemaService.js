@@ -142,7 +142,8 @@ export const normalizeLegacyLoad = (row = {}, pool = null) => {
       remaining_capacity: requiredCapacity
         ? Math.max(requiredCapacity - acceptedCapacity, 0)
         : null,
-      fulfilled: pool?.status === 'full' || remaining === 0,
+      fulfilled: pool?.status === 'full'
+        || (remaining === 0 && (!requiredCapacity || acceptedCapacity >= requiredCapacity)),
     },
   };
 };
@@ -178,6 +179,7 @@ export const normalizeLegacyVehicle = (row = {}) => ({
   id: row.vehicle_id,
   registration_number: row.license_plate,
   capacity: row.capacity_kg,
+  current_location: row.current_location ? normalizeLegacyLocation(row.current_location) : null,
 });
 
 export const buildLegacyUser = (profile = {}, relations = {}) => ({
@@ -195,10 +197,17 @@ export const buildLegacyUser = (profile = {}, relations = {}) => ({
   company: relations.company || null,
   company_name: relations.company?.company_name || null,
   company_address: relations.company?.company_address || null,
-  address: relations.company?.company_address || null,
+  contact_person: relations.company?.contact_person || null,
+  address: relations.driver?.address || relations.company?.company_address || null,
   fleet_size: relations.company?.fleet_size || null,
   tax_id: relations.company?.tax_id || null,
   invite_code: relations.company?.invite_code || null,
+  verification_status: relations.driver?.verification_status || relations.company?.verification_status || null,
+  experience_years: relations.driver?.experience_years ?? null,
+  current_company: relations.driver?.current_company || null,
+  emergency_contact: relations.driver?.emergency_contact || null,
+  emergency_contactName: relations.driver?.emergency_contact_name || null,
+  avatar_url: profile.avatar_url || null,
   organizations: relations.organizations || [],
 });
 

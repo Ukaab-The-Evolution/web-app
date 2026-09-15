@@ -38,6 +38,7 @@ const getProfileAggregate = async (userId) => {
     company_id: driverResult.data?.company_id || company?.company_id || null,
     driver_id: driverResult.data?.driver_id || null,
     shipper_id: shipperResult.data?.shipper_id || null,
+    driver: driverResult.data || null,
     company,
     organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
   });
@@ -50,14 +51,19 @@ export const getProfile = catchAsync(async (req, res) => {
 });
 
 export const updateProfile = catchAsync(async (req, res, next) => {
-  const profileUpdate = buildProfileUpdate(req.body);
+  let profileUpdate;
+  try {
+    profileUpdate = buildProfileUpdate(req.body);
+  } catch (error) {
+    return next(new AppError(error.message, 400));
+  }
   const userId = req.user.id;
 
   if (profileUpdate.email && profileUpdate.email !== req.user.email) {
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
       req.user.auth_user_id, { email: profileUpdate.email },
     );
-    if (authError) return next(new AppError(authError.message, 400));
+    if (authError) return next(new AppError('Unable to update email address', 400));
   }
   if (Object.keys(profileUpdate).length) {
     const { error } = await supabaseAdmin.from('profiles').update(profileUpdate).eq('user_id', userId);
@@ -72,6 +78,14 @@ export const updateProfile = catchAsync(async (req, res, next) => {
       driverUpdate.cnic = cnic;
     }
     if (req.body.license_number !== undefined) driverUpdate.license_number = String(req.body.license_number).trim();
+    if (req.body.experience_years !== undefined) {
+      const experienceYears = Number(req.body.experience_years);
+      if (!Number.isInteger(experienceYears) || experienceYears < 0) return next(new AppError('experience_years must be a non-negative whole number', 400));
+      driverUpdate.experience_years = experienceYears;
+    }
+    for (const [inputKey, column] of [['current_company', 'current_company'], ['emergency_contact', 'emergency_contact'], ['emergency_contactName', 'emergency_contact_name'], ['address', 'address']]) {
+      if (req.body[inputKey] !== undefined) driverUpdate[column] = String(req.body[inputKey]).trim();
+    }
     if (Object.keys(driverUpdate).length) {
       const { error } = await supabaseAdmin.from('drivers').update(driverUpdate).eq('driver_id', req.user.driver_id);
       if (error) throw error;
@@ -86,6 +100,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
     if (req.body.address !== undefined || req.body.company_address !== undefined) {
       companyUpdate.company_address = String(req.body.company_address || req.body.address).trim();
     }
+    if (req.body.contact_person !== undefined) companyUpdate.contact_person = String(req.body.contact_person).trim();
     if (req.user.user_type === 'trucking_company' && req.body.fleet_size !== undefined) {
       const fleetSize = Number(req.body.fleet_size);
       if (!Number.isInteger(fleetSize) || fleetSize < 1) return next(new AppError('fleet_size must be a positive whole number', 400));
@@ -132,4 +147,34 @@ export const generateInviteCode = catchAsync(async (req, res, next) => {
     .select('invite_code').single();
   if (error) throw error;
   res.status(200).json({ status: 'success', data: { invite_code: company.invite_code } });
+});
+
+export const getCompanyDrivers = catchAsync(async (req, res, next) => {
+  if (req.user.user_type !== 'trucking_company' || !req.user.company_id) {
+    return next(new AppError('Only trucking company members can view company drivers', 403));
+  }
+
+  const { data: drivers, error: driverError } = await supabaseAdmin
+    .from('drivers')
+    .select('driver_id, user_id, company_id')
+    .eq('company_id', req.user.company_id)
+    .order('driver_id', { ascending: true });
+  if (driverError) throw driverError;
+
+  const userIds = (drivers || []).map((driver) => driver.user_id).filter(Boolean);
+  const { data: profiles, error: profileError } = userIds.length
+    ? await supabaseAdmin.from('profiles').select('user_id, full_name').in('user_id', userIds)
+    : { data: [], error: null };
+  if (profileError) throw profileError;
+  const names = new Map((profiles || []).map((profile) => [profile.user_id, profile.full_name]));
+
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      drivers: (drivers || []).map((driver) => ({
+        ...driver,
+        full_name: names.get(driver.user_id) || `Driver ${driver.driver_id}`,
+      })),
+    },
+  });
 });

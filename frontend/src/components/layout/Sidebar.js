@@ -1,4 +1,4 @@
-import { FaTruckFast, FaUser, FaClipboardList } from "react-icons/fa6";
+import { FaTruckFast, FaUser } from "react-icons/fa6";
 import { IoSettingsOutline } from "react-icons/io5";
 import { TbCubePlus,TbLayoutDashboardFilled } from "react-icons/tb";
 import { FiTruck } from "react-icons/fi";
@@ -15,15 +15,15 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
       case 'trucking_company':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: <TbLayoutDashboardFilled className="w-6 h-6" /> },
-          { id: 'loadRequests', label: 'Load Requests', icon: <TbCubePlus className="w-6 h-6" /> },
-          { id: 'acceptedLoads', label: 'Accepted Loads', icon: <FaClipboardList className="w-6 h-6" /> },
+          { id: 'loadRequests', label: 'Available Load Pools', icon: <TbCubePlus className="w-6 h-6" /> },
           { id: 'fleet', label: 'Fleet Management', icon: <FiTruck className="w-6 h-6" /> },
         ];
       
       case 'driver':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: <TbLayoutDashboardFilled className="w-6 h-6" /> },
-          { id: 'orders', label: 'My Orders', icon: <BiPackage className="w-6 h-6" /> },
+          { id: 'orders', label: 'Available Load Pools', icon: <BiPackage className="w-6 h-6" /> },
+          { id: 'assignedLoads', label: 'My Assigned Trips', icon: <FiTruck className="w-6 h-6" /> },
         ];
       
       case 'shipper':
@@ -70,8 +70,9 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
       <nav className="">
         <div className="px-5 space-y-2">
           {navigationItems.map((item) => (
-            <div
+            <button
               key={item.id}
+              type="button"
               className={`p-3 font-poppins flex items-center rounded-lg cursor-pointer transition-colors ${
                 activeSection === item.id
                   ? 'bg-white text-[#3B6255]'
@@ -83,7 +84,7 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
                 {item.icon}
               </div>
               <span className="font-medium">{item.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </nav>
@@ -93,8 +94,9 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
         <div className="text-sm mb-3 font-medium text-white">ACCOUNT</div>
         <div className="space-y-2 pl-2">
           {accountItems.map((item) => (
-            <div
+            <button
               key={item.id}
+              type="button"
               className={`p-2 flex items-center rounded cursor-pointer transition-colors ${
                 activeSection === item.id
                   ? 'bg-white  hover:bg-white text-[#3B6255]'
@@ -106,11 +108,12 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
                 {item.icon}
               </div>
               <span className="text-sm">{item.label}</span>
-            </div>
+            </button>
           ))}
           
           {/* Logout */}
-          <div
+          <button
+            type="button"
             className="p-2 flex items-center hover:bg-white hover:bg-opacity-10 rounded cursor-pointer transition-colors"
             onClick={handleSignOut}
           >
@@ -118,7 +121,7 @@ const Sidebar = ({ activeSection, setActiveSection, handleSignOut, userRole = 's
               <TbLogout2  className="w-5 h-5" />
             </div>
             <span className="text-sm">Logout</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>

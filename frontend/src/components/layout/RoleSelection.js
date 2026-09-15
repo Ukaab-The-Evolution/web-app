@@ -3,7 +3,7 @@ import { FaAngleDoubleRight } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Toast from "../ui/Toast";
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
@@ -191,7 +191,7 @@ const RoleSelection = ({ isAuthenticated }) => {
             </h2>
             <p className="text-white text-base md:text-lg lg:text-lg xl:text-xl font-medium font-poppins leading-relaxed">
               Get started in seconds – connect with shippers, fleets, and drivers instantly to post
-              requests, assign loads, and track in real time across one unified platform.
+              requests, assign loads, and share trip updates across one unified platform.
             </p>
           </div>
         </div>

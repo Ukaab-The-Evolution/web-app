@@ -7,6 +7,7 @@ import path from 'path';
 const documentTypeMap = Object.freeze({
   driver_registration: 'license',
   company_registration: 'certification',
+  shipper_registration: 'certification',
   license: 'license',
   certification: 'certification',
   proof_of_delivery: 'proof_of_delivery',
@@ -22,6 +23,9 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
   if (!req.user?.user_id) {
     return next(new AppError('Authentication required', 401));
   }
+
+  const documentType = documentTypeMap[req.body.document_type];
+  if (!documentType) return next(new AppError('Unsupported document type', 400));
 
   try {
     const fileExt = path.extname(req.file.originalname).toLowerCase();
@@ -44,8 +48,6 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     if (uploadError) throw uploadError;
 
     // Create document record
-    const documentType = documentTypeMap[req.body.document_type];
-    if (!documentType) return next(new AppError('Unsupported document type', 400));
     const { data: docData, error: dbError } = await supabaseAdmin
       .from('documents')
       .insert({
@@ -69,7 +71,7 @@ export const uploadDocument = catchAsync(async (req, res, next) => {
     });
 
   } catch (err) {
-    next(new AppError(`Upload failed: ${err.message}`, 400));
+    next(new AppError('Upload failed', 500, { expose: false }));
   }
 });
 
@@ -139,15 +141,23 @@ export const reviewVerification = catchAsync(async (req, res, next) => {
 
     if (updateError) throw updateError;
 
+    const { data: profile, error: profileError } = await supabaseAdmin.from('profiles')
+      .select('user_type').eq('user_id', document.user_id).single();
+    if (profileError) throw profileError;
+    const targetTable = profile.user_type === 'driver'
+      ? 'drivers'
+      : profile.user_type === 'shipper' ? 'shipper_companies' : 'trucking_companies';
+    const { error: verificationError } = await supabaseAdmin.from(targetTable)
+      .update({ verification_status: action === 'approve' ? 'verified' : 'rejected' })
+      .eq('user_id', document.user_id);
+    if (verificationError) throw verificationError;
+
     // 3. If rejected, delete the file
     if (action === 'reject') {
       await supabaseAdmin.storage
         .from('documents')
         .remove([document.storage_path]);
     }
-
-    // 4. User verification is now handled by Supabase Auth
-    // No need to update verification status in our database
 
     res.status(200).json({
       status: 'success',

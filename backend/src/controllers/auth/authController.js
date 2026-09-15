@@ -12,6 +12,50 @@ import { protect } from '../../middleware/protect.js';
 import AppError from '../../utils/appError.js';
 
 const config = loadEnv();
+const internalError = (message, status = 500) => new AppError(message, status, { expose: false });
+
+const cleanupApplicationRecords = async (userId) => {
+  if (!userId) return;
+  // Signup only creates one profile and one role record. Remove those records
+  // in dependency order when provisioning fails after Auth has succeeded.
+  await supabaseAdmin.from('drivers').delete().eq('user_id', userId);
+  await supabaseAdmin.from('shippers').delete().eq('user_id', userId);
+  await supabaseAdmin.from('trucking_companies').delete().eq('user_id', userId);
+  await supabaseAdmin.from('shipper_companies').delete().eq('user_id', userId);
+  await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
+};
+
+const anonymizeApplicationRecords = async (userId) => {
+  const { data: documents, error: documentLookupError } = await supabaseAdmin
+    .from('documents').select('storage_path').eq('user_id', userId);
+  if (documentLookupError) throw documentLookupError;
+  const paths = (documents || []).map((document) => document.storage_path).filter(Boolean);
+  if (paths.length) {
+    const { error: storageError } = await supabaseAdmin.storage.from('documents').remove(paths);
+    if (storageError) throw storageError;
+  }
+  const { error: documentDeleteError } = await supabaseAdmin.from('documents').delete().eq('user_id', userId);
+  if (documentDeleteError) throw documentDeleteError;
+
+  const { error: driverError } = await supabaseAdmin.from('drivers').update({
+    cnic: null,
+    license_number: null,
+    experience_years: null,
+    current_company: null,
+    emergency_contact: null,
+    emergency_contact_name: null,
+    address: null,
+  }).eq('user_id', userId);
+  if (driverError) throw driverError;
+
+  const { error: profileError } = await supabaseAdmin.from('profiles').update({
+    full_name: `Deleted user ${userId}`,
+    email: null,
+    phone: null,
+    avatar_url: null,
+  }).eq('user_id', userId);
+  if (profileError) throw profileError;
+};
 
 const getProfileAggregate = async (authUserId) => {
   const { data: profile, error: profileError } = await supabaseAdmin
@@ -49,6 +93,7 @@ const getProfileAggregate = async (authUserId) => {
     company_id: driverResult.data?.company_id || company?.company_id || null,
     driver_id: driverResult.data?.driver_id || null,
     shipper_id: shipperResult.data?.shipper_id || null,
+    driver: driverResult.data || null,
     company,
     organizations: company ? [{ company_id: company.company_id, company_name: company.company_name }] : [],
   });
@@ -72,7 +117,19 @@ const createApplicationRecords = async ({ authUser, input, userType }) => {
   if (profileError) throw profileError;
 
   if (userType === 'driver') {
-    const driverPayload = { user_id: profile.user_id };
+    let companyId = null;
+    if (input.company_code) {
+      const { data: company, error: companyLookupError } = await supabaseAdmin
+        .from('trucking_companies')
+        .select('company_id')
+        .eq('invite_code', String(input.company_code).trim())
+        .maybeSingle();
+      if (companyLookupError) throw companyLookupError;
+      if (!company) throw new AppError('Invalid trucking company invite code', 400);
+      companyId = company.company_id;
+    }
+
+    const driverPayload = { user_id: profile.user_id, company_id: companyId };
     if (input.cnic) {
       const cnic = String(input.cnic).replace(/\D/g, '');
       if (cnic) driverPayload.cnic = cnic;
@@ -94,7 +151,9 @@ const createApplicationRecords = async ({ authUser, input, userType }) => {
   };
   if (userType === 'trucking_company') {
     const fleetSize = Number(input.fleet_size || 1);
-    if (!Number.isInteger(fleetSize) || fleetSize < 1) throw new Error('fleet_size must be a positive whole number');
+    if (!Number.isInteger(fleetSize) || fleetSize < 1) {
+      throw new AppError('fleet_size must be a positive whole number', 400);
+    }
     const { error: companyError } = await supabaseAdmin
       .from('trucking_companies')
       .insert({ ...companyPayload, fleet_size: fleetSize });
@@ -117,6 +176,7 @@ const createApplicationRecords = async ({ authUser, input, userType }) => {
 
 export const signup = async (req, res, next) => {
   let authUserId;
+  let applicationUserId;
   try {
     const input = {
       ...req.body,
@@ -131,7 +191,8 @@ export const signup = async (req, res, next) => {
     }
     authUserId = authData.user.id;
 
-    await createApplicationRecords({ authUser: authData.user, input, userType: input.user_type });
+    const profile = await createApplicationRecords({ authUser: authData.user, input, userType: input.user_type });
+    applicationUserId = profile.user_id;
     const user = await getProfileAggregate(authUserId);
 
     return res.status(201).json({
@@ -144,10 +205,23 @@ export const signup = async (req, res, next) => {
       },
     });
   } catch (error) {
+    let cleanupUserId = applicationUserId;
+    if (!cleanupUserId && authUserId) {
+      const { data: createdProfile } = await supabaseAdmin.from('profiles')
+        .select('user_id').eq('auth_user_id', authUserId).maybeSingle();
+      cleanupUserId = createdProfile?.user_id;
+    }
+    try {
+      await cleanupApplicationRecords(cleanupUserId);
+    } catch {
+      return next(internalError('Registration cleanup failed'));
+    }
     if (authUserId) {
       await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => undefined);
     }
-    return next(new AppError(error.message || 'Registration failed', 400));
+    if (error instanceof AppError && error.expose) return next(error);
+    if (!authUserId && error instanceof Error) return next(new AppError(error.message, 400));
+    return next(internalError('Registration failed'));
   }
 };
 
@@ -176,7 +250,7 @@ export const login = async (req, res, next) => {
       data: user,
     });
   } catch (error) {
-    return next(new AppError(error.message || 'Login failed', 401));
+    return next(internalError('Login failed'));
   }
 };
 
@@ -185,11 +259,11 @@ export const logout = async (req, res, next) => {
     const token = extractBearerToken(req);
     if (token) {
       const { error } = await createUserClient(token).auth.signOut();
-      if (error) return next(new AppError(error.message, 400));
+      if (error) return next(internalError('Logout failed'));
     }
     return res.status(200).json({ status: 'success', message: 'Signed out' });
   } catch (error) {
-    return next(new AppError(error.message || 'Logout failed', 400));
+    return next(internalError('Logout failed'));
   }
 };
 
@@ -207,10 +281,10 @@ export const forgotPassword = async (req, res, next) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${config.frontendUrl}/reset-password`,
     });
-    if (error) return next(new AppError(error.message, 400));
+    if (error) return next(internalError('Failed to send reset link'));
     return res.status(200).json({ status: 'success', message: 'Password reset link sent' });
   } catch (error) {
-    return next(new AppError(error.message || 'Failed to send reset link', 400));
+    return next(internalError('Failed to send reset link'));
   }
 };
 
@@ -218,15 +292,19 @@ export const resetPassword = async (req, res, next) => {
   try {
     const token = extractBearerToken(req);
     if (!token) return next(new AppError('Recovery token is required', 401));
-    validatePasswordStrength(req.body.newPassword);
+    try {
+      validatePasswordStrength(req.body.newPassword);
+    } catch (error) {
+      return next(new AppError(error.message, 400));
+    }
 
     const { error } = await createUserClient(token).auth.updateUser({
       password: req.body.newPassword,
     });
-    if (error) return next(new AppError(error.message, 400));
+    if (error) return next(internalError('Failed to reset password'));
     return res.status(200).json({ status: 'success', message: 'Password updated successfully' });
   } catch (error) {
-    return next(new AppError(error.message || 'Failed to reset password', 400));
+    return next(internalError('Failed to reset password'));
   }
 };
 
@@ -235,7 +313,11 @@ export const updatePassword = async (req, res, next) => {
     if (!req.body.currentPassword) {
       return next(new AppError('Current password is required', 400));
     }
-    validatePasswordStrength(req.body.newPassword);
+    try {
+      validatePasswordStrength(req.body.newPassword);
+    } catch (error) {
+      return next(new AppError(error.message, 400));
+    }
 
     const identity = req.user.email
       ? { email: req.user.email, password: req.body.currentPassword }
@@ -245,10 +327,10 @@ export const updatePassword = async (req, res, next) => {
 
     const token = extractBearerToken(req);
     const { error } = await createUserClient(token).auth.updateUser({ password: req.body.newPassword });
-    if (error) return next(new AppError(error.message, 400));
+    if (error) return next(internalError('Failed to change password'));
     return res.status(200).json({ status: 'success', message: 'Password changed successfully' });
   } catch (error) {
-    return next(new AppError(error.message || 'Failed to change password', 400));
+    return next(internalError('Failed to change password'));
   }
 };
 
@@ -261,11 +343,12 @@ export const deleteAccount = async (req, res, next) => {
     const { error: verifyError } = await supabase.auth.signInWithPassword(identity);
     if (verifyError) return next(new AppError('Current password is incorrect', 401));
 
+    await anonymizeApplicationRecords(req.user.user_id);
     const { error } = await supabaseAdmin.auth.admin.deleteUser(req.user.auth_user_id);
-    if (error) return next(new AppError(error.message, 400));
+    if (error) return next(internalError('Failed to delete account'));
     return res.status(204).send();
   } catch (error) {
-    return next(new AppError(error.message || 'Failed to delete account', 400));
+    return next(internalError('Failed to delete account'));
   }
 };
 

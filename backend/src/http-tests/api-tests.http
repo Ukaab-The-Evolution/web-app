@@ -1,0 +1,49 @@
+@baseUrl = http://localhost:3001/api/v1
+@authBaseUrl = {{baseUrl}}/auth
+@token = replace-with-token-from-login
+
+### Health
+GET {{baseUrl}}/health
+
+### Register a driver (Supabase email verification may be required before login)
+POST {{authBaseUrl}}/signup
+Content-Type: application/json
+
+{
+  "email": "driver@example.com",
+  "password": "DriverPass123!",
+  "user_type": "driver",
+  "full_name": "Pilot Driver",
+  "company_code": "replace-with-company-invite-code"
+}
+
+### Login
+POST {{authBaseUrl}}/login
+Content-Type: application/json
+
+{
+  "identifier": "driver@example.com",
+  "password": "DriverPass123!"
+}
+
+### Current user
+GET {{authBaseUrl}}/me
+Authorization: Bearer {{token}}
+
+### Available pooled loads
+GET {{baseUrl}}/loads/available
+Authorization: Bearer {{token}}
+
+### Driver vehicles
+GET {{baseUrl}}/vehicles
+Authorization: Bearer {{token}}
+
+### Driver location update (pilot/manual GPS reading)
+PATCH {{baseUrl}}/vehicles/1/location
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "latitude": 31.5204,
+  "longitude": 74.3587
+}

@@ -97,3 +97,21 @@ export const acceptBid = (loadId, bidId) => async (dispatch) => {
     throw error;
   }
 };
+
+export const getLoadBookings = (loadId) => async () => {
+  const response = await api.get(`/api/v1/loads/${loadId}/bookings`);
+  return response.data?.data?.bookings || [];
+};
+
+export const getMyBookings = () => async () => {
+  const response = await api.get('/api/v1/loads/bookings/mine');
+  return response.data?.data?.bookings || [];
+};
+
+export const updateBookingStatus = (bookingId, status, confirmationCode = '') => async () => {
+  const response = await api.patch(`/api/v1/loads/bookings/${bookingId}/status`, {
+    status,
+    confirmation_code: confirmationCode || undefined,
+  });
+  return response.data?.data?.booking;
+};

@@ -7,12 +7,8 @@ import {
   REGISTER_SUCCESS,
   REGISTER_FAIL,
   USER_LOADED,
-  GOOGLE_AUTH_START,
-  GOOGLE_AUTH_FAIL,
   SUPABASE_SESSION_LOADED,
   SUPABASE_SIGNOUT,
-  OTP_SEND_FAIL,
-  OTP_VERIFY_FAIL,
   RESET_PASSWORD_SUCCESS,
   RESET_PASSWORD_FAIL,
 } from './types';
@@ -41,6 +37,7 @@ export const register = (formData, role) => async (dispatch) => {
       full_name: formData.name,
       user_type: role,
       organization_name: formData.companyname || formData.companyName || undefined,
+      company_code: formData.companycode || formData.companyCode || undefined,
       cnic: formData.cnic || undefined,
     });
     dispatch({ type: REGISTER_SUCCESS, payload: response.data?.data });
@@ -131,21 +128,6 @@ export const loadSupabaseSession = () => async (dispatch) => {
   }
 };
 
-export const signInWithGoogle = () => async (dispatch) => {
-  try {
-    dispatch({ type: GOOGLE_AUTH_START });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) throw error;
-  } catch (error) {
-    dispatch({ type: GOOGLE_AUTH_FAIL, payload: error.message });
-    dispatch(setAlert('Google authentication failed', 'danger'));
-    throw error;
-  }
-};
-
 export const handleAuthStateChange = (event, session) => async (dispatch) => {
   if (event === 'SIGNED_OUT') {
     dispatch({ type: SUPABASE_SIGNOUT });
@@ -172,16 +154,4 @@ export const signOutUser = () => async (dispatch) => {
     dispatch(setAlert(normalizeApiError(error), 'danger'));
     throw error;
   }
-};
-
-export const sendOTP = () => async (dispatch) => {
-  const message = 'Email verification is handled by Supabase. No OTP endpoint is configured.';
-  dispatch({ type: OTP_SEND_FAIL, payload: message });
-  throw new Error(message);
-};
-
-export const verifyOTP = () => async (dispatch) => {
-  const message = 'Email verification is handled by Supabase. No OTP endpoint is configured.';
-  dispatch({ type: OTP_VERIFY_FAIL, payload: message });
-  throw new Error(message);
 };

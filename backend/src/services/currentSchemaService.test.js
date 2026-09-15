@@ -58,6 +58,19 @@ describe('current schema mapping', () => {
     });
   });
 
+  test('does not mark a pool fulfilled when truck slots are full but capacity is incomplete', () => {
+    const load = normalizeLegacyLoad({
+      load_id: 13,
+      weight_kg: 1200,
+      number_of_trucks_required: 2,
+      is_pooling: true,
+      status: 'available',
+    }, { trucks_assigned: 2, accepted_capacity: 600, status: 'not_full' });
+
+    expect(load.pool.fulfilled).toBe(false);
+    expect(load.pool.remaining_capacity).toBe(600);
+  });
+
   test('maps a driver bid to existing bids columns', () => {
     expect(buildLegacyBidInsert({
       load_id: '12',

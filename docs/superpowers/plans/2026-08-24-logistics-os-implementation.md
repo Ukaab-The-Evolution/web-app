@@ -1,4 +1,6 @@
-# Logistics Operating System Implementation Plan
+# Logistics Operating System Implementation Plan (Archived)
+
+> Archived planning notes from the earlier canonical-schema proposal. The current implementation preserves the supplied integer-ID schema; use `docs/superpowers/plans/2026-09-15-production-readiness.md` for the active release plan.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

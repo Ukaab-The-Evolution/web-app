@@ -76,13 +76,11 @@ const roleSpecificFields = {
     {
       name: 'companycode',
       type: 'text',
-      label: 'Company Code',
-      placeholder: '98765',
+      label: 'Company Invite Code',
+      placeholder: 'Paste your company invite code',
       autoComplete: 'organization',
       required: true,
       gridCol: 2,
-      pattern: '[0-9]*',
-      inputMode: 'numeric'
     }
   ],
   [ROLES.TRUCKING_COMPANY]: [
@@ -102,15 +100,15 @@ const roleSpecificFields = {
 export const roleContent = {
   [ROLES.SHIPPER]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   },
   [ROLES.TRUCK_DRIVER]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   },
   [ROLES.TRUCKING_COMPANY]: {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   }
 };
 
@@ -167,7 +165,7 @@ export const getRoleDisplayName = (role) => {
 export const getRoleContent = (role) => {
   return roleContent[normalizeRole(role)] || {
     title: 'Welcome to Ukaab!',
-    description: 'Get started in seconds - connect with shippers, fleets, and drivers instantly to post requests, assign loads, and track in real time across one unified platform.'
+    description: 'Get started in seconds - connect with shippers, fleets, and drivers to post requests, assign loads, and share trip updates across one unified platform.'
   };
 };
 
@@ -193,7 +191,7 @@ export const validateFieldInput = (fieldName, value) => {
   }
 
   if (fieldName === 'companycode') {
-    return /^\d+$/.test(value);
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
   }
   if (fieldName === 'name' || fieldName === 'fullName' || fieldName === 'emergencyContactName') {
     return /^[a-zA-Z\s]{2,}$/.test(value.trim());

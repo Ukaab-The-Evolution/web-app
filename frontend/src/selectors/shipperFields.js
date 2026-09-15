@@ -1,8 +1,6 @@
 export const shipperFields = (state) => {
   const overview = state.dashboard.overview || {};
   const pieChart = state.dashboard.pieChart || {};
-  const shipments = state.dashboard.shipments || [];
-
   return {
     totalShipments: overview.total_shipments || 0,
     activeShipments: overview.active_shipments || 0,
