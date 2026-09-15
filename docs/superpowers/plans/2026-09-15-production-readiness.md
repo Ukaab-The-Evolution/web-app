@@ -133,8 +133,8 @@
 - [x] Run backend tests, frontend tests, lint, builds, dependency checks, and `git diff --check` from the candidate tree.
 - [x] Add unauthenticated/authorization smoke coverage; live authenticated workflow verification remains a post-migration deployment check.
 - [x] Review the complete diff against `main` and confirm no secrets are present.
-- [ ] Commit the implementation on `codex/logistics-os`.
-- [ ] Push the branch and open a pull request targeting `main` with deployment and database migration instructions.
+- [x] Commit the implementation on `codex/logistics-os`.
+- [x] Push the branch and open pull request #50 targeting `main` with deployment and database migration instructions.
 
 ## Release gate outside the repository
 
