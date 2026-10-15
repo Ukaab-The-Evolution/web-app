@@ -14,7 +14,7 @@ export const validatePasswordStrength = (password) => {
   return true;
 };
 
-export const buildSignupInput = (input = {}) => {
+export const buildSignupInput = (input = {}, { emailRedirectTo } = {}) => {
   const userType = normalizeRole(input.user_type);
   if (!input.email && !input.phone) {
     throw new Error('Please provide either email or phone number');
@@ -35,7 +35,10 @@ export const buildSignupInput = (input = {}) => {
 
   const payload = {
     password: input.password,
-    options: { data: metadata },
+    options: {
+      data: metadata,
+      ...(emailRedirectTo ? { emailRedirectTo } : {}),
+    },
   };
 
   if (input.email) payload.email = input.email.trim().toLowerCase();

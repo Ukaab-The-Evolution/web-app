@@ -1,23 +1,24 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getMyLoads } from '../../../actions/loads';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
+import { selectLoads, selectLoadsError, selectLoadsLoading } from '../../../selectors/loads';
+import AsyncState from '../../ui/AsyncState';
 
 const statusLabel = (status) => status.replace('_', ' ');
 
 const ShipperDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSupabaseAuth();
-  const { items: loads, loading, error } = useSelector((state) => state.loads || {
-    items: [],
-    loading: false,
-    error: null,
-  });
+  const loads = useSelector(selectLoads);
+  const loading = useSelector(selectLoadsLoading);
+  const error = useSelector(selectLoadsError);
+  const reload = useCallback(() => dispatch(getMyLoads()), [dispatch]);
 
   useEffect(() => {
-    dispatch(getMyLoads());
-  }, [dispatch]);
+    reload();
+  }, [reload]);
 
   const active = loads.filter((load) => ['open', 'booked', 'in_progress'].includes(load.status));
   const delivered = loads.filter((load) => load.status === 'delivered');
@@ -46,11 +47,7 @@ const ShipperDashboard = () => {
 
         <section className="rounded-xl bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-5">Your load requests</h2>
-          {loading && <p className="text-gray-500">Loading loads…</p>}
-          {error && <p className="text-red-600">{error}</p>}
-          {!loading && !error && loads.length === 0 && (
-            <p className="text-gray-500">No loads yet. Create your first load request to start a pool.</p>
-          )}
+          <AsyncState loading={loading} error={error} onRetry={reload} empty={loads.length === 0 ? 'No loads yet. Create your first load request to start a pool.' : ''}>
           <div className="space-y-4">
             {!loading && !error && loads.map((load) => (
               <div key={load.id} className="rounded-lg border border-gray-200 p-4">
@@ -72,6 +69,7 @@ const ShipperDashboard = () => {
               </div>
             ))}
           </div>
+          </AsyncState>
         </section>
       </div>
     </div>

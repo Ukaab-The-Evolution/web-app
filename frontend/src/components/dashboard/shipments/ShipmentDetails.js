@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { acceptBid, getLoadBids, getLoadBookings, selectLoad, updateBookingStatus } from '../../../actions/loads';
+import { acceptBid, getLoadAudit, getLoadBids, getLoadBookings, selectLoad, updateBookingStatus } from '../../../actions/loads';
 import api, { normalizeApiError, normalizeLoad } from '../../../api/client';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
+import AsyncState from '../../ui/AsyncState';
 
 const label = (value = '') => value.replaceAll('_', ' ');
 const formatDate = (value) => value ? new Date(value).toLocaleString() : 'Not scheduled';
@@ -16,6 +17,12 @@ const ShipmentDetails = () => {
   const [load, setLoad] = useState(null);
   const [bids, setBids] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [auditEvents, setAuditEvents] = useState([]);
+  const [bidsError, setBidsError] = useState('');
+  const [bookingsError, setBookingsError] = useState('');
+  const [auditError, setAuditError] = useState('');
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [acceptingBid, setAcceptingBid] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -28,11 +35,25 @@ const ShipmentDetails = () => {
       const nextLoad = normalizeLoad(response.data?.data?.load);
       setLoad(nextLoad);
       dispatch(selectLoad(nextLoad));
-      if (user?.user_type === 'shipper') setBids(await dispatch(getLoadBids(id)));
-      setBookings(await dispatch(getLoadBookings(id)));
+      setBidsError('');
+      setBookingsError('');
+      setAuditError('');
+      setAuditLoading(true);
+      const [bidsResult, bookingsResult, auditResult] = await Promise.allSettled([
+        user?.user_type === 'shipper' ? dispatch(getLoadBids(id)) : Promise.resolve([]),
+        dispatch(getLoadBookings(id)),
+        dispatch(getLoadAudit(id)),
+      ]);
+      if (bidsResult.status === 'fulfilled') setBids(bidsResult.value || []);
+      else setBidsError(normalizeApiError(bidsResult.reason));
+      if (bookingsResult.status === 'fulfilled') setBookings(bookingsResult.value || []);
+      else setBookingsError(normalizeApiError(bookingsResult.reason));
+      if (auditResult.status === 'fulfilled') setAuditEvents(auditResult.value || []);
+      else setAuditError(normalizeApiError(auditResult.reason));
     } catch (requestError) {
       setError(normalizeApiError(requestError));
     } finally {
+      setAuditLoading(false);
       setLoading(false);
     }
   }, [dispatch, id, user?.user_type]);
@@ -41,12 +62,15 @@ const ShipmentDetails = () => {
 
   const handleAccept = async (bidId) => {
     setActionMessage('');
+    setAcceptingBid(bidId);
     try {
       const allocation = await dispatch(acceptBid(id, bidId));
       setActionMessage(allocation?.fulfilled ? 'Pool complete. All required truck capacity is allocated.' : 'Driver added to the pool. More capacity is still required.');
       await loadData();
     } catch (requestError) {
       setActionMessage(normalizeApiError(requestError));
+    } finally {
+      setAcceptingBid(null);
     }
   };
 
@@ -61,8 +85,8 @@ const ShipmentDetails = () => {
     }
   };
 
-  if (loading) return <p className="p-8 text-gray-500">Loading load details…</p>;
-  if (error) return <div className="p-8"><p className="text-red-600">{error}</p><button type="button" onClick={() => navigate(-1)} className="mt-4 text-[#578C7A]">← Back</button></div>;
+  if (loading) return <AsyncState loading />;
+  if (error) return <div className="p-8"><p className="text-red-600" role="alert">{error}</p><button type="button" onClick={loadData} className="mt-4 rounded-lg border border-[#578C7A] px-3 py-2 text-sm text-[#3B6255]">Try again</button><button type="button" onClick={() => navigate(-1)} className="ml-3 mt-4 text-[#578C7A]">← Back</button></div>;
   if (!load) return <p className="p-8 text-gray-500">Load not found.</p>;
 
   const pool = load.pool || {};
@@ -80,8 +104,9 @@ const ShipmentDetails = () => {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-bold text-gray-800">{load.cargo_type || 'Load details'}</h1><p className="mt-1 text-gray-500">{load.origin} → {load.destination}</p><p className="mt-1 text-xs text-gray-400">{load.id}</p></div><span className="rounded-full bg-[#E8F2EE] px-4 py-2 text-sm capitalize text-[#3B6255]">{label(load.status)}</span></div>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Load information</h2><div className="grid grid-cols-2 gap-5 text-sm"><div><p className="text-gray-400">Weight</p><p className="font-medium text-gray-700">{Number(load.load_weight || 0).toLocaleString()} kg</p></div><div><p className="text-gray-400">Required trucks</p><p className="font-medium text-gray-700">{required}</p></div><div><p className="text-gray-400">Pickup</p><p className="font-medium text-gray-700">{formatDate(load.pickup_time)}</p></div><div><p className="text-gray-400">Estimated delivery</p><p className="font-medium text-gray-700">{formatDate(bookings[0]?.estimated_delivery_time)}</p></div></div><div className="mt-8"><div className="mb-2 flex justify-between text-sm text-gray-600"><span>Pool progress</span><span>{accepted}/{required} trucks · {capacity}/{requiredCapacity} kg</span></div><div className="h-3 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#578C7A]" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-sm text-gray-500">{pool.remaining ?? 0} truck slots remaining</p></div></section>
-        <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Accepted allocations</h2>{bookings.length === 0 ? <p className="text-sm text-gray-500">No driver has been accepted yet.</p> : <div className="space-y-3">{bookings.map((booking) => <div key={booking.booking_id} className="rounded-lg border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-medium text-gray-700">Driver {booking.bid?.driver_id || '—'}</p><p className="text-sm text-gray-500">Vehicle {booking.vehicle?.registration_number || booking.vehicle_id} · Final price: {booking.final_price}</p>{booking.vehicle?.current_location?.label && <p className="mt-1 text-xs text-gray-400">Last location: {booking.vehicle.current_location.label}</p>}</div><span className="text-xs capitalize text-[#3B6255]">{label(booking.status)}</span></div>{user?.user_type === 'driver' && <div className="mt-3 flex gap-2">{booking.status === 'booked' && <button type="button" onClick={() => handleBookingStatus(booking.booking_id, 'in_transit')} className="rounded-lg bg-[#578C7A] px-3 py-2 text-xs font-medium text-white">Start trip</button>}{booking.status === 'in_transit' && <button type="button" onClick={() => handleBookingStatus(booking.booking_id, 'delivered')} className="rounded-lg border border-[#578C7A] px-3 py-2 text-xs font-medium text-[#3B6255]">Mark delivered</button>}</div>}</div>)}</div>}</section>
-        {user?.user_type === 'shipper' && <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Driver bids</h2>{actionMessage && <p className="mb-4 rounded-lg bg-[#E8F2EE] p-3 text-sm text-[#3B6255]">{actionMessage}</p>}{bids.length === 0 ? <p className="text-sm text-gray-500">No driver bids yet.</p> : <div className="space-y-3">{bids.map((bid) => <div key={bid.id} className="rounded-lg border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-medium text-gray-700">Driver {bid.driver_id}</p><p className="text-sm text-gray-500">Capacity: {bid.proposed_capacity} kg · Bid: {bid.bid_amount ?? '—'}</p></div>{bid.status === 'pending' && <button type="button" onClick={() => handleAccept(bid.id)} className="rounded-lg bg-[#578C7A] px-3 py-2 text-sm font-medium text-white">Accept</button>}</div><p className="mt-2 text-xs capitalize text-gray-400">{label(bid.status)}</p></div>)}</div>}</section>}
+        <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Accepted allocations</h2>{bookingsError ? <div className="text-sm text-red-600"><p>{bookingsError}</p><button type="button" onClick={loadData} className="mt-2 rounded border border-[#578C7A] px-2 py-1 text-[#3B6255]">Try again</button></div> : bookings.length === 0 ? <p className="text-sm text-gray-500">No driver has been accepted yet.</p> : <div className="space-y-3">{bookings.map((booking) => <div key={booking.booking_id} className="rounded-lg border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-medium text-gray-700">Driver {booking.bid?.driver_id || '—'}</p><p className="text-sm text-gray-500">Vehicle {booking.vehicle?.registration_number || booking.vehicle_id} · Final price: {booking.final_price}</p>{booking.vehicle?.current_location?.label && <p className="mt-1 text-xs text-gray-400">Last location: {booking.vehicle.current_location.label}</p>}</div><span className="text-xs capitalize text-[#3B6255]">{label(booking.status)}</span></div>{user?.user_type === 'driver' && <div className="mt-3 flex gap-2">{booking.status === 'booked' && <button type="button" onClick={() => handleBookingStatus(booking.booking_id, 'in_transit')} className="rounded-lg bg-[#578C7A] px-3 py-2 text-xs font-medium text-white">Start trip</button>}{booking.status === 'in_transit' && <button type="button" onClick={() => handleBookingStatus(booking.booking_id, 'delivered')} className="rounded-lg border border-[#578C7A] px-3 py-2 text-xs font-medium text-[#3B6255]">Mark delivered</button>}</div>}</div>)}</div>}</section>
+        {user?.user_type === 'shipper' && <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Driver bids</h2>{actionMessage && <p className="mb-4 rounded-lg bg-[#E8F2EE] p-3 text-sm text-[#3B6255]">{actionMessage}</p>}{bidsError ? <div className="text-sm text-red-600"><p>{bidsError}</p><button type="button" onClick={loadData} className="mt-2 rounded border border-[#578C7A] px-2 py-1 text-[#3B6255]">Try again</button></div> : bids.length === 0 ? <p className="text-sm text-gray-500">No driver bids yet.</p> : <div className="space-y-3">{bids.map((bid) => <div key={bid.id} className="rounded-lg border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-medium text-gray-700">Driver {bid.driver_id}</p><p className="text-sm text-gray-500">Capacity: {bid.proposed_capacity} kg · Bid: {bid.bid_amount ?? '—'}</p></div>{bid.status === 'pending' && <button type="button" disabled={acceptingBid === bid.id} onClick={() => handleAccept(bid.id)} className="rounded-lg bg-[#578C7A] px-3 py-2 text-sm font-medium text-white disabled:opacity-50">{acceptingBid === bid.id ? 'Accepting…' : 'Accept'}</button>}</div><p className="mt-2 text-xs capitalize text-gray-400">{label(bid.status)}</p></div>)}</div>}</section>}
+        <section className="rounded-xl bg-white p-6 shadow-sm"><h2 className="mb-5 text-lg font-semibold text-gray-800">Activity history</h2><AsyncState loading={auditLoading} error={auditError} onRetry={loadData} empty={auditEvents.length ? '' : 'No activity has been recorded yet.'}>{auditEvents.length > 0 && <div className="space-y-3">{auditEvents.map((event) => <div key={event.event_id} className="rounded-lg border border-gray-200 p-3"><div className="flex justify-between gap-3"><span className="text-sm font-medium text-gray-700">{String(event.event_type || '').replaceAll('.', ' ')}</span><time className="text-xs text-gray-400">{formatDate(event.created_at)}</time></div><p className="mt-1 text-xs text-gray-500">{event.from_status ? `${label(event.from_status)} → ` : ''}{label(event.to_status || '')}</p></div>)}</div>}</AsyncState></section>
       </div>
     </div>
   );

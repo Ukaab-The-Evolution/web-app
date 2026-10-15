@@ -5,6 +5,16 @@ import { buildLegacyUser } from '../services/currentSchemaService.js';
 import AppError from '../utils/appError.js';
 import catchAsync from '../utils/catchAsync.js';
 
+const fleetFailure = (next, operation, error) => {
+  console.error(`[fleet] ${operation} failed`, {
+    code: error?.code,
+    message: error?.message,
+    details: error?.details,
+    hint: error?.hint,
+  });
+  return next(new AppError(`${operation} is temporarily unavailable`, 503));
+};
+
 const getProfileAggregate = async (userId) => {
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles').select('*').eq('user_id', userId).single();
@@ -159,13 +169,13 @@ export const getCompanyDrivers = catchAsync(async (req, res, next) => {
     .select('driver_id, user_id, company_id')
     .eq('company_id', req.user.company_id)
     .order('driver_id', { ascending: true });
-  if (driverError) throw driverError;
+  if (driverError) return fleetFailure(next, 'Loading company drivers', driverError);
 
   const userIds = (drivers || []).map((driver) => driver.user_id).filter(Boolean);
   const { data: profiles, error: profileError } = userIds.length
     ? await supabaseAdmin.from('profiles').select('user_id, full_name').in('user_id', userIds)
     : { data: [], error: null };
-  if (profileError) throw profileError;
+  if (profileError) return fleetFailure(next, 'Loading company driver profiles', profileError);
   const names = new Map((profiles || []).map((profile) => [profile.user_id, profile.full_name]));
 
   return res.status(200).json({

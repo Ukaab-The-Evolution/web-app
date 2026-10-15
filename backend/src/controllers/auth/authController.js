@@ -453,7 +453,9 @@ export const signup = async (req, res, next) => {
       hasEmail: Boolean(input.email),
       hasPhone: Boolean(input.phone),
     });
-    const signupInput = buildSignupInput(input);
+    const signupInput = buildSignupInput(input, {
+      emailRedirectTo: `${config.frontendUrl}/auth/callback?verified=1`,
+    });
     logAuthEvent('signup.input_validated', { role });
 
     logAuthEvent('signup.supabase_auth_started', { role });

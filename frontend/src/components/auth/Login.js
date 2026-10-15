@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { login } from '../../actions/auth';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ import { MdOutlineSupportAgent } from 'react-icons/md';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
 const Login = ({ login, isAuthenticated }) => {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,6 +18,7 @@ const Login = ({ login, isAuthenticated }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { email, password } = formData;
+  const verified = new URLSearchParams(location.search).get('verified') === '1';
 
   const onChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,6 +58,11 @@ const Login = ({ login, isAuthenticated }) => {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-relaxed text-[#333333] mb-4 mt-8">
             Login
           </h1>
+          {verified && (
+            <p className="mb-6 rounded-lg bg-[#E8F2EE] px-4 py-3 text-sm text-[#3B6255]" role="status">
+              Email verified. You can now log in.
+            </p>
+          )}
           <p className='mb-10 text-[#7b7f8d]   font-poppins'>
             Don’t have an account?{' '}
             <Link

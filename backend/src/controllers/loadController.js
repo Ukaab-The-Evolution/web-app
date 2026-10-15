@@ -8,6 +8,7 @@ import {
   normalizeLegacyLoad,
   normalizeLegacyVehicle,
 } from '../services/currentSchemaService.js';
+import { isMissingAuditTable, writeLoadEvent } from '../services/auditService.js';
 
 const fail = (next, message, status = 400) => next(new AppError(message, status));
 const failInternal = (next, status = 500) => next(new AppError('Request could not be completed', status, { expose: false }));
@@ -66,6 +67,15 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
         return fail(next, 'Database migration required before creating loads', 503);
       }
       if (error || !data?.load) return failInternal(next);
+      await writeLoadEvent(db, {
+        load_id: data.load.load_id,
+        actor_user_id: req.user.id,
+        event_type: 'load.created',
+        entity_type: 'load',
+        entity_id: data.load.load_id,
+        to_status: data.load.status,
+        metadata: { pooling: Boolean(payload.is_pooling), trucks_required: payload.number_of_trucks_required },
+      });
       return res.status(201).json({
         status: 'success',
         data: { load: normalizeLegacyLoad(data.load, data.pool) },
@@ -171,6 +181,15 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
         if (error.code === '23505') return fail(next, 'This vehicle already has a bid on the load', 409);
         return failInternal(next);
       }
+      await writeLoadEvent(db, {
+        load_id: load.load_id,
+        actor_user_id: req.user.id,
+        event_type: 'bid.submitted',
+        entity_type: 'bid',
+        entity_id: data.bid_id,
+        to_status: data.status,
+        metadata: { driver_id: data.driver_id, vehicle_id: data.vehicle_id, proposed_capacity: data.proposed_capacity },
+      });
       return res.status(201).json({ status: 'success', data: { bid: normalizeLegacyBid(data) } });
     } catch (error) {
       return failInternal(next);
@@ -287,6 +306,13 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
       if (![USER_TYPES.DRIVER, USER_TYPES.SHIPPER].includes(req.user?.user_type)) {
         return fail(next, 'Only the assigned driver or load owner can update a booking', 403);
       }
+      let currentBooking = null;
+      try {
+        const result = await db.from('bookings').select('status').eq('booking_id', Number(req.params.id)).maybeSingle();
+        currentBooking = result.data;
+      } catch (auditLookupError) {
+        console.error('Booking status history lookup could not be completed', auditLookupError);
+      }
       const { data, error } = await db.rpc('update_booking_status', {
         p_booking_id: Number(req.params.id),
         p_actor_user_id: Number(req.user.id),
@@ -297,6 +323,35 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
       if (error) {
         const status = error.code === '42501' ? 403 : error.code === 'P0002' ? 404 : error.code === 'P0001' ? 409 : 400;
         return fail(next, status === 403 ? 'You do not have access to this booking' : error.message || 'Invalid booking transition', status);
+      }
+      try {
+        const { data: booking } = await db.from('bookings').select('bid_id').eq('booking_id', Number(req.params.id)).maybeSingle();
+        const { data: bid } = booking
+          ? await db.from('bids').select('load_id').eq('bid_id', booking.bid_id).maybeSingle()
+          : { data: null };
+        if (bid?.load_id) {
+          await writeLoadEvent(db, {
+            load_id: bid.load_id,
+            actor_user_id: req.user.id,
+            event_type: 'booking.status_changed',
+            entity_type: 'booking',
+            entity_id: req.params.id,
+            from_status: currentBooking?.status,
+            to_status: data.status,
+            metadata: { load_status: data.load_status },
+          });
+          await writeLoadEvent(db, {
+            load_id: bid.load_id,
+            actor_user_id: req.user.id,
+            event_type: 'load.status_changed',
+            entity_type: 'load',
+            entity_id: bid.load_id,
+            to_status: data.load_status,
+            metadata: { booking_id: req.params.id },
+          });
+        }
+      } catch (auditError) {
+        console.error('Booking audit enrichment could not be completed', auditError);
       }
       return res.status(200).json({ status: 'success', data: { booking: data } });
     } catch (error) {
@@ -317,7 +372,49 @@ export const createLoadController = ({ db = supabaseAdmin } = {}) => ({
         if (status === 409) return fail(next, 'This bid cannot be accepted in the current load state', status);
         return failInternal(next);
       }
+      await writeLoadEvent(db, {
+        load_id: data.load_id,
+        actor_user_id: req.user.id,
+        event_type: 'bid.accepted',
+        entity_type: 'bid',
+        entity_id: req.params.bidId,
+        to_status: 'accepted',
+        metadata: { booking_id: data.booking_id, fulfilled: Boolean(data.fulfilled) },
+      });
+      await writeLoadEvent(db, {
+        load_id: data.load_id,
+        actor_user_id: req.user.id,
+        event_type: 'booking.created',
+        entity_type: 'booking',
+        entity_id: data.booking_id,
+        to_status: 'booked',
+        metadata: { vehicle_id: data.vehicle_id || null },
+      });
       return res.status(200).json({ status: 'success', data: { allocation: data } });
+    } catch (error) {
+      return failInternal(next);
+    }
+  },
+
+  getLoadAudit: async (req, res, next) => {
+    try {
+      const load = await readSingle(db.from('loads').select('load_id, shipper_id').eq('load_id', req.params.id).maybeSingle());
+      if (!load) return fail(next, 'Load not found', 404);
+      const isOwner = load.shipper_id === req.user?.shipper_id;
+      if (!isOwner && [USER_TYPES.DRIVER, USER_TYPES.TRUCKING_COMPANY].includes(req.user?.user_type)) {
+        let participantQuery = db.from('bids').select('bid_id').eq('load_id', load.load_id).eq('status', 'accepted');
+        participantQuery = req.user.user_type === USER_TYPES.DRIVER
+          ? participantQuery.eq('driver_id', req.user.driver_id)
+          : participantQuery.eq('company_id', req.user.company_id);
+        const { data: participant, error: participantError } = await participantQuery.limit(1).maybeSingle();
+        if (participantError) return failInternal(next);
+        if (!participant) return fail(next, 'You do not have access to this load history', 403);
+      } else if (!isOwner) {
+        return fail(next, 'You do not have access to this load history', 403);
+      }
+      const { data, error } = await db.from('load_events').select('*').eq('load_id', load.load_id).order('created_at', { ascending: false });
+      if (error) return fail(next, isMissingAuditTable(error) ? 'Database migration required before reading load history' : 'Load history could not be loaded', isMissingAuditTable(error) ? 503 : 500);
+      return res.status(200).json({ status: 'success', data: { events: data || [] } });
     } catch (error) {
       return failInternal(next);
     }
@@ -336,4 +433,5 @@ export const {
   getMyBookings,
   updateBookingStatus,
   acceptBid,
+  getLoadAudit,
 } = controller;

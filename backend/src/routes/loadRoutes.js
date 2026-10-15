@@ -13,6 +13,7 @@ import {
   getMyBookings,
   updateBookingStatus,
   acceptBid,
+  getLoadAudit,
 } from '../controllers/loadController.js';
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.get('/:id', requireRole('driver', 'trucking_company', 'shipper'), catchAs
 router.post('/:id/bids', requireRole('driver'), catchAsync(submitBid));
 router.get('/:id/bids', requireRole('driver', 'shipper', 'trucking_company'), catchAsync(getLoadBids));
 router.get('/:id/bookings', requireRole('driver', 'shipper', 'trucking_company'), catchAsync(getLoadBookings));
+router.get('/:id/audit', requireRole('driver', 'shipper', 'trucking_company'), catchAsync(getLoadAudit));
 router.post('/:id/bids/:bidId/accept', requireRole('shipper'), catchAsync(acceptBid));
 router.patch('/bookings/:id/status', requireRole('driver', 'shipper'), catchAsync(updateBookingStatus));
 
