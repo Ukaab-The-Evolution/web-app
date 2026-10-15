@@ -134,10 +134,10 @@ const SignupConfirmation = ({ isAuthenticated, supabaseUser }) => {
           {/* Back to Login */}
           <div className="mt-6">
             <button
-              onClick={() => navigate('/role-selection')}
+              onClick={() => navigate('/login')}
               className="text-[#3B6255] text-sm hover:underline"
             >
-              ← Back to Role Selection
+              Go to Login →
             </button>
           </div>
         </div>

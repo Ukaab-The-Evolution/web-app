@@ -22,10 +22,9 @@ const DashboardLayout = () => {
     if (path.includes('/shipments')) return 'shipments';
     if (path.includes('/load-requests')) return 'loadRequests';
     if (path.includes('/load-request')) return 'loadRequest';
-    if (path.includes('/accepted-loads')) return 'acceptedLoads';
+    if (path.includes('/accepted-loads')) return 'assignedLoads';
     if (path.includes('/fleet')) return 'fleet';
     if (path.includes('/orders')) return 'orders';
-    if (path.includes('/accepted-loads')) return 'assignedLoads';
     if (path.includes('/profile')) return 'profile';
     if (path.includes('/settings')) return 'settings';
     return 'dashboard';
@@ -66,7 +65,7 @@ const DashboardLayout = () => {
         navigate('/dashboard/load-requests');
         break;
       case 'acceptedLoads':
-        navigate('/dashboard/shipments');
+        navigate('/dashboard/accepted-loads');
         break;
       case 'fleet':
         navigate('/dashboard/fleet');

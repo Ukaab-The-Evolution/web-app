@@ -5,16 +5,30 @@ import catchAsync from '../utils/catchAsync.js';
 import { buildLegacyLocation, normalizeLegacyVehicle } from '../services/currentSchemaService.js';
 
 const fail = (next, message, status = 400) => next(new AppError(message, status));
-const failInternal = (next, status = 500) => next(new AppError('Request could not be completed', status, { expose: false }));
+const failInternal = (next, operation, error) => {
+  console.error(`[fleet] ${operation} failed`, {
+    code: error?.code,
+    message: error?.message,
+    details: error?.details,
+    hint: error?.hint,
+  });
+  return next(new AppError(`${operation} is temporarily unavailable`, 503));
+};
 const VEHICLE_STATUSES = new Set(['available', 'in_transit', 'maintenance']);
 
 export const getMyVehicles = catchAsync(async (req, res, next) => {
-  const query = supabaseAdmin.from('vehicles').select('*').order('last_location_update', { ascending: false, nullsFirst: false });
+  const query = supabaseAdmin.from('vehicles').select('*').order('vehicle_id', { ascending: false });
+  if (req.user.user_type === USER_TYPES.DRIVER && !req.user.driver_id) {
+    return res.status(200).json({ status: 'success', data: { vehicles: [] } });
+  }
+  if (req.user.user_type !== USER_TYPES.DRIVER && !req.user.company_id) {
+    return res.status(200).json({ status: 'success', data: { vehicles: [] } });
+  }
   const scoped = req.user.user_type === USER_TYPES.DRIVER
     ? query.eq('driver_id', req.user.driver_id)
     : query.eq('company_id', req.user.company_id);
   const { data, error } = await scoped;
-  if (error) return failInternal(next);
+  if (error) return failInternal(next, 'Loading fleet vehicles', error);
   return res.status(200).json({ status: 'success', data: { vehicles: (data || []).map(normalizeLegacyVehicle) } });
 });
 
@@ -42,12 +56,12 @@ export const createVehicle = catchAsync(async (req, res, next) => {
     .eq('driver_id', driverId)
     .eq('company_id', req.user.company_id)
     .maybeSingle();
-  if (driverError) return failInternal(next);
+  if (driverError) return failInternal(next, 'Checking fleet driver assignment', driverError);
   if (!driver) return fail(next, 'Driver does not belong to this company', 400);
   const { data, error } = await supabaseAdmin.from('vehicles').insert(insert).select('*').single();
   if (error) {
     if (error.code === '23505') return fail(next, 'A vehicle with this registration already exists', 409);
-    return failInternal(next);
+    return failInternal(next, 'Saving fleet vehicle', error);
   }
   return res.status(201).json({ status: 'success', data: { vehicle: normalizeLegacyVehicle(data) } });
 });
@@ -81,12 +95,12 @@ export const updateVehicle = catchAsync(async (req, res, next) => {
   }
   if (update.driver_id !== undefined) {
     const { data: driver, error: driverError } = await supabaseAdmin.from('drivers').select('driver_id').eq('driver_id', update.driver_id).eq('company_id', req.user.company_id).maybeSingle();
-    if (driverError) return failInternal(next);
+    if (driverError) return failInternal(next, 'Checking fleet driver assignment', driverError);
     if (!driver) return fail(next, 'Driver does not belong to this company', 400);
   }
   if (!Object.keys(update).length) return fail(next, 'No vehicle changes supplied', 400);
   const { data, error } = await supabaseAdmin.from('vehicles').update(update).eq('vehicle_id', Number(req.params.id)).eq('company_id', req.user.company_id).select('*').single();
-  if (error) return failInternal(next);
+  if (error) return failInternal(next, 'Updating fleet vehicle', error);
   return res.status(200).json({ status: 'success', data: { vehicle: normalizeLegacyVehicle(data) } });
 });
 
@@ -117,27 +131,27 @@ export const updateVehicleLocation = catchAsync(async (req, res, next) => {
   if (bookingId !== null) {
     const { data: booking, error: bookingError } = await supabaseAdmin.from('bookings')
       .select('booking_id').eq('booking_id', bookingId).eq('vehicle_id', vehicleId).maybeSingle();
-    if (bookingError) return failInternal(next);
+    if (bookingError) return failInternal(next, 'Checking vehicle booking', bookingError);
     if (!booking) return fail(next, 'Booking does not belong to this vehicle', 403);
   }
 
   const { data: vehicle, error: vehicleError } = await supabaseAdmin.from('vehicles')
     .select('vehicle_id, status').eq('vehicle_id', vehicleId).eq('driver_id', req.user.driver_id).maybeSingle();
-  if (vehicleError) return failInternal(next);
+  if (vehicleError) return failInternal(next, 'Checking vehicle assignment', vehicleError);
   if (!vehicle) return fail(next, 'Vehicle is not assigned to your driver profile', 403);
 
   const update = { current_location: location, last_location_update: new Date().toISOString() };
   if (bookingId !== null) update.status = 'in_transit';
   const { data: updated, error: updateError } = await supabaseAdmin.from('vehicles')
     .update(update).eq('vehicle_id', vehicleId).select('*').single();
-  if (updateError) return failInternal(next);
+  if (updateError) return failInternal(next, 'Updating vehicle location', updateError);
 
   const { error: logError } = await supabaseAdmin.from('vehicle_location_log').insert({
     vehicle_id: vehicleId,
     booking_id: bookingId,
     location,
   });
-  if (logError) return failInternal(next);
+  if (logError) return failInternal(next, 'Recording vehicle location', logError);
 
   return res.status(200).json({ status: 'success', data: { vehicle: normalizeLegacyVehicle(updated) } });
 });

@@ -38,6 +38,21 @@ describe('auth service contracts', () => {
     }).options.data.company_code).toBe('company-invite-code');
   });
 
+  test('sets the email verification redirect to the login callback', () => {
+    expect(buildSignupInput({
+      email: 'driver@example.com',
+      password: 'Secure!123',
+      user_type: 'driver',
+    }, { emailRedirectTo: 'https://web-app.example.com/auth/callback?verified=1' }).options)
+      .toEqual({
+        emailRedirectTo: 'https://web-app.example.com/auth/callback?verified=1',
+        data: {
+          user_type: 'driver',
+          full_name: '',
+        },
+      });
+  });
+
   test('returns a canonical user shape with organization membership', () => {
     expect(buildCanonicalUser(
       {

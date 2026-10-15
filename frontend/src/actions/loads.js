@@ -103,6 +103,11 @@ export const getLoadBookings = (loadId) => async () => {
   return response.data?.data?.bookings || [];
 };
 
+export const getLoadAudit = (loadId) => async () => {
+  const response = await api.get(`/api/v1/loads/${loadId}/audit`);
+  return response.data?.data?.events || [];
+};
+
 export const getMyBookings = () => async () => {
   const response = await api.get('/api/v1/loads/bookings/mine');
   return response.data?.data?.bookings || [];

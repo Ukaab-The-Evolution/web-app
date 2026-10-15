@@ -1,39 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAvailableLoads } from '../../../actions/loads';
 import { normalizeApiError } from '../../../api/client';
 import api from '../../../api/client';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
+import { fetchFleetData } from './fleetData';
+import { selectLoads, selectLoadsError, selectLoadsLoading } from '../../../selectors/loads';
+import AsyncState from '../../ui/AsyncState';
 
 const emptyVehicle = { registration_number: '', vehicle_type: 'truck', capacity: '', driver_id: '' };
 
 const TruckingCompanyDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSupabaseAuth();
-  const { items: loads = [], loading, error } = useSelector((state) => state.loads || {});
+  const loads = useSelector(selectLoads);
+  const loading = useSelector(selectLoadsLoading);
+  const error = useSelector(selectLoadsError);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicleForm, setVehicleForm] = useState(emptyVehicle);
   const [vehicleMessage, setVehicleMessage] = useState('');
+  const [fleetErrors, setFleetErrors] = useState({ vehicles: null, drivers: null });
   const [inviteCode, setInviteCode] = useState(user?.invite_code || '');
+  const [fleetLoading, setFleetLoading] = useState(true);
 
-  const loadFleet = async () => {
-    try {
-      const [vehicleResponse, driverResponse] = await Promise.all([
-        api.get('/api/v1/vehicles'),
-        api.get('/api/v1/profile/company-drivers'),
-      ]);
-      setVehicles(vehicleResponse.data?.data?.vehicles || []);
-      setDrivers(driverResponse.data?.data?.drivers || []);
-    } catch (requestError) {
-      setVehicleMessage(normalizeApiError(requestError));
-    }
-  };
+  const loadFleet = useCallback(async () => {
+    setFleetLoading(true);
+    const fleetData = await fetchFleetData(api);
+    setVehicles(fleetData.vehicles);
+    setDrivers(fleetData.drivers);
+    setFleetErrors({
+      vehicles: fleetData.vehicleError,
+      drivers: fleetData.driverError,
+    });
+    setFleetLoading(false);
+  }, []);
 
   useEffect(() => {
     dispatch(getAvailableLoads());
     loadFleet();
-  }, [dispatch]);
+  }, [dispatch, loadFleet]);
 
   useEffect(() => {
     setInviteCode(user?.invite_code || '');
@@ -77,15 +83,15 @@ const TruckingCompanyDashboard = () => {
         <section className="rounded-xl bg-white p-6 shadow-sm">
           <div className="mb-5 rounded-xl bg-[#578C7A] p-6 text-white"><p className="text-sm opacity-90">Open loads in the network</p><p className="text-4xl font-bold">{loads.length}</p></div>
           <h2 className="mb-5 text-lg font-semibold text-gray-800">Open load pools</h2>
-          {loading && <p className="text-gray-500">Loading open loads…</p>}
-          {error && <p className="text-red-600">{error}</p>}
-          {!loading && !error && loads.length === 0 && <p className="text-gray-500">No open load pools are available.</p>}
-          <div className="space-y-4">{loads.map((load) => <div key={load.id} className="rounded-lg border border-gray-200 p-4"><div className="flex justify-between gap-4"><div><p className="font-semibold text-gray-800">{load.cargo_type}</p><p className="text-sm text-gray-600">{load.origin} → {load.destination}</p></div><span className="text-sm font-medium text-[#3B6255]">{load.pool?.remaining || load.required_trucks} truck(s) needed</span></div><p className="mt-3 text-sm text-gray-600">Pool progress: {load.pool?.accepted || 0}/{load.pool?.required || load.required_trucks} trucks · {load.pool?.accepted_capacity || 0}/{load.pool?.required_capacity || load.load_weight} kg</p></div>)}</div>
+          <AsyncState loading={loading} error={error} onRetry={() => dispatch(getAvailableLoads())} empty={loads.length === 0 ? 'No open load pools are available.' : ''}><div className="space-y-4">{loads.map((load) => <div key={load.id} className="rounded-lg border border-gray-200 p-4"><div className="flex justify-between gap-4"><div><p className="font-semibold text-gray-800">{load.cargo_type}</p><p className="text-sm text-gray-600">{load.origin} → {load.destination}</p></div><span className="text-sm font-medium text-[#3B6255]">{load.pool?.remaining || load.required_trucks} truck(s) needed</span></div><p className="mt-3 text-sm text-gray-600">Pool progress: {load.pool?.accepted || 0}/{load.pool?.required || load.required_trucks} trucks · {load.pool?.accepted_capacity || 0}/{load.pool?.required_capacity || load.load_weight} kg</p></div>)}</div></AsyncState>
         </section>
         <section className="rounded-xl bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-lg font-semibold text-gray-800">Fleet vehicles</h2>
           <p className="mb-5 text-sm text-gray-500">Add a vehicle and assign it to a driver before bidding.</p>
           {vehicleMessage && <p className="mb-4 rounded-lg bg-[#E8F2EE] p-3 text-sm text-[#3B6255]">{vehicleMessage}</p>}
+          {fleetLoading && <p className="mb-4 text-sm text-gray-500">Loading fleet data…</p>}
+          {fleetErrors.vehicles && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"><p role="alert">Vehicles could not be loaded: {fleetErrors.vehicles}</p><button type="button" onClick={loadFleet} className="mt-2 rounded border border-[#578C7A] px-2 py-1 text-[#3B6255]">Try again</button></div>}
+          {fleetErrors.drivers && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"><p role="alert">Company drivers could not be loaded: {fleetErrors.drivers}</p><button type="button" onClick={loadFleet} className="mt-2 rounded border border-[#578C7A] px-2 py-1 text-[#3B6255]">Try again</button></div>}
           <div className="mb-5 rounded-lg border border-dashed border-[#578C7A] p-4">
             <p className="text-sm font-medium text-gray-700">Driver invite code</p>
             <p className="mt-1 break-all text-sm text-gray-500">{inviteCode || 'Generate a code to onboard drivers.'}</p>

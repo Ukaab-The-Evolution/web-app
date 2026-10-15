@@ -1,6 +1,6 @@
 import { MdOutlineSupportAgent } from 'react-icons/md';
 import { FaAngleDoubleRight } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const Landing = () => {
 
           <button
             onClick={() => navigate('/role-selection')}
-            type="submit"
+            type="button"
             className="w-full h-[45px] px-[25px] rounded-full 
                        bg-gradient-to-t from-[#3B6255] to-[#578C7A] 
                        shadow-[0px_4px_12px_0px_rgba(0,0,0,0.25)] font-poppins font-semibold text-[18px] leading-[100%] 
@@ -44,6 +44,16 @@ const Landing = () => {
           >
             Get Started <FaAngleDoubleRight className="text-sm" />
           </button>
+
+          <p className="mt-5 text-center text-sm text-[#7B7F8D]">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-semibold text-[#3B6255] underline underline-offset-2"
+            >
+              Log in
+            </Link>
+          </p>
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import { FaAngleDoubleRight } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useState } from "react";
 import Toast from "../ui/Toast";
 import PropTypes from 'prop-types';
@@ -156,6 +156,16 @@ const RoleSelection = ({ isAuthenticated }) => {
                 Next
               <FaAngleDoubleRight className="text-sm" />
             </button>
+
+            <p className="mt-5 text-center text-sm text-[#7B7F8D]">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="font-semibold text-[#3B6255] underline underline-offset-2"
+              >
+                Log in
+              </Link>
+            </p>
           </div>
         </div>
 

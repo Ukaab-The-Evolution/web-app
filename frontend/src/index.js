@@ -13,12 +13,15 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import RoleSelection from './components/layout/RoleSelection';
 import ResetPassword from "./components/auth/ResetPassword";
 import SignupConfirmation from './components/auth/SignupConfirmation';
+import EmailVerificationCallback from './components/auth/EmailVerificationCallback';
 
 // Providers
 import SupabaseAuthProvider from './components/providers/SupabaseAuthProvider';
 
 import DashboardLayout from './components/layout/DashboardLayout';
 import Shipments from './components/dashboard/shipments/Shipments';
+import AvailableLoadPools from './components/dashboard/shipments/AvailableLoadPools';
+import AssignedTrips from './components/dashboard/shipments/AssignedTrips';
 import ShipmentDetails from './components/dashboard/shipments/ShipmentDetails';
 import LoadRequest from './components/dashboard/loadRequest/LoadRequest';
 import TruckingCompanyDashboard from './components/dashboard/dashboard/TruckingCompanyDashboard';
@@ -41,6 +44,7 @@ root.render(
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
           <Route exact path="/signup-confirmation" element={<SignupConfirmation />} />
+          <Route exact path="/auth/callback" element={<EmailVerificationCallback />} />
           <Route exact path='/forgot-password' element={<ForgotPassword />} />
           <Route exact path='/role-selection' element={<RoleSelection />} />
           <Route exact path="/reset-password" element={<ResetPassword />} />
@@ -50,9 +54,9 @@ root.render(
           <Route path="/dashboard" element={<DashboardLayout />}>
             
             <Route path="shipments" element={<Shipments />} />
-            <Route path="load-requests" element={<Shipments />} />
-            <Route path="accepted-loads" element={<Shipments />} />
-            <Route path="orders" element={<Shipments />} />
+            <Route path="load-requests" element={<AvailableLoadPools />} />
+            <Route path="accepted-loads" element={<AssignedTrips />} />
+            <Route path="orders" element={<AvailableLoadPools />} />
             <Route path="fleet" element={<TruckingCompanyDashboard />} />
             <Route path="shipment-details/:id" element={<ShipmentDetails />} />
             <Route path="load-request" element={<LoadRequest />} />
